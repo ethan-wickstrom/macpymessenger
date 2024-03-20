@@ -8,19 +8,6 @@ from .message import Message
 from .configuration import Configuration
 
 
-def check_compatibility(phone: str) -> bool:
-    mac_ver, _, _ = platform.mac_ver()
-    mac_ver = float('.'.join(mac_ver.split('.')[:2]))
-
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    relative_path = 'osascript/check_imessage.js'
-    path = f'{dir_path}/{relative_path}'
-    cmd = f'osascript -l JavaScript {path} {phone} {mac_ver}'
-    output = subprocess.check_output(cmd, shell=True)
-
-    return 'true' in output.decode('utf-8')
-
-
 class IMessageClient:
     def __init__(self):
         self.config = Configuration()
@@ -36,6 +23,19 @@ class IMessageClient:
         sleep(1)  # Allow local db to update
         guid = self.db_manager.get_most_recently_sent_text()
         return guid
+
+    @staticmethod
+    def check_compatibility(phone: str) -> bool:
+        mac_ver, _, _ = platform.mac_ver()
+        mac_ver = float('.'.join(mac_ver.split('.')[:2]))
+
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        relative_path = 'osascript/check_imessage.js'
+        path = f'{dir_path}/{relative_path}'
+        cmd = f'osascript -l JavaScript {path} {phone} {mac_ver}'
+        output = subprocess.check_output(cmd, shell=True)
+
+        return 'true' in output.decode('utf-8')
 
     def status(self, guid: str) -> Message:
         return self.db_manager.get_message(guid)

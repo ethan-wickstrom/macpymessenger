@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 class IMessageClient:
     def __init__(self, configuration: Configuration):
         self.configuration = configuration
+        self.template_manager = TemplateManager()
 
     def send(self, phone_number: str, message: str, delay: int = 0) -> bool:
         try:
@@ -26,6 +27,19 @@ class IMessageClient:
         except subprocess.CalledProcessError as e:
             logger.error(f"Failed to send message to {phone_number}. Error: {str(e)}")
             return False
+
+    def send_template(self, phone_number, template_id):
+        template = self.template_manager.get_template(template_id)
+        return self.send(phone_number, template.content)
+
+    def create_template(self, template_id, content):
+        self.template_manager.create_template(template_id, content)
+
+    def update_template(self, template_id, new_content):
+        self.template_manager.update_template(template_id, new_content)
+
+    def delete_template(self, template_id):
+        self.template_manager.delete_template(template_id)
 
     def get_chat_history(self, phone_number: str, limit: int = 10) -> list:
         # Implementation to retrieve chat history

@@ -1,1 +1,2 @@
-from macpymessenger.src.configuration import Configuration
+from .configuration import Configuration
+from .template_manager import TemplateManager

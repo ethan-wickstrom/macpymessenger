@@ -1,35 +1,45 @@
+import pytest
 from i_py_messenger import IMessageClient, Configuration
-from dotenv import dotenv_values
+import os
+import dotenv
 
 
-def test_send_message(client: IMessageClient, phone_number, message_text):
-    success = client.send(phone_number, message_text)
-    if success:
-        print("Message sent successfully.")
-    else:
-        print("Failed to send message.")
+@pytest.fixture(scope='session', autouse=True)
+def load_env():
+    dotenv.load_dotenv()
+    return os.environ
 
 
-def test_check_compatibility(client: IMessageClient, phone_number):
-    is_compatible = client.check_compatibility(phone_number)
-    if is_compatible:
-        print(f"{phone_number} is compatible with iMessage.")
-    else:
-        print(f"{phone_number} is not compatible with iMessage.")
-
-
-def run_tests():
-    test_phone_number = dotenv_values().get("TEST_PHONE_NUMBER")
-
+@pytest.fixture
+def client():
     config = Configuration()
-    client: IMessageClient = IMessageClient(config)
-
-    print("Running send message test...")
-    test_send_message(client, test_phone_number, "Test message from i_py_messenger.")
-
-    print("\nRunning compatibility test...")
-    test_check_compatibility(client, test_phone_number)
+    return IMessageClient(config)
 
 
-if __name__ == "__main__":
-    run_tests()
+class TestIMessageClient:
+    def test_send_message_success(self, client, load_env):
+        message_text = "Test message"
+
+        success = client.send(load_env["TEST_PHONE_NUMBER"], message_text)
+
+        assert success == True
+
+
+class TestConfiguration:
+    def test_configuration_initialization(self):
+        config = Configuration()
+
+        assert config.send_script_path.endswith("osascript/sendMessage.scpt")
+        assert config.check_compatibility_script_path.endswith("osascript/checkCompatibility.scpt")
+
+    def test_configuration_send_script_path(self):
+        config = Configuration()
+
+        assert "osascript" in config.send_script_path
+        assert config.send_script_path.endswith("sendMessage.scpt")
+
+    def test_configuration_check_compatibility_script_path(self):
+        config = Configuration()
+
+        assert "osascript" in config.check_compatibility_script_path
+        assert config.check_compatibility_script_path.endswith("checkCompatibility.scpt")

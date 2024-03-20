@@ -13,11 +13,3 @@ class IMessageClient:
             return not result.startswith("Error:")
         except subprocess.CalledProcessError:
             return False
-
-    def check_compatibility(self, phone_number: str) -> bool:
-        cmd = f'osascript "{self.config.check_compatibility_script_path}" "{phone_number}"'
-        try:
-            result = subprocess.check_output(cmd, shell=True).decode("utf-8").strip()
-            return result == "true"
-        except subprocess.CalledProcessError:
-            return False

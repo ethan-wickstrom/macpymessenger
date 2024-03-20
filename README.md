@@ -14,7 +14,7 @@ macpymessenger is a Python library that provides a simple interface for sending 
 | Send attachments          | ❌     |
 | Receive messages          | ❌     |
 | Group messaging           | ❌     |
-| Bulk messaging            | ❌     |
+| Bulk messaging            | ✅     |
 | Message history retrieval | ❌     |
 | Message status retrieval  | ❌     |
 

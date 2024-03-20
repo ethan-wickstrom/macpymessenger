@@ -6,5 +6,5 @@
 __pycache__
 build
 dist
-py_iMessage.egg-info/
+IPyMessenger.egg-info/
 .idea

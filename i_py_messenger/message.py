@@ -13,7 +13,7 @@ class Message:
         self.date_delivered = date_delivered
 
     @staticmethod
-    def from_apple_time(timestamp: int) -> datetime.datetime:
+    def from_apple_time(timestamp: int) -> datetime.datetime | None:
         if timestamp == 0:
             return None
 

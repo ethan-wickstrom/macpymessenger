@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-from setuptools import setup
+from setuptools import setup, find_packages
 from os.path import join, dirname
 
-with open (join(dirname(__file__), 'requirements.txt'), 'r') as f:
+with open(join(dirname(__file__), 'requirements.txt'), 'r') as f:
     install_requires = f.read().split("\n")
 
 setup(
@@ -12,7 +12,7 @@ setup(
     author='Ethan Wickstrom',
     author_email='e.t.wickstrom@wustl.edu',
     description="Support for sending/receiving iMessages",
-    packages=['py_imessage'],
+    packages=find_packages(),
     zip_safe=False,
     python_requires='>=3',
     include_package_data=True,

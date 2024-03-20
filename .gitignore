@@ -8,3 +8,4 @@ build
 dist
 py_iMessage.egg-info/
 test.py
+.idea

@@ -5,12 +5,10 @@ from .configuration import Configuration
 
 
 class Message:
-    def __init__(self, guid: str, date: datetime.datetime, date_read: datetime.datetime,
-                 date_delivered: datetime.datetime):
+    def __init__(self, guid: str, text: str, date: datetime.datetime):
         self.guid = guid
+        self.text = text
         self.date = date
-        self.date_read = date_read
-        self.date_delivered = date_delivered
 
     @staticmethod
     def from_apple_time(timestamp: int) -> datetime.datetime | None:

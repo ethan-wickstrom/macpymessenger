@@ -71,21 +71,32 @@ The tests cover the following scenarios:
 
 ```
 macpymessenger/
-├── i_py_messenger/
+│
+├── macpymessenger/
 │   ├── __init__.py
-│   ├── configuration.py
 │   ├── imessage_client.py
-│   └── osascript/
-│       └── sendMessage.scpt
-├── .env.template
+│   └── src/
+│       ├── osascript/
+│       │   └── sendMessage.scpt
+│       ├── __init__.py
+│       └── configuration.py
+│
+├── tests/
+│   ├── __init__.py
+│   ├── test_imessage_client.py
+│   └── test_configuration.py
+│
 ├── .github/
-│   └── workflows/
-│       └── python-publish.yml
+│   ├── workflows/
+│   │   └── python-publish.yml
+│   └── dependabot.yml
+│
+├── .env.template
+├── .gitignore
 ├── LICENSE
 ├── README.md
 ├── requirements.txt
-├── setup.py
-└── test.py
+└── setup.py
 ```
 
 ## 📜 License

@@ -67,23 +67,22 @@ class IMessageClient:
             logger.error(f"Failed to send message to {phone_number}. Error: {str(e)}")
             raise exceptions.MessageSendError(f"Failed to send message to {phone_number}") from e
 
-    def send_template(self, phone_number, template_id) -> bool:
+    def send_template(self, phone_number, template_id, context=None):
         """
         Send a message using a template.
 
         Args:
             phone_number (str): The phone number of the recipient.
             template_id (str): The ID of the template to use.
+            context (dict): The context data for rendering the template.
 
         Returns:
             bool: True if the message was sent successfully, False otherwise.
-
-        :param phone_number:
-        :param template_id:
-        :returns bool:
         """
-        template = self.template_manager.get_template(template_id)
-        return self.send(phone_number, template.content)
+        if context is None:
+            context = {}
+        composed_template = self.template_manager.compose_template(template_id, **context)
+        return self.send(phone_number, composed_template.render())
 
     def create_template(self, template_id, content) -> None:
         """

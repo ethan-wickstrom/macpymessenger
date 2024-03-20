@@ -36,15 +36,15 @@ from macpymessenger import IMessageClient, Configuration
 config = Configuration()
 client = IMessageClient(config)
 
+# Create a template
+template_id = "welcome_template"
+template_content = "Hello, {{ name }}! Welcome to our service."
+client.create_template(template_id, template_content)
+
+# Send a message using the template
 phone_number = "1234567890"
-message = "Hello, this is a test message sent using macpymessenger!"
-
-success = client.send(phone_number, message)
-
-if success:
-    print("Message sent successfully!")
-else:
-    print("Failed to send the message.")
+context = {"name": "John"}
+client.send_template(phone_number, template_id, context)
 ```
 
 ## ⚙️ Configuration

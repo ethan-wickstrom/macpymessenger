@@ -14,6 +14,7 @@ setup(
     license="Apache License 2.0",
     author_email='e.t.wickstrom@wustl.edu',
     long_description=long_description,
+    long_description_content_type="text/markdown",
     packages=find_packages(),
     zip_safe=False,
     python_requires='>=3.8',

@@ -29,7 +29,7 @@ pip install macpymessenger
 Here's a simple example of how to use macpymessenger to send a text message:
 
 ```python
-from i_py_messenger import IMessageClient, Configuration
+from macpymessenger import IMessageClient, Configuration
 
 config = Configuration()
 client = IMessageClient(config)

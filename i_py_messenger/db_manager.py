@@ -31,7 +31,7 @@ class DBManager:
         cursor.close()
         return result[0] if result else None
 
-    def get_message(self, guid: str) -> Message:
+    def get_message(self, guid: str) -> Message | None:
         self.open_connection()
         cursor = self.connection.cursor()
         cursor.execute(f"""
@@ -52,3 +52,28 @@ class DBManager:
                 date_delivered=Message.from_apple_time(result[3])
             )
         return None
+
+    def get_messages_for_phone_number(self, phone_number: str) -> list[Message]:
+        self.open_connection()
+        cursor = self.connection.cursor()
+        cursor.execute(f"""
+            SELECT guid, date, date_read, date_delivered
+            FROM message
+            LEFT OUTER JOIN handle ON message.handle_id=handle.ROWID
+            WHERE handle.id = "{phone_number}"
+            ORDER BY date DESC
+        """)
+        results = cursor.fetchall()
+        cursor.close()
+
+        messages = []
+        for result in results:
+            message = Message(
+                guid=result[0],
+                date=Message.from_apple_time(result[1]),
+                date_read=Message.from_apple_time(result[2]),
+                date_delivered=Message.from_apple_time(result[3])
+            )
+            messages.append(message)
+
+        return messages

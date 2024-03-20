@@ -1,3 +1,6 @@
+[![PyPI version](https://badge.fury.io/py/macpymessenger.svg)](https://badge.fury.io/py/macpymessenger)
+[![Documentation Status](https://readthedocs.org/projects/macpymessenger/badge/?version=latest)](https://macpymessenger.readthedocs.io/en/latest/?badge=latest)
+
 # 🚀💬 macpymessenger
 
 macpymessenger is a Python library that provides a simple interface for sending iMessages on macOS. It allows you to send text messages programmatically using the Messages app on your Mac.
@@ -7,7 +10,6 @@ macpymessenger is a Python library that provides a simple interface for sending 
 | Feature                   | Status |
 |---------------------------|--------|
 | Send text messages        | ✅     |
-| Check compatibility       | ❌     |
 | Send images               | ❌     |
 | Send attachments          | ❌     |
 | Receive messages          | ❌     |

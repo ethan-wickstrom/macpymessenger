@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
-from os.path import join, dirname
+from os import path
 
-with open(join(dirname(__file__), 'requirements.txt'), 'r') as f:
-    install_requires = f.read().split("\n")
+here = path.abspath(path.dirname(__file__))
+with open(path.join(here, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
+
+with open(path.join(here, 'requirements.txt'), encoding='utf-8') as f:
+    install_requires = f.read().split('\n')
 
 setup(
     name='iPyMessenger',
@@ -13,12 +17,13 @@ setup(
     author='Ethan Wickstrom',
     license="Apache License 2.0",
     author_email='e.t.wickstrom@wustl.edu',
+    long_description=long_description,
     packages=find_packages(),
+    requires=install_requires,
     zip_safe=False,
     python_requires='>=3.8',
     include_package_data=True,
     platforms='Operating System :: MacOS :: MacOS X',
-    install_requires=install_requires,
     tests_require=[
         'nose'
     ],

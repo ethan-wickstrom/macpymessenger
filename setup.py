@@ -1,12 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-    setup
-    ~~~~
-    py-iMessage is an extension to let you send/receive iMessages
-    :copyright: (c) 2020 by Rob Olsthoorn.
-    :license: MIT, see LICENSE for more details.
-"""
-
 from setuptools import setup
 from os.path import join, dirname
 
@@ -14,14 +6,12 @@ with open (join(dirname(__file__), 'requirements.txt'), 'r') as f:
     install_requires = f.read().split("\n")
 
 setup(
-    name='py-iMessage',
-    version=1.7,
-    url='https://github.com/rolstenhouse/py-imessage',
-    license='MIT',
-    author='Rob Olsthoorn',
-    author_email='rolsthoorn12@gmail.com',
+    name='iPyMessenger',
+    version='0.1.0',
+    url='https://github.com/ethan-wickstrom/iPyMessenger',
+    author='Ethan Wickstrom',
+    author_email='e.t.wickstrom@wustl.edu',
     description="Support for sending/receiving iMessages",
-    long_description=open('README.rst').read(),
     packages=['py_imessage'],
     zip_safe=False,
     python_requires='>=3',

@@ -1,8 +1,18 @@
 import subprocess
+
+from .src import TemplateManager, Configuration, exceptions
 import logging
-from .src.configuration import Configuration
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+file_handler = logging.FileHandler('macpymessenger.log')
+file_handler.setLevel(logging.INFO)
+
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+
+logger.addHandler(file_handler)
 
 
 class IMessageClient:
@@ -26,7 +36,7 @@ class IMessageClient:
             return True
         except subprocess.CalledProcessError as e:
             logger.error(f"Failed to send message to {phone_number}. Error: {str(e)}")
-            return False
+            raise exceptions.MessageSendError(f"Failed to send message to {phone_number}") from e
 
     def send_template(self, phone_number, template_id):
         template = self.template_manager.get_template(template_id)

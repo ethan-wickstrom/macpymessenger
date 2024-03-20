@@ -125,6 +125,33 @@ class IMessageClient:
         """
         self.template_manager.delete_template(template_id)
 
+    def send_bulk(self, phone_numbers, message) -> tuple:
+        """
+        Send a message to multiple recipients.
+
+        Args:
+            phone_numbers (list): A list of phone numbers.
+            message (str): The message content.
+
+        Returns: tuple: A tuple containing the phone numbers to which the message was successfully sent, and the phone numbers to which the message failed to send.
+
+        :param phone_numbers:
+        :param message:
+        :return tuple:
+        """
+        successful_sends = []
+        failed_sends = []
+
+        for phone_number in phone_numbers:
+            try:
+                self.send(phone_number, message)
+                successful_sends.append(phone_number)
+            except exceptions.MessageSendError as e:
+                logger.error(f"Failed to send message to {phone_number}. Error: {str(e)}")
+                failed_sends.append(phone_number)
+
+        return successful_sends, failed_sends
+
     def get_chat_history(self, phone_number: str, limit: int = 10) -> list:
         # Implementation to retrieve chat history
         pass

@@ -1,6 +1,6 @@
 .vscode
 .DS_STORE
-env
+.env
 .git
 .pyc
 __pycache__

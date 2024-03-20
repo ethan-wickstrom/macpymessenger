@@ -1,4 +1,3 @@
-import os
 import subprocess
 from .configuration import Configuration
 from .db_manager import DBManager

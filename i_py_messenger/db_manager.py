@@ -1,9 +1,10 @@
 import os
 import sqlite3
 import tempfile
-import shutil
+import subprocess
 from .message import Message
 from .configuration import Configuration
+from shlex import quote as shlex_quote
 
 
 class DBManager:
@@ -14,10 +15,15 @@ class DBManager:
 
     def open_connection(self):
         if self.connection is None:
-            # Copy the chat.db file to a temporary location
+            # Create a temporary directory
             temp_dir = tempfile.mkdtemp()
             self.temp_db_path = os.path.join(temp_dir, 'chat.db')
-            shutil.copy2(self.config.db_path, self.temp_db_path)
+
+            print(self.temp_db_path)
+
+            # Use a terminal command to copy the chat.db file with proper permissions
+            command = f"echo {self.config.os_password} | sudo -S cp {shlex_quote(self.config.db_path)} {shlex_quote(self.temp_db_path)}"
+            subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
 
             # Connect to the temporary database
             self.connection = sqlite3.connect(self.temp_db_path, uri=True)
@@ -36,25 +42,23 @@ class DBManager:
         self.open_connection()
         cursor = self.connection.cursor()
         cursor.execute("""
-            SELECT guid, id as handle, text, date, date_read, date_delivered
+            SELECT guid, text, date
             FROM message
-            LEFT OUTER JOIN handle ON message.handle_id=handle.ROWID
             WHERE is_from_me = 1
             ORDER BY date DESC
             LIMIT 1
         """)
         result = cursor.fetchone()
         cursor.close()
-        return result[0] if result else None
+        return result[1] if result else None
 
     def get_message(self, guid: str) -> Message | None:
         self.open_connection()
         cursor = self.connection.cursor()
         cursor.execute(f"""
-            SELECT guid, date, date_read, date_delivered
+            SELECT guid, text, date
             FROM message
-            LEFT OUTER JOIN handle ON message.handle_id=handle.ROWID
-            WHERE is_from_me = 1 and guid="{guid}"
+            WHERE guid = "{guid}"
             LIMIT 1
         """)
         result = cursor.fetchone()
@@ -63,9 +67,8 @@ class DBManager:
         if result:
             return Message(
                 guid=result[0],
-                date=Message.from_apple_time(result[1]),
-                date_read=Message.from_apple_time(result[2]),
-                date_delivered=Message.from_apple_time(result[3])
+                text=result[1],
+                date=Message.from_apple_time(result[2])
             )
         return None
 
@@ -73,11 +76,14 @@ class DBManager:
         self.open_connection()
         cursor = self.connection.cursor()
         cursor.execute(f"""
-            SELECT guid, date, date_read, date_delivered
-            FROM message
-            LEFT OUTER JOIN handle ON message.handle_id=handle.ROWID
-            WHERE handle.id = "{phone_number}"
-            ORDER BY date DESC
+            SELECT m.guid, m.text, m.date
+            FROM message m
+            JOIN chat_message_join cmj ON m.ROWID = cmj.message_id
+            JOIN chat c ON cmj.chat_id = c.ROWID
+            JOIN chat_handle_join chj ON c.ROWID = chj.chat_id
+            JOIN handle h ON chj.handle_id = h.ROWID
+            WHERE h.id = "{phone_number}"
+            ORDER BY m.date DESC
         """)
         results = cursor.fetchall()
         cursor.close()
@@ -86,9 +92,8 @@ class DBManager:
         for result in results:
             message = Message(
                 guid=result[0],
-                date=Message.from_apple_time(result[1]),
-                date_read=Message.from_apple_time(result[2]),
-                date_delivered=Message.from_apple_time(result[3])
+                text=result[1],
+                date=Message.from_apple_time(result[2])
             )
             messages.append(message)
 

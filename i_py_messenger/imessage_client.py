@@ -29,7 +29,7 @@ class IMessageClient:
     def get_most_recently_sent_text(self) -> str:
         return self.db_manager.get_most_recently_sent_text()
 
-    def get_message(self, guid: str) -> Message:
+    def get_message(self, guid: str) -> Message | None:
         return self.db_manager.get_message(guid)
 
     def get_messages_for_phone_number(self, phone_number: str) -> list[Message]:

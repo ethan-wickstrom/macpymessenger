@@ -1,0 +1,1 @@
+from macpymessenger.src.configuration import Configuration

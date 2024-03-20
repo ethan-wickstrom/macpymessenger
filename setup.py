@@ -6,10 +6,10 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='i_py_messenger',
+    name='macpymessenger',
     description='A Python Interface for iMessage on MacOS',
     version='0.1.0',
-    url='https://github.com/ethan-wickstrom/iPyMessenger',
+    url='https://github.com/ethan-wickstrom/macpymessenger',
     author='Ethan Wickstrom',
     license="Apache License 2.0",
     author_email='e.t.wickstrom@wustl.edu',

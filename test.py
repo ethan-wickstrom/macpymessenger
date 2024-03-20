@@ -1,5 +1,5 @@
 import pytest
-from i_py_messenger import IMessageClient, Configuration
+from macpymessenger import IMessageClient, Configuration
 import os
 import dotenv
 

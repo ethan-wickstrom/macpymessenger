@@ -1,20 +1,36 @@
+import os
 import sqlite3
+import tempfile
+import shutil
 from .message import Message
 from .configuration import Configuration
+
 
 class DBManager:
     def __init__(self, config: Configuration):
         self.config = config
         self.connection = None
+        self.temp_db_path = None
 
     def open_connection(self):
         if self.connection is None:
-            self.connection = sqlite3.connect(self.config.db_path, uri=True)
+            # Copy the chat.db file to a temporary location
+            temp_dir = tempfile.mkdtemp()
+            self.temp_db_path = os.path.join(temp_dir, 'chat.db')
+            shutil.copy2(self.config.db_path, self.temp_db_path)
+
+            # Connect to the temporary database
+            self.connection = sqlite3.connect(self.temp_db_path, uri=True)
 
     def close_connection(self):
         if self.connection is not None:
             self.connection.close()
             self.connection = None
+
+            # Clean up the temporary database file
+            if self.temp_db_path:
+                os.remove(self.temp_db_path)
+                self.temp_db_path = None
 
     def get_most_recently_sent_text(self) -> str:
         self.open_connection()

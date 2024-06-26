@@ -1,0 +1,1 @@
+👋 Hey {{ name }}, have you joined the Fabric community yet? Connect, share, and grow with like-minded individuals. Break into discussions and be part of something bigger. #JoinFabric

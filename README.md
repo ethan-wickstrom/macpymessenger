@@ -1,35 +1,46 @@
+# 🚀📱 macpymessenger: Python Library for iMessage Automation on macOS
+
 [![PyPI version](https://badge.fury.io/py/macpymessenger.svg)](https://badge.fury.io/py/macpymessenger)
 [![Documentation Status](https://readthedocs.org/projects/macpymessenger/badge/?version=latest)](https://macpymessenger.readthedocs.io/en/latest/?badge=latest)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-# 🚀💬 macpymessenger
+macpymessenger is a feature-rich Python library designed to simplify the process of automating iMessage communications on macOS. With macpymessenger, you can effortlessly send text messages, create and manage message templates, and integrate iMessage functionality into your Python projects. Whether you're building a chatbot, setting up automated notifications, or streamlining your messaging workflow, macpymessenger provides a powerful and intuitive interface to achieve your goals.
 
-macpymessenger is a Python library that provides a simple interface for sending iMessages on macOS. It allows you to send text messages programmatically using the Messages app on your Mac.
+## 🌟 Key Features
 
-## Features
+- 📩 Send text messages effortlessly using the Messages app on macOS
+- 🎨 Create, manage, and utilize message templates for efficient communication
+- 🔄 Update and delete existing templates with ease
+- 📂 Seamlessly integrate with the Messages app for a smooth user experience
+- 🎛️ Customize configuration options to adapt to your specific needs
+- 📊 Retrieve chat history and gain insights into your messaging interactions
+- 📎 Attach files and images to your messages (coming soon)
+- 👥 Send messages to multiple recipients using bulk messaging
+- 🧪 Comprehensive test suite ensuring reliability and stability
 
-| Feature                   | Status |
-|---------------------------|--------|
-| Send text messages        | ✅     |
-| Send images               | ❌     |
-| Send attachments          | ❌     |
-| Create text templates     | ✅     |
-| Receive messages          | ❌     |
-| Group messaging           | ❌     |
-| Bulk messaging            | ✅     |
-| Message history retrieval | ❌     |
-| Message status retrieval  | ❌     |
+## 📋 Table of Contents
 
-## 🔑 Installation
+- [Installation](#installation)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [Contributing](#contributing)
+- [Testing](#testing)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
 
-You can install macpymessenger using pip:
+## 🔧 Installation <a name="installation"></a>
+
+To install macpymessenger, simply use pip:
 
 ```bash
 pip install macpymessenger
 ```
 
-## 🧑🏽‍💻 Usage
+Ensure that you have Python 3.6 or above installed on your macOS system.
 
-Here's a simple example of how to use macpymessenger to send a text message:
+## 💻 Usage <a name="usage"></a>
+
+Using macpymessenger is straightforward and intuitive. Here's a quick example to get you started:
 
 ```python
 from macpymessenger import IMessageClient, Configuration
@@ -48,77 +59,68 @@ context = {"name": "John"}
 client.send_template(phone_number, template_id, context)
 ```
 
-## ⚙️ Configuration
+For more detailed usage instructions and advanced features, please refer to the [official documentation](https://macpymessenger.readthedocs.io/).
 
-The `Configuration` class allows you to customize the paths to the AppleScript files used by macpymessenger. By default, it uses the following paths:
+## ⚙️ Configuration <a name="configuration"></a>
+
+macpymessenger provides a `Configuration` class that allows you to customize various settings and paths used by the library. By default, it uses the following paths:
 
 - `send_script_path`: `osascript/sendMessage.scpt`
-- `check_compatibility_script_path`: `osascript/checkCompatibility.scpt`
 
-You can modify these paths if needed by creating an instance of the `Configuration` class and setting the desired paths.
+You can modify these paths by creating an instance of the `Configuration` class and setting the desired paths:
 
-## 🧪 Testing
+```python
+from macpymessenger import Configuration
 
-macpymessenger includes a test suite to ensure the functionality of the library. To run the tests, make sure you have the required dependencies installed and execute the following command:
-
-```bash
-python -m pytest test.py
+config = Configuration(send_script_path="path/to/custom/sendMessage.scpt")
 ```
 
-The tests cover the following scenarios:
-- Sending a message successfully
-- Initializing the `Configuration` class
-- Verifying the paths of the AppleScript files
+## 👥 Contributing <a name="contributing"></a>
 
-## 📦 Project Structure
+We welcome contributions from the community! If you encounter any issues, have suggestions for improvements, or would like to add new features, please feel free to open an issue or submit a pull request on the [GitHub repository](https://github.com/ethan-wickstrom/macpymessenger).
 
-```
-macpymessenger/
-│
-├── macpymessenger/
-│   ├── __init__.py
-│   ├── imessage_client.py
-│   └── src/
-│       ├── osascript/
-│       │   └── sendMessage.scpt
-│       ├── __init__.py
-│       └── configuration.py
-│
-├── tests/
-│   ├── __init__.py
-│   ├── test_imessage_client.py
-│   └── test_configuration.py
-│
-├── .github/
-│   ├── workflows/
-│   │   └── python-publish.yml
-│   └── dependabot.yml
-│
-├── .env.template
-├── .gitignore
-├── LICENSE
-├── README.md
-├── requirements.txt
-└── setup.py
-```
+To contribute to macpymessenger, follow these steps:
 
-## 📜 License
+1. Fork the repository and create a new branch for your feature or bug fix.
+2. Make your changes, ensuring that the code follows the project's coding style and conventions.
+3. Write tests to cover your changes and ensure that existing tests pass.
+4. Update the documentation if necessary to reflect your changes.
+5. Submit a pull request, providing a clear description of your changes and their purpose.
 
-macpymessenger is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for more information.
+We appreciate your contributions and will review your pull request as soon as possible.
 
-## 🤝 Contributing
+## 🧪 Testing <a name="testing"></a>
 
-Contributions to macpymessenger are welcome! If you find any issues or have suggestions for improvements, please open an issue or submit a pull request on the [GitHub repository](https://github.com/ethan-wickstrom/macpymessenger).
+macpymessenger includes a comprehensive test suite to ensure the reliability and stability of the library. To run the tests, follow these steps:
 
-## 🙏 Acknowledgements
+1. Install the required dependencies:
 
-Originally forked from [Rolstenhouse/py-iMessage](https://github.com/Rolstenhouse/py-iMessage), macpymessenger was inspired by the need for a simple and intuitive way to send iMessages using Python on macOS. Special thanks to the developers of the libraries and tools used in this project.
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-## 📧 Contact
+2. Navigate to the project root directory.
 
-If you have any questions or inquiries, feel free to reach out to me:
+3. Run the tests using pytest:
 
-- **Email:** e.t.wickstrom@wustl.edu
-- **GitHub:** [ethan-wickstrom](https://github.com/ethan-wickstrom)
+   ```bash
+   python -m pytest tests/
+   ```
 
-Thank you for using macpymessenger!
+   This command will discover and run all the test cases defined in the `tests/` directory.
+
+4. Review the test results in the terminal, which will indicate the number of tests passed, failed, or skipped.
+
+If any tests fail, please investigate the cause of the failure and open an issue on the [GitHub repository](https://github.com/ethan-wickstrom/macpymessenger) with details about the failure.
+
+## 📜 License <a name="license"></a>
+
+macpymessenger is licensed under the [Apache License 2.0](https://github.com/ethan-wickstrom/macpymessenger/blob/main/LICENSE). You are free to use, modify, and distribute the library in accordance with the terms and conditions of this license.
+
+## 🙏 Acknowledgements <a name="acknowledgements"></a>
+
+macpymessenger was originally forked from [Rolstenhouse/py-iMessage](https://github.com/Rolstenhouse/py-iMessage) and has been extensively enhanced and expanded. We would like to express our gratitude to the developers of the libraries and tools used in this project, as well as the open-source community for their valuable contributions.
+
+---
+
+We hope you find macpymessenger useful and enjoy using it in your projects. If you have any questions, feedback, or need assistance, please don't hesitate to reach out to us. Happy messaging! 📬✨

@@ -1,2 +1,0 @@
-from tests.test_configuration import TestConfiguration
-from tests.test_imessage_client import TestIMessageClient

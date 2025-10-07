@@ -60,7 +60,9 @@ macpymessenger allows you to create and manage message templates for convenient 
 
       phone_number = "1234567890"
       template_id = "greeting"
-      client.send_template(phone_number, template_id)
+      client.send_template(phone_number, template_id, {"name": "Ada"})
+
+   Provide a context dictionary that includes every placeholder referenced in the template; missing variables render as empty strings.
 
 3. Update an existing template:
 

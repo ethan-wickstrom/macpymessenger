@@ -9,7 +9,7 @@ Key Features
 - 🚀 Send text messages with explicit subprocess control.
 - 📝 Create and manage message templates rendered by Jinja2.
 - 🔌 Seamless integration with the Messages app on macOS via packaged AppleScript.
-- 📂 Customisable configuration without implicit globals.
+- 📂 Customizable configuration without implicit globals.
 - 🧪 Comprehensive tests and static analysis driven by `uv`.
 
 Getting Started

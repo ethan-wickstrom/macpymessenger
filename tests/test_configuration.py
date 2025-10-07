@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -23,3 +24,21 @@ def test_configuration_raises_for_missing_script(tmp_path: Path) -> None:
     missing_path = tmp_path / "missing.scpt"
     with pytest.raises(ScriptNotFoundError):
         Configuration(missing_path)
+
+
+def test_configuration_raises_for_unreadable_script(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    script_path = tmp_path / "protected.scpt"
+    script_path.write_text("-- mock script", encoding="utf-8")
+    original_open = Path.open
+
+    def fake_open(self: Path, *args: Any, **kwargs: Any) -> Any:
+        if self == script_path:
+            raise PermissionError("permission denied")
+        return original_open(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", fake_open)
+
+    with pytest.raises(ScriptNotFoundError):
+        Configuration(script_path)

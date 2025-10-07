@@ -1,0 +1,1 @@
+Hi {{ name }}, just a reminder about {{ event }} on {{ date }}.

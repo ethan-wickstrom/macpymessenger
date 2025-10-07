@@ -1,1 +1,0 @@
-📅 Save the Date, {{ name }}! Join us for an exclusive Fabric event on {{ event_date }}. Be the first to experience our latest innovations and connect with the community. RSVP now! #FabricEvent

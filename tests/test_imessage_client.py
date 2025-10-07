@@ -1,115 +1,152 @@
+import subprocess
+from pathlib import Path
+from typing import List, Sequence
+
 import pytest
-from macpymessenger import IMessageClient, Configuration
-import os
-import dotenv
+
+from macpymessenger import Configuration, IMessageClient, TemplateManager
+from macpymessenger.exceptions import (
+    DuplicateTemplateIdentifierError,
+    MessageSendError,
+    TemplateNotFoundError,
+)
 
 
-@pytest.fixture(scope='session', autouse=True)
-def load_env():
-    dotenv.load_dotenv()
-    return os.environ
+class StubRunner:
+    def __init__(self, failing_phone_numbers: Sequence[str] | None = None) -> None:
+        self.commands: List[List[str]] = []
+        if failing_phone_numbers is None:
+            self.failing_numbers = set()
+        else:
+            self.failing_numbers = set(failing_phone_numbers)
+
+    def __call__(self, command: Sequence[str]) -> None:
+        arguments = list(command)
+        self.commands.append(arguments)
+        phone_number = arguments[2]
+        if phone_number in self.failing_numbers:
+            raise subprocess.CalledProcessError(returncode=1, cmd=arguments)
 
 
 @pytest.fixture
-def client():
-    config = Configuration()
-    return IMessageClient(config)
+def script_path(tmp_path: Path) -> Path:
+    script = tmp_path / "send.scpt"
+    script.write_text("-- test script", encoding="utf-8")
+    return script
 
 
-class TestIMessageClient:
-    def test_send_message_success(self, client, load_env):
-        message_text = "Test message"
+@pytest.fixture
+def configuration(script_path: Path) -> Configuration:
+    return Configuration(script_path)
 
-        success = client.send(load_env["TEST_PHONE_NUMBER"], message_text)
 
-        assert success == True
+@pytest.fixture
+def template_manager() -> TemplateManager:
+    return TemplateManager()
 
-    def test_send_bulk_success(self, client, load_env):
-        phone_numbers = [
-            load_env["TEST_PHONE_NUMBER_1"],
-            load_env["TEST_PHONE_NUMBER_2"],
-            load_env["TEST_PHONE_NUMBER_3"]
-        ]
-        message = "Bulk test message"
 
-        successful_sends, failed_sends = client.send_bulk(phone_numbers, message)
-        assert len(successful_sends) == 3
-        assert len(failed_sends) == 0
+@pytest.fixture
+def client(configuration: Configuration, template_manager: TemplateManager) -> tuple[IMessageClient, StubRunner]:
+    runner = StubRunner()
+    client_instance = IMessageClient(
+        configuration=configuration,
+        template_manager=template_manager,
+        command_runner=runner,
+    )
+    return client_instance, runner
 
-    def test_create_and_send_template(self, client, load_env):
-        template_id = "test_template"
-        template_content = "Hello, {{ name }}! This is a test template."
-        context = {"name": "John"}
 
-        client.create_template(template_id, template_content)
-        success = client.send_template(load_env["TEST_PHONE_NUMBER"], template_id, context)
+def test_send_message_success(client: tuple[IMessageClient, StubRunner]) -> None:
+    instance, runner = client
+    instance.send("1234567890", "Hello")
+    assert runner.commands[0][2] == "1234567890"
 
-        assert success == True
 
-    def test_update_template(self, client, load_env):
-        template_id = "test_template"
-        original_content = "Hello, {{ name }}! This is a test template."
-        updated_content = "Hello, {{ name }}! This is an updated test template."
-        context = {"name": "John"}
+def test_send_message_failure(client: tuple[IMessageClient, StubRunner]) -> None:
+    instance, runner = client
+    runner.failing_numbers.add("9876543210")
+    with pytest.raises(MessageSendError):
+        instance.send("9876543210", "Hello")
 
-        client.create_template(template_id, original_content)
-        client.update_template(template_id, updated_content)
-        success = client.send_template(load_env["TEST_PHONE_NUMBER"], template_id, context)
 
-        assert success == True
+def test_send_message_rejects_negative_delay(client: tuple[IMessageClient, StubRunner]) -> None:
+    instance, _ = client
+    with pytest.raises(ValueError, match="Delay must be non-negative"):
+        instance.send("1234567890", "Hello", delay_seconds=-1)
 
-    def test_delete_template(self, client):
-        template_id = "test_template"
-        template_content = "Hello, {{ name }}! This is a test template."
 
-        client.create_template(template_id, template_content)
-        client.delete_template(template_id)
+def test_send_template_renders_content(client: tuple[IMessageClient, StubRunner], template_manager: TemplateManager) -> None:
+    instance, runner = client
+    template_manager.create_template("greeting", "Hello, {{ name }}!")
+    instance.send_template("1234567890", "greeting", {"name": "Ada"})
+    assert "Hello, Ada!" in runner.commands[-1]
 
-        with pytest.raises(ValueError):
-            client.send_template("1234567890", template_id, {})
 
-    def test_render_template_with_context(self, client):
-        template_id = "test_template"
-        template_content = "Hello, {{ name }}! Your age is {{ age }}."
-        context = {"name": "John", "age": 25}
+def test_send_template_missing_template_raises(
+    client: tuple[IMessageClient, StubRunner],
+) -> None:
+    instance, _ = client
+    with pytest.raises(TemplateNotFoundError):
+        instance.send_template("1234567890", "unknown")
 
-        client.create_template(template_id, template_content)
-        rendered_template = client.template_manager.render_template(template_id, context)
+def test_update_and_delete_template(client: tuple[IMessageClient, StubRunner], template_manager: TemplateManager) -> None:
+    instance, _ = client
+    template_manager.create_template("greeting", "Hello")
+    template_manager.update_template("greeting", "Hi")
+    assert template_manager.render_template("greeting") == "Hi"
+    template_manager.delete_template("greeting")
+    with pytest.raises(TemplateNotFoundError):
+        template_manager.render_template("greeting")
 
-        assert rendered_template == "Hello, John! Your age is 25."
+def test_update_nonexistent_template_raises(client: tuple[IMessageClient, StubRunner], template_manager: TemplateManager) -> None:
+    with pytest.raises(TemplateNotFoundError):
+        template_manager.update_template("nonexistent", "Hi")
 
-    def test_template_inheritance(self, client):
-        base_template_id = "base_template"
-        base_template_content = "<html><body>{% block content %}{% endblock %}</body></html>"
-        child_template_id = "child_template"
-        child_template_content = "{% extends 'base_template' %}{% block content %}<h1>Hello, {{ name }}!</h1>{% endblock %}"
-        context = {"name": "John"}
+def test_delete_nonexistent_template_raises(client: tuple[IMessageClient, StubRunner], template_manager: TemplateManager) -> None:
+    with pytest.raises(TemplateNotFoundError):
+        template_manager.delete_template("nonexistent")
 
-        client.create_template(base_template_id, base_template_content)
-        client.create_template(child_template_id, child_template_content, parent=base_template_id)
-        rendered_template = client.template_manager.render_template(child_template_id, context)
+def test_update_nonexistent_template_raises(template_manager: TemplateManager) -> None:
+    with pytest.raises(TemplateNotFoundError):
+        template_manager.update_template("nonexistent", "Hi")
 
-        assert rendered_template == "<html><body><h1>Hello, John!</h1></body></html>"
 
-    def test_template_include(self, client):
-        header_template_id = "header_template"
-        header_template_content = "<header>{{ title }}</header>"
-        footer_template_id = "footer_template"
-        footer_template_content = "<footer>{{ year }}</footer>"
-        main_template_id = "main_template"
-        main_template_content = "<html><body>{% include 'header_template' title='Welcome' %}{% include 'footer_template' year=2023 %}</body></html>"
+def test_delete_nonexistent_template_raises(template_manager: TemplateManager) -> None:
+    with pytest.raises(TemplateNotFoundError):
+        template_manager.delete_template("nonexistent")
 
-        client.create_template(header_template_id, header_template_content)
-        client.create_template(footer_template_id, footer_template_content)
-        client.create_template(main_template_id, main_template_content)
-        rendered_template = client.template_manager.render_template(main_template_id, {})
 
-        assert rendered_template == "<html><body><header>Welcome</header><footer>2023</footer></body></html>"
+def test_send_bulk_classifies_numbers(configuration: Configuration, template_manager: TemplateManager) -> None:
+    runner = StubRunner(["2", "3"])
+    client_instance = IMessageClient(
+        configuration=configuration,
+        template_manager=template_manager,
+        command_runner=runner,
+    )
+    success, failure = client_instance.send_bulk(["1", "2", "3", "4"], "Ping")
+    assert success == ["1", "4"]
+    assert failure == ["2", "3"]
 
-    def test_get_chat_history(self, client, load_env):
-        # Test case for retrieving chat history
-        pass
 
-    def test_send_with_attachment(self, client, load_env):
-        # Test case for sending message with attachment
-        pass
+def test_send_bulk_with_no_numbers(
+    configuration: Configuration, template_manager: TemplateManager
+) -> None:
+    runner = StubRunner()
+    client_instance = IMessageClient(
+        configuration=configuration,
+        template_manager=template_manager,
+        command_runner=runner,
+    )
+    success, failure = client_instance.send_bulk([], "Ping")
+    assert success == []
+    assert failure == []
+
+
+def test_load_directory_detects_duplicate_identifiers(tmp_path: Path) -> None:
+    template_dir = tmp_path / "templates"
+    template_dir.mkdir()
+    (template_dir / "welcome.txt").write_text("Hello", encoding="utf-8")
+    (template_dir / "welcome.j2").write_text("Hello again", encoding="utf-8")
+    manager = TemplateManager()
+    with pytest.raises(DuplicateTemplateIdentifierError):
+        manager.load_directory(template_dir)

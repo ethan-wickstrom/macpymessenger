@@ -1,29 +1,25 @@
 Welcome to macpymessenger's Documentation!
 ==========================================
 
-**macpymessenger** is a Python library that provides a simple and intuitive interface for sending iMessages on macOS. It allows you to send text messages programmatically using the Messages app on your Mac.
-
-With macpymessenger, you can easily integrate iMessage functionality into your Python projects, automate messaging tasks, and build powerful applications that leverage the capabilities of iMessage.
+**macpymessenger** is a Python library that provides a clear, type-safe interface for sending iMessages on macOS. It embraces dependency injection and deterministic configuration so that every component can be tested in isolation.
 
 Key Features
 ------------
 
-- 🚀 Send text messages with ease
-- 📝 Create and manage message templates
-- 🔌 Seamless integration with the Messages app on macOS
-- 📂 Customizable configuration options
-- 🧪 Comprehensive test suite for ensuring reliability
+- 🚀 Send text messages with explicit subprocess control.
+- 📝 Create and manage message templates rendered by Jinja2.
+- 🔌 Seamless integration with the Messages app on macOS via packaged AppleScript.
+- 📂 Customisable configuration without implicit globals.
+- 🧪 Comprehensive tests and static analysis driven by `uv`.
 
 Getting Started
 ---------------
 
-To get started with macpymessenger, follow these steps:
-
-1. Install macpymessenger using pip:
+1. Install macpymessenger using `uv`:
 
    .. code-block:: bash
 
-      pip install macpymessenger
+      uv pip install macpymessenger
 
 2. Import the necessary classes in your Python script:
 
@@ -31,24 +27,24 @@ To get started with macpymessenger, follow these steps:
 
       from macpymessenger import IMessageClient, Configuration
 
-3. Create an instance of the `Configuration` class and customize the settings if needed.
+3. Create an instance of the ``Configuration`` class and customise the settings if needed.
 
-4. Initialize the `IMessageClient` with the configuration:
-
-   .. code-block:: python
-
-      config = Configuration()
-      client = IMessageClient(config)
-
-5. Start sending iMessages using the `send` method:
+4. Initialise the ``IMessageClient`` with the configuration:
 
    .. code-block:: python
 
-      phone_number = "1234567890"
+      configuration = Configuration()
+      client = IMessageClient(configuration)
+
+5. Send an iMessage using the ``send`` method:
+
+   .. code-block:: python
+
+      phone_number = "+15555555555"
       message = "Hello, this is a test message sent using macpymessenger!"
-      success = client.send(phone_number, message)
+      client.send(phone_number, message)
 
-For more detailed information and examples, please refer to the following sections of the documentation:
+For more detailed information and examples, explore the following sections:
 
 .. toctree::
    :maxdepth: 2
@@ -67,11 +63,6 @@ Community and Support
 If you encounter any issues, have questions, or would like to contribute to macpymessenger, please visit our GitHub repository: https://github.com/ethan-wickstrom/macpymessenger
 
 We welcome contributions, bug reports, and feature requests from the community. Feel free to open an issue or submit a pull request on GitHub.
-
-For additional support or inquiries, you can reach out to the maintainer:
-
-- Email: e.t.wickstrom@wustl.edu
-- GitHub: `@ethan-wickstrom <https://github.com/ethan-wickstrom>`_
 
 License
 -------

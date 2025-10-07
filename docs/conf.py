@@ -1,15 +1,50 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# For the full list of built-in configuration values, see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+"""Sphinx configuration for macpymessenger documentation."""
 
-# -- Project information -----------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+from __future__ import annotations
 
-project = 'macpymessenger'
-copyright = '2024, Ethan Wickstrom'
-author = 'Ethan Wickstrom'
-release = '0.1.1'
+import importlib
+import sys
+import warnings
+from pathlib import Path
+
+import tomllib
+
+# Ensure the project source is importable when building the docs.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SRC_PATH = PROJECT_ROOT / "src"
+if str(SRC_PATH) not in sys.path:
+    sys.path.insert(0, str(SRC_PATH))
+
+with (PROJECT_ROOT / "pyproject.toml").open("rb") as pyproject_stream:
+    _pyproject = tomllib.load(pyproject_stream).get("project", {})
+
+project = _pyproject.get("name", "macpymessenger")
+release = _pyproject.get("version", "0.0.0")
+version = release
+
+_authors = [author_record.get("name") for author_record in _pyproject.get("authors", [])]
+author = ", ".join(name for name in _authors if name) or "Unknown"
+
+if sys.version_info >= (3, 10):
+    try:
+        _module = importlib.import_module(project)
+    except Exception as import_error:  # pragma: no cover - defensive for older doc builders
+        warnings.warn(
+            f"Unable to import project package '{project}' while configuring docs: {import_error}",
+            RuntimeWarning,
+        )
+        public_api: tuple[str, ...] = ()
+    else:
+        public_api = tuple(sorted(getattr(_module, "__all__", ())))
+else:  # pragma: no cover - executed only on unsupported interpreters
+    warnings.warn(
+        "Skipping project import because the docs builder is running on Python < 3.10.",
+        RuntimeWarning,
+    )
+    public_api = ()
+
+copyright_year = "2025"
+copyright = f"{copyright_year}, {author}"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -62,7 +97,7 @@ viewcode_import = True
 # -- Options for HTMLHelp output ---------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-htmlhelp-output
 
-htmlhelp_basename = 'macpymessenger'
+htmlhelp_basename = project
 
 # -- Options for Napoleon extension ------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html#configuration

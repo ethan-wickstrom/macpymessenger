@@ -37,11 +37,13 @@ To upgrade to the newest version:
 Verification
 ------------
 
-Confirm the installation succeeded by importing the library:
+Confirm the installation succeeded by importing the library and constructing a configuration:
 
 .. code-block:: bash
 
-   python -c "import macpymessenger; print(macpymessenger.__version__)"
+   python -c "from macpymessenger import Configuration; print(Configuration())"
+
+This verifies that Python can locate the package and that the bundled AppleScript is available. To inspect the installed version, run ``pip show macpymessenger``.
 
 Troubleshooting
 ---------------

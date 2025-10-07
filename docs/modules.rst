@@ -3,40 +3,35 @@ Modules
 
 macpymessenger is organized into several modules, each responsible for a specific set of functionalities. In this section, we'll provide an overview of the main modules and their purposes.
 
-imessage_client.py
-------------------
+client.py
+---------
 
-The `imessage_client.py` module contains the `IMessageClient` class, which is the main entry point for interacting with the macpymessenger library. This module provides methods for sending messages, managing templates, and performing other iMessage-related operations.
+The :mod:`client` module exposes the public messaging interface via :class:`macpymessenger.IMessageClient`. It wraps AppleScript execution, handles logging, surfaces delivery failures through :class:`macpymessenger.exceptions.MessageSendError`, and provides helpers such as :class:`macpymessenger.SubprocessCommandRunner` for command execution.
 
 configuration.py
 ----------------
 
-The `configuration.py` module defines the `Configuration` class, which handles the configuration settings for macpymessenger. It allows you to customize various options, such as script paths and logging behavior.
-
-message_template.py
--------------------
-
-The `message_template.py` module provides the `MessageTemplate` class, which represents a reusable message template. It encapsulates the template ID and content, allowing you to create, update, and delete templates easily.
-
-template_manager.py
--------------------
-
-The `template_manager.py` module contains the `TemplateManager` class, which is responsible for managing message templates. It provides methods for creating, retrieving, updating, and deleting templates, as well as handling template storage and retrieval.
+The :mod:`configuration` module defines :class:`macpymessenger.Configuration`, which discovers the bundled AppleScript files, validates the configuration, and lets you customize script locations and logging behavior.
 
 exceptions.py
 -------------
 
-The `exceptions.py` module defines custom exception classes used by macpymessenger. These exceptions are raised when specific error conditions occur, such as when a message fails to send or when a template is not found.
+The :mod:`exceptions` module defines the error hierarchy for the package, including :class:`macpymessenger.exceptions.MessageSendError` for delivery issues, :class:`macpymessenger.exceptions.TemplateError` for template problems, and :class:`macpymessenger.exceptions.ConfigurationError` for configuration validation.
 
-utils.py
---------
+templates.py
+------------
 
-The `utils.py` module contains utility functions and helper classes used throughout the macpymessenger library. These utilities provide common functionality, such as string formatting, file handling, and logging setup.
+The :mod:`templates` module manages reusable message templates. It provides :class:`macpymessenger.TemplateManager` for CRUD operations, :class:`macpymessenger.TemplateDefinition` for describing templates, and :class:`macpymessenger.RenderedTemplate` for working with the rendered content. Templates are rendered with Jinja2, so standard Jinja syntax and features are available.
 
-tests/
-------
+__init__.py
+-----------
 
-The `tests/` directory contains the test suite for macpymessenger. It includes various test modules and test cases to ensure the functionality and reliability of the library. The tests cover different aspects of macpymessenger, such as sending messages, managing templates, and handling error scenarios.
+The package root re-exports the primary public interfaces through ``__all__`` so that ``from macpymessenger import ...`` surfaces the classes listed above. Refer to :mod:`macpymessenger.__init__` for the authoritative list of supported entry points.
+
+osascript/
+----------
+
+The ``osascript`` directory contains the AppleScript files invoked by :class:`macpymessenger.IMessageClient`. The scripts implement the low-level interaction with the Messages app and are resolved automatically by :class:`macpymessenger.Configuration`.
 
 Each module plays a specific role in the overall functionality of macpymessenger. By understanding the purpose and responsibilities of each module, you can effectively navigate and utilize the library in your projects.
 

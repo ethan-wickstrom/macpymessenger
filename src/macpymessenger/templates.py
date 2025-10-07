@@ -33,6 +33,9 @@ class RenderedTemplate:
     content: str
 
 
+_UNSET: Final[object] = object()
+
+
 class TemplateManager:
     """Manages message templates backed by Jinja2."""
 
@@ -85,8 +88,6 @@ class TemplateManager:
         except KeyError as error:
             raise TemplateNotFoundError(f"Template with ID '{identifier}' does not exist.") from error
 
-    _UNSET: Final[object] = object()
-
     def update_template(
         self,
         identifier: str,
@@ -97,7 +98,7 @@ class TemplateManager:
         if identifier not in self._definitions:
             raise TemplateNotFoundError(f"Template with ID '{identifier}' does not exist.")
         old_definition = self._definitions[identifier]
-        if parent_identifier is self._UNSET:
+        if parent_identifier is _UNSET:
             new_parent = old_definition.parent_identifier
         else:
             new_parent = cast(Optional[str], parent_identifier)
@@ -133,10 +134,6 @@ class TemplateManager:
     ) -> RenderedTemplate:
         rendered_content = self.render_template(identifier, context)
         return RenderedTemplate(identifier=identifier, content=rendered_content)
-
-    def include_template(self, identifier: str, context: Optional[Mapping[str, object]] = None) -> str:
-        """Return the rendered content for use in include-like contexts."""
-        return self.render_template(identifier, context)
 
     def list_templates(self) -> Dict[str, TemplateDefinition]:
         return dict(self._definitions)

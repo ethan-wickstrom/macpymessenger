@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import subprocess
+from collections.abc import Sequence as SequenceABC
 from dataclasses import dataclass, field
 from typing import List, Mapping, Optional, Protocol, Sequence, Tuple
 
@@ -23,7 +24,7 @@ class SubprocessCommandRunner:
     """Command runner that delegates to :func:`subprocess.run`."""
 
     def __call__(self, command: Sequence[str]) -> None:
-        if not isinstance(command, Sequence) or isinstance(command, (str, bytes)):
+        if not isinstance(command, SequenceABC) or isinstance(command, (str, bytes)):
             raise TypeError("Command must be a sequence of strings.")
         for segment in command:
             if not isinstance(segment, str):

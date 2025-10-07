@@ -13,12 +13,12 @@ from macpymessenger.exceptions import (
 
 
 class StubRunner:
-    def __init__(self, failing_numbers: Sequence[str] | None = None) -> None:
+    def __init__(self, failing_phone_numbers: Sequence[str] | None = None) -> None:
         self.commands: List[List[str]] = []
-        if failing_numbers is None:
+        if failing_phone_numbers is None:
             self.failing_numbers = set()
         else:
-            self.failing_numbers = set(failing_numbers)
+            self.failing_numbers = set(failing_phone_numbers)
 
     def __call__(self, command: Sequence[str]) -> None:
         arguments = list(command)

@@ -71,7 +71,7 @@ def test_send_message_failure(client: tuple[IMessageClient, StubRunner]) -> None
 
 def test_send_message_rejects_negative_delay(client: tuple[IMessageClient, StubRunner]) -> None:
     instance, _ = client
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Delay must be non-negative"):
         instance.send("1234567890", "Hello", delay_seconds=-1)
 
 

@@ -5,7 +5,11 @@ from typing import List, Sequence
 import pytest
 
 from macpymessenger import Configuration, IMessageClient, TemplateManager
-from macpymessenger.exceptions import MessageSendError, TemplateNotFoundError
+from macpymessenger.exceptions import (
+    DuplicateTemplateIdentifierError,
+    MessageSendError,
+    TemplateNotFoundError,
+)
 
 
 class StubRunner:
@@ -54,8 +58,7 @@ def client(configuration: Configuration, template_manager: TemplateManager) -> t
 
 def test_send_message_success(client: tuple[IMessageClient, StubRunner]) -> None:
     instance, runner = client
-    result = instance.send("1234567890", "Hello")
-    assert result is True
+    instance.send("1234567890", "Hello")
     assert runner.commands[0][2] == "1234567890"
 
 
@@ -66,12 +69,25 @@ def test_send_message_failure(client: tuple[IMessageClient, StubRunner]) -> None
         instance.send("9876543210", "Hello")
 
 
+def test_send_message_rejects_negative_delay(client: tuple[IMessageClient, StubRunner]) -> None:
+    instance, _ = client
+    with pytest.raises(ValueError):
+        instance.send("1234567890", "Hello", delay_seconds=-1)
+
+
 def test_send_template_renders_content(client: tuple[IMessageClient, StubRunner], template_manager: TemplateManager) -> None:
     instance, runner = client
     template_manager.create_template("greeting", "Hello, {{ name }}!")
-    result = instance.send_template("1234567890", "greeting", {"name": "Ada"})
-    assert result is True
+    instance.send_template("1234567890", "greeting", {"name": "Ada"})
     assert "Hello, Ada!" in runner.commands[-1]
+
+
+def test_send_template_missing_template_raises(
+    client: tuple[IMessageClient, StubRunner],
+) -> None:
+    instance, _ = client
+    with pytest.raises(TemplateNotFoundError):
+        instance.send_template("1234567890", "unknown")
 
 
 def test_update_and_delete_template(client: tuple[IMessageClient, StubRunner], template_manager: TemplateManager) -> None:
@@ -84,6 +100,16 @@ def test_update_and_delete_template(client: tuple[IMessageClient, StubRunner], t
         template_manager.render_template("greeting")
 
 
+def test_update_nonexistent_template_raises(template_manager: TemplateManager) -> None:
+    with pytest.raises(TemplateNotFoundError):
+        template_manager.update_template("nonexistent", "Hi")
+
+
+def test_delete_nonexistent_template_raises(template_manager: TemplateManager) -> None:
+    with pytest.raises(TemplateNotFoundError):
+        template_manager.delete_template("nonexistent")
+
+
 def test_send_bulk_classifies_numbers(configuration: Configuration, template_manager: TemplateManager) -> None:
     runner = StubRunner(["2", "3"])
     client_instance = IMessageClient(
@@ -94,3 +120,27 @@ def test_send_bulk_classifies_numbers(configuration: Configuration, template_man
     success, failure = client_instance.send_bulk(["1", "2", "3", "4"], "Ping")
     assert success == ["1", "4"]
     assert failure == ["2", "3"]
+
+
+def test_send_bulk_with_no_numbers(
+    configuration: Configuration, template_manager: TemplateManager
+) -> None:
+    runner = StubRunner()
+    client_instance = IMessageClient(
+        configuration=configuration,
+        template_manager=template_manager,
+        command_runner=runner,
+    )
+    success, failure = client_instance.send_bulk([], "Ping")
+    assert success == []
+    assert failure == []
+
+
+def test_load_directory_detects_duplicate_identifiers(tmp_path: Path) -> None:
+    template_dir = tmp_path / "templates"
+    template_dir.mkdir()
+    (template_dir / "welcome.txt").write_text("Hello", encoding="utf-8")
+    (template_dir / "welcome.j2").write_text("Hello again", encoding="utf-8")
+    manager = TemplateManager()
+    with pytest.raises(DuplicateTemplateIdentifierError):
+        manager.load_directory(template_dir)

@@ -23,7 +23,12 @@ class SubprocessCommandRunner:
     """Command runner that delegates to :func:`subprocess.run`."""
 
     def __call__(self, command: Sequence[str]) -> None:
-        subprocess.run(list(command), check=True, text=True)
+        if not isinstance(command, Sequence) or isinstance(command, (str, bytes)):
+            raise TypeError("Command must be a sequence of strings.")
+        for segment in command:
+            if not isinstance(segment, str):
+                raise TypeError("Command segments must be strings.")
+        subprocess.run(tuple(command), check=True, text=True, shell=False)
 
 
 @dataclass(slots=True)
@@ -45,7 +50,7 @@ class IMessageClient:
             self.logger.addHandler(file_handler)
         self.logger.setLevel(logging.INFO)
 
-    def send(self, phone_number: str, message: str, delay_seconds: int = 0) -> bool:
+    def send(self, phone_number: str, message: str, delay_seconds: int = 0) -> None:
         if delay_seconds < 0:
             raise ValueError("Delay must be non-negative.")
         command: List[str] = [
@@ -58,7 +63,6 @@ class IMessageClient:
         try:
             self.command_runner(command)
             self.logger.info("Message sent to %s", phone_number)
-            return True
         except subprocess.CalledProcessError as error:
             self.logger.error("Failed to send message to %s: %s", phone_number, error)
             raise MessageSendError(
@@ -76,7 +80,7 @@ class IMessageClient:
         template_id: str,
         context: Optional[Mapping[str, object]] = None,
         delay_seconds: int = 0,
-    ) -> bool:
+    ) -> None:
         rendered_template: RenderedTemplate = self.template_manager.compose_template(
             template_id, context
         )

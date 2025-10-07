@@ -34,6 +34,18 @@ class Configuration:
         if not script_path.exists():
             raise ScriptNotFoundError(f"Send script not found at path: {script_path}")
 
+        try:
+            with script_path.open("rb"):
+                pass
+        except PermissionError as error:
+            raise ScriptNotFoundError(
+                f"Send script at path '{script_path}' is not readable due to permission error."
+            ) from error
+        except OSError as error:
+            raise ScriptNotFoundError(
+                f"Send script at path '{script_path}' cannot be read: {error}"
+            ) from error
+
         return script_path
 
     def __repr__(self) -> str:

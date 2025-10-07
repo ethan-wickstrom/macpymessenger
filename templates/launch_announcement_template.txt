@@ -1,1 +1,0 @@
-🎉 Big News, {{ name }}! Fabric is launching on {{ launch_date }}. We can't wait for you to experience the future of social media. Mark your calendar and join us on this exciting journey! #FabricLaunch

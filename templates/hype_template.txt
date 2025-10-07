@@ -1,1 +1,0 @@
-Hey {{ name }}, guess what? Something amazing is coming soon from Fabric! Stay tuned for more exciting news. 🚀 #GetReady

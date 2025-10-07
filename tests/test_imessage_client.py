@@ -89,7 +89,6 @@ def test_send_template_missing_template_raises(
     with pytest.raises(TemplateNotFoundError):
         instance.send_template("1234567890", "unknown")
 
-
 def test_update_and_delete_template(client: tuple[IMessageClient, StubRunner], template_manager: TemplateManager) -> None:
     instance, _ = client
     template_manager.create_template("greeting", "Hello")
@@ -99,6 +98,13 @@ def test_update_and_delete_template(client: tuple[IMessageClient, StubRunner], t
     with pytest.raises(TemplateNotFoundError):
         template_manager.render_template("greeting")
 
+def test_update_nonexistent_template_raises(client: tuple[IMessageClient, StubRunner], template_manager: TemplateManager) -> None:
+    with pytest.raises(TemplateNotFoundError):
+        template_manager.update_template("nonexistent", "Hi")
+
+def test_delete_nonexistent_template_raises(client: tuple[IMessageClient, StubRunner], template_manager: TemplateManager) -> None:
+    with pytest.raises(TemplateNotFoundError):
+        template_manager.delete_template("nonexistent")
 
 def test_update_nonexistent_template_raises(template_manager: TemplateManager) -> None:
     with pytest.raises(TemplateNotFoundError):

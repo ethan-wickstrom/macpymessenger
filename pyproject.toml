@@ -34,8 +34,8 @@ include = [
   "src/macpymessenger/osascript/sendMessage.scpt",
 ]
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
   "pytest>=8.3.2",
   "mypy>=1.11.2",
   "ruff>=0.6.9",

@@ -28,4 +28,4 @@ If either check fails a :class:`~macpymessenger.exceptions.ScriptNotFoundError` 
 Logging Defaults
 ----------------
 
-Instances of :class:`~macpymessenger.client.IMessageClient` attach a :class:`logging.FileHandler` targeting ``macpymessenger.log`` during :meth:`~macpymessenger.client.IMessageClient.__post_init__`. The handler records informational and error events for all send operations, so you automatically receive a persistent audit trail without additional configuration. You can provide a pre-configured logger when constructing the client to customize the destination or formatting.
+Instances of :class:`~macpymessenger.client.IMessageClient` rely on the handlers already configured on the provided ``logger``. To persist events to disk you can opt in by instantiating the client with ``enable_file_logging=True``, which attaches a ``macpymessenger.log`` :class:`logging.FileHandler` when one is not present. Supplying a pre-configured logger remains the recommended approach when you need custom destinations or formatting.

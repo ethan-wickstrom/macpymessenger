@@ -44,7 +44,7 @@ from macpymessenger import Configuration
 configuration = Configuration(Path("/path/to/custom/sendMessage.scpt"))
 ```
 
-`Configuration` will raise `ScriptNotFoundError` if the AppleScript is missing, keeping runtime failures obvious. The [configuration guide](docs/configuration.rst) explains the readability validation in more detail and documents the default ``macpymessenger.log`` handler attached by `IMessageClient`.
+`Configuration` will raise `ScriptNotFoundError` if the AppleScript is missing, keeping runtime failures obvious. The [configuration guide](docs/configuration.rst) explains the readability validation in more detail and covers how to opt into the optional ``macpymessenger.log`` handler via ``IMessageClient(enable_file_logging=True)``.
 
 ## Development workflow
 

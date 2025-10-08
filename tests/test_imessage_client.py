@@ -1,3 +1,4 @@
+import logging
 import subprocess
 from pathlib import Path
 from typing import List, Sequence
@@ -142,3 +143,48 @@ def test_load_directory_detects_duplicate_identifiers(tmp_path: Path) -> None:
     manager = TemplateManager()
     with pytest.raises(DuplicateTemplateIdentifierError):
         manager.load_directory(template_dir)
+
+
+def test_client_does_not_create_log_file_by_default(
+    configuration: Configuration,
+    template_manager: TemplateManager,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    log_path = tmp_path / "macpymessenger.log"
+    client_instance = IMessageClient(
+        configuration=configuration,
+        template_manager=template_manager,
+        command_runner=StubRunner(),
+    )
+    assert log_path.exists() is False
+    has_file_handler = False
+    for handler in client_instance.logger.handlers:
+        if isinstance(handler, logging.FileHandler):
+            has_file_handler = True
+            break
+    assert has_file_handler is False
+
+
+def test_client_file_logging_opt_in_creates_handler(
+    configuration: Configuration,
+    template_manager: TemplateManager,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    log_path = tmp_path / "macpymessenger.log"
+    client_instance = IMessageClient(
+        configuration=configuration,
+        template_manager=template_manager,
+        command_runner=StubRunner(),
+        enable_file_logging=True,
+    )
+    assert log_path.exists() is True
+    has_file_handler = False
+    for handler in client_instance.logger.handlers:
+        if isinstance(handler, logging.FileHandler):
+            has_file_handler = True
+            break
+    assert has_file_handler is True

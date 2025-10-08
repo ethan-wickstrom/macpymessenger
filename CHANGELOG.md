@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `IMessageClient` no longer creates ``macpymessenger.log`` automatically; use ``enable_file_logging=True`` or provide a pre-configured logger to persist events.
+- Documented `IMessageClient.get_chat_history` and `IMessageClient.send_with_attachment` as experimental stubs that raise ``NotImplementedError`` until the features ship.
 
 ## [0.2.0] - 2025-10-07
 ### Added

@@ -1,3 +1,4 @@
+import inspect
 import logging
 import subprocess
 from pathlib import Path
@@ -264,3 +265,32 @@ def test_client_file_logging_opt_in_uses_existing_log_file(
         assert has_file_handler
     finally:
         _remove_file_handlers(client_instance.logger)
+
+
+def test_get_chat_history_is_experimental(
+    client: tuple[IMessageClient, StubRunner]
+) -> None:
+    instance, _ = client
+    with pytest.raises(
+        NotImplementedError, match="Experimental: Chat history retrieval is not yet implemented."
+    ):
+        instance.get_chat_history("+15551234567")
+    doc = inspect.getdoc(IMessageClient.get_chat_history)
+    assert doc is not None
+    assert "Experimental: Chat history retrieval is not yet implemented." in doc
+    assert "Expected availability: TBD." in doc
+
+
+def test_send_with_attachment_is_experimental(
+    client: tuple[IMessageClient, StubRunner]
+) -> None:
+    instance, _ = client
+    with pytest.raises(
+        NotImplementedError,
+        match="Experimental: Sending messages with attachments is not yet implemented.",
+    ):
+        instance.send_with_attachment("+15559876543", "hello", "/tmp/file.pdf")
+    doc = inspect.getdoc(IMessageClient.send_with_attachment)
+    assert doc is not None
+    assert "Experimental: Sending messages with attachments is not yet implemented." in doc
+    assert "Expected availability: TBD." in doc

@@ -131,9 +131,73 @@ class IMessageClient:
         return successful, failed
 
     def get_chat_history(self, phone_number: str, limit: int = 10) -> List[Mapping[str, object]]:
-        raise NotImplementedError("Chat history retrieval is not yet implemented.")
+        """Experimental: Chat history retrieval is not yet implemented.
+
+        Parameters
+        ----------
+        phone_number:
+            The E.164-formatted phone number or iMessage handle whose history would be fetched.
+        limit:
+            Maximum number of messages to return once the feature ships. Values must be
+            positive and are expected to cap the page size. The default of ``10`` is a
+            placeholder until the implementation is available.
+
+        Returns
+        -------
+        List[Mapping[str, object]]
+            This method will eventually return structured message payloads ordered from most
+            recent to oldest. The exact schema is intentionally unspecified while the feature
+            is experimental.
+
+        Raises
+        ------
+        NotImplementedError
+            Always raised. The message includes the ``"Experimental"`` prefix to signal that
+            the public API exists but is not yet functional.
+
+        Notes
+        -----
+        Expected availability: TBD. Tracking work is scoped for a future minor release.
+        Until then, callers must not rely on this method.
+        """
+
+        raise NotImplementedError(
+            "Experimental: Chat history retrieval is not yet implemented."
+        )
 
     def send_with_attachment(
         self, phone_number: str, message: str, attachment_path: str
     ) -> bool:
-        raise NotImplementedError("Sending messages with attachments is not yet implemented.")
+        """Experimental: Sending messages with attachments is not yet implemented.
+
+        Parameters
+        ----------
+        phone_number:
+            Intended recipient handle in E.164 or email format.
+        message:
+            Text body that would accompany the attachment when support lands.
+        attachment_path:
+            Absolute path to a file on disk. Future implementations will validate MIME type,
+            existence, and maximum payload size before sending.
+
+        Returns
+        -------
+        bool
+            Planned to indicate whether the attachment send succeeded. The concrete semantics
+            will be finalised alongside the implementation.
+
+        Raises
+        ------
+        NotImplementedError
+            Always raised with an ``"Experimental"`` prefixed message, ensuring callers are
+            aware that attachment delivery is not currently supported.
+
+        Notes
+        -----
+        Expected availability: TBD. The method is defined to stabilise the public API surface
+        but must not be invoked in production workflows yet.
+        """
+
+        raise NotImplementedError(
+            "Experimental: Sending messages with attachments is not yet implemented."
+        )

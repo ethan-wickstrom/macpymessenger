@@ -109,7 +109,8 @@ def test_send_template_missing_template_raises(
 def test_template_non_string_value_raises(template_manager: TemplateManager) -> None:
     template_manager.create_template("greeting", lambda name: t"Hello, {name}!")
     with pytest.raises(TemplateTypeError):
-        template_manager.render_template("greeting", {"name": 123})
+        context: dict[str, object] = {"name": 123}
+        template_manager.render_template("greeting", context=context)
 
 
 def test_update_and_delete_template(

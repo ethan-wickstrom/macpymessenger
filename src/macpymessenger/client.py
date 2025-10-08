@@ -95,7 +95,7 @@ class IMessageClient:
         self,
         phone_number: str,
         template_id: str,
-        context: Mapping[str, str] | None = None,
+        context: Mapping[str, object] | None = None,
         delay_seconds: int = 0,
     ) -> None:
         rendered_template: RenderedTemplate = self.template_manager.compose_template(

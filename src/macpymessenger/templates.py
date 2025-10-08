@@ -66,7 +66,7 @@ class TemplateManager:
     def render_template(
         self,
         identifier: str,
-        context: Mapping[str, str] | None = None,
+        context: Mapping[str, object] | None = None,
     ) -> str:
         try:
             factory = self._templates[identifier]
@@ -81,7 +81,7 @@ class TemplateManager:
     def compose_template(
         self,
         identifier: str,
-        context: Mapping[str, str] | None = None,
+        context: Mapping[str, object] | None = None,
     ) -> RenderedTemplate:
         return RenderedTemplate(
             identifier=identifier,

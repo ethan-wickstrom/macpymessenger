@@ -59,12 +59,11 @@ class IMessageClient:
     enable_file_logging: bool = False
 
     def __post_init__(self) -> None:
-        has_file_handler = False
-        for handler in self.logger.handlers:
-            if isinstance(handler, logging.FileHandler):
-                has_file_handler = True
-                break
-        if self.enable_file_logging is True and has_file_handler is False:
+        has_file_handler = any(
+            isinstance(handler, logging.FileHandler)
+            for handler in self.logger.handlers
+        )
+        if self.enable_file_logging is True and not has_file_handler:
             file_handler = logging.FileHandler("macpymessenger.log")
             formatter = logging.Formatter(
                 "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

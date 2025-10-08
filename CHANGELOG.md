@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- note: add changes here after each major change -->
 
+### Changed
+- `IMessageClient` no longer creates ``macpymessenger.log`` automatically; use ``enable_file_logging=True`` or provide a pre-configured logger to persist events.
+
 ## [0.2.0] - 2025-10-07
 ### Added
 - A refreshed macpymessenger package with a discoverable public API (`Configuration`, `IMessageClient`, `TemplateManager`, etc.), making new integrations as simple as `from macpymessenger import ...` (see `docs/index.rst`).

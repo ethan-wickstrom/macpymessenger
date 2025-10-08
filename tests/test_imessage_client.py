@@ -1,3 +1,4 @@
+import logging
 import subprocess
 from pathlib import Path
 from typing import List, Sequence
@@ -26,6 +27,13 @@ class StubRunner:
         phone_number = arguments[2]
         if phone_number in self.failing_numbers:
             raise subprocess.CalledProcessError(returncode=1, cmd=arguments)
+
+
+def _remove_file_handlers(logger: logging.Logger) -> None:
+    for handler in list(logger.handlers):
+        if isinstance(handler, logging.FileHandler):
+            handler.close()
+            logger.removeHandler(handler)
 
 
 @pytest.fixture
@@ -142,3 +150,117 @@ def test_load_directory_detects_duplicate_identifiers(tmp_path: Path) -> None:
     manager = TemplateManager()
     with pytest.raises(DuplicateTemplateIdentifierError):
         manager.load_directory(template_dir)
+
+
+def test_client_does_not_create_log_file_by_default(
+    configuration: Configuration,
+    template_manager: TemplateManager,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    log_path = tmp_path / "macpymessenger.log"
+    logger = logging.getLogger("macpymessenger.client")
+    _remove_file_handlers(logger)
+    client_instance = IMessageClient(
+        configuration=configuration,
+        template_manager=template_manager,
+        command_runner=StubRunner(),
+    )
+    try:
+        assert log_path.exists() is False
+        has_file_handler = any(
+            isinstance(handler, logging.FileHandler)
+            for handler in client_instance.logger.handlers
+        )
+        assert not has_file_handler
+    finally:
+        _remove_file_handlers(client_instance.logger)
+
+
+def test_client_with_preexisting_filehandler_logger(
+    configuration: Configuration,
+    template_manager: TemplateManager,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    log_path = tmp_path / "preexisting.log"
+    logger = logging.getLogger("test_logger_with_filehandler")
+    _remove_file_handlers(logger)
+    file_handler = logging.FileHandler(log_path)
+    logger.addHandler(file_handler)
+
+    try:
+        client_instance = IMessageClient(
+            configuration=configuration,
+            template_manager=template_manager,
+            command_runner=StubRunner(),
+            logger=logger,
+            enable_file_logging=True,
+        )
+        file_handlers = [
+            handler
+            for handler in client_instance.logger.handlers
+            if isinstance(handler, logging.FileHandler)
+        ]
+        assert len(file_handlers) == 1
+        assert file_handlers[0] is file_handler
+        assert log_path.exists() is True
+    finally:
+        _remove_file_handlers(logger)
+
+
+def test_client_file_logging_opt_in_creates_handler(
+    configuration: Configuration,
+    template_manager: TemplateManager,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    log_path = tmp_path / "macpymessenger.log"
+    logger = logging.getLogger("macpymessenger.client")
+    _remove_file_handlers(logger)
+    client_instance = IMessageClient(
+        configuration=configuration,
+        template_manager=template_manager,
+        command_runner=StubRunner(),
+        enable_file_logging=True,
+    )
+    try:
+        assert log_path.exists() is True
+        has_file_handler = any(
+            isinstance(handler, logging.FileHandler)
+            for handler in client_instance.logger.handlers
+        )
+        assert has_file_handler
+    finally:
+        _remove_file_handlers(client_instance.logger)
+
+
+def test_client_file_logging_opt_in_uses_existing_log_file(
+    configuration: Configuration,
+    template_manager: TemplateManager,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    log_path = tmp_path / "macpymessenger.log"
+    log_path.write_text("preexisting content", encoding="utf-8")
+    logger = logging.getLogger("macpymessenger.client")
+    _remove_file_handlers(logger)
+    client_instance = IMessageClient(
+        configuration=configuration,
+        template_manager=template_manager,
+        command_runner=StubRunner(),
+        enable_file_logging=True,
+    )
+    try:
+        assert log_path.exists() is True
+        has_file_handler = any(
+            isinstance(handler, logging.FileHandler)
+            for handler in client_instance.logger.handlers
+        )
+        assert has_file_handler
+    finally:
+        _remove_file_handlers(client_instance.logger)

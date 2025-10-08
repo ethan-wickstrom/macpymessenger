@@ -126,3 +126,17 @@ To send the same message to multiple recipients, :meth:`~macpymessenger.client.I
 The method returns two lists—successful deliveries and failures—so you can decide whether to retry or escalate based on the recipients that encountered errors.
 
 For more detailed information on the available methods and their parameters, please refer to the API reference documentation.
+
+Experimental APIs
+-----------------
+
+Two helper methods on :class:`~macpymessenger.client.IMessageClient` are intentionally
+non-functional today:
+
+* :meth:`~macpymessenger.client.IMessageClient.get_chat_history`
+* :meth:`~macpymessenger.client.IMessageClient.send_with_attachment`
+
+Both raise :class:`NotImplementedError` with an "Experimental" prefix to highlight that chat
+history retrieval and attachment delivery are scoped for a future minor release. The signatures are
+published early so downstream projects can plan integrations without taking a hard dependency on
+unfinished behaviour.

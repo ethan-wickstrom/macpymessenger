@@ -17,7 +17,7 @@ This document is a concise contributor guide for macpymessenger. It explains how
 
 ## Build, Test, and Development Commands
 
-Use Astral’s uv for a fast, reproducible workflow.
+Use Astral's uv for a fast, reproducible workflow.
 
 - Create/refresh environment: `uv sync`
 - Lint: `uv run ruff check`

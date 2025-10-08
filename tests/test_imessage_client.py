@@ -187,7 +187,7 @@ def test_client_with_preexisting_filehandler_logger(
     monkeypatch.chdir(tmp_path)
     log_path = tmp_path / "preexisting.log"
     logger = logging.getLogger("test_logger_with_filehandler")
-    logger.handlers.clear()
+    _remove_file_handlers(logger)
     file_handler = logging.FileHandler(log_path)
     logger.addHandler(file_handler)
 
@@ -208,9 +208,7 @@ def test_client_with_preexisting_filehandler_logger(
         assert file_handlers[0] is file_handler
         assert log_path.exists() is True
     finally:
-        for handler in list(logger.handlers):
-            handler.close()
-            logger.removeHandler(handler)
+        _remove_file_handlers(logger)
 
 
 def test_client_file_logging_opt_in_creates_handler(

@@ -8,6 +8,7 @@ macpymessenger is a modern, strongly typed Python toolkit for orchestrating macO
 - Composable `TemplateManager` powered by Jinja2 with in-memory storage for safe inheritance and inclusion.
 - Dependency-injected `IMessageClient` that isolates subprocess execution for straightforward testing.
 - Type-driven API surface with explicit error handling and no hidden global state.
+- Clearly signposted experimental APIs for future chat history retrieval and attachment sending.
 
 ## Installation
 
@@ -34,6 +35,14 @@ client.send_template("+15555555555", "welcome", {"name": "Ada"})
 ```
 
 Templates are stored in-memory and rendered via Jinja2. They support inheritance and inclusion without touching the filesystem unless you opt into loading a directory of templates.
+
+## Experimental features
+
+`IMessageClient.get_chat_history` and `IMessageClient.send_with_attachment` are present on the
+public API to stabilise their signatures, but both methods are **experimental**. Each raises a
+`NotImplementedError` prefixed with "Experimental" to ensure callers do not rely on behaviour that
+is not yet available. Roadmap planning is underway for a future minor release; until then these
+helpers should be considered placeholders.
 
 ## Configuration
 

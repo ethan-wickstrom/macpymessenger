@@ -1,38 +1,94 @@
 Modules
 =======
 
-macpymessenger is organized into several modules, each responsible for a specific set of functionalities. In this section, we'll provide an overview of the main modules and their purposes.
+**macpymessenger is organized into focused modules, each with a specific responsibility.**
 
-client.py
----------
+This guide provides an overview of each module and its key classes.
 
-The :mod:`client` module exposes the public messaging interface via :class:`macpymessenger.IMessageClient`. It wraps AppleScript execution, handles logging, surfaces delivery failures through :class:`macpymessenger.exceptions.MessageSendError`, and provides helpers such as :class:`macpymessenger.SubprocessCommandRunner` for command execution.
+client module — Send messages and manage templates
+---------------------------------------------------
 
-configuration.py
-----------------
+**The `client` module provides the main public interface.**
 
-The :mod:`configuration` module defines :class:`macpymessenger.Configuration`, which discovers the bundled AppleScript files, validates the configuration, and lets you customize script locations and logging behavior.
+Key classes:
 
-exceptions.py
--------------
+- **`IMessageClient`** — sends messages, manages templates, and handles errors
+- **`SubprocessCommandRunner`** — executes AppleScript via subprocess
 
-The :mod:`exceptions` module defines the error hierarchy for the package, including :class:`macpymessenger.exceptions.MessageSendError` for delivery issues, :class:`macpymessenger.exceptions.TemplateError` for template problems, and :class:`macpymessenger.exceptions.ConfigurationError` for configuration validation.
+**The client wraps AppleScript execution and surfaces delivery failures through `MessageSendError`.**
 
-templates.py
-------------
+configuration module — Validate AppleScript paths
+--------------------------------------------------
 
-The :mod:`templates` module manages reusable message templates. It provides :class:`macpymessenger.TemplateManager` for CRUD operations, :class:`macpymessenger.TemplateDefinition` for describing templates, and :class:`macpymessenger.RenderedTemplate` for working with the rendered content. Templates are rendered with Jinja2, so standard Jinja syntax and features are available.
+**The `configuration` module defines the `Configuration` class.**
 
-__init__.py
------------
+The `Configuration` class:
 
-The package root re-exports the primary public interfaces through ``__all__`` so that ``from macpymessenger import ...`` surfaces the classes listed above. Refer to :mod:`macpymessenger.__init__` for the authoritative list of supported entry points.
+- Discovers the bundled AppleScript at `osascript/sendMessage.scpt`
+- Validates that the script exists and is readable
+- Allows custom script paths
+- Provides logging configuration options
 
-osascript/
-----------
+exceptions module — Define the error hierarchy
+-----------------------------------------------
 
-The ``osascript`` directory contains the AppleScript files invoked by :class:`macpymessenger.IMessageClient`. The scripts implement the low-level interaction with the Messages app and are resolved automatically by :class:`macpymessenger.Configuration`.
+**The `exceptions` module defines all custom exceptions.**
 
-Each module plays a specific role in the overall functionality of macpymessenger. By understanding the purpose and responsibilities of each module, you can effectively navigate and utilize the library in your projects.
+Key exceptions:
 
-For detailed information on the classes, methods, and functions provided by each module, please refer to the API reference documentation.
+- **`MessageSendError`** — raised when message delivery fails
+- **`TemplateError`** — raised for template rendering or management issues
+- **`TemplateNotFoundError`** — raised when a requested template does not exist
+- **`DuplicateTemplateIdentifierError`** — raised when loading templates with duplicate identifiers
+- **`ConfigurationError`** — raised for configuration validation failures
+- **`ScriptNotFoundError`** — raised when the AppleScript file is missing or unreadable
+
+templates module — Manage and render message templates
+-------------------------------------------------------
+
+**The `templates` module provides template management with Python 3.14 t-strings.**
+
+Key classes:
+
+- **`TemplateManager`** — stores callables that return t-strings, renders them, and enforces that all interpolations resolve to `str`
+- **`RenderedTemplate`** — contains the rendered message after processing a t-string
+- **`TemplateTypeError`** — raised when a template interpolation resolves to a non-string value
+
+**Templates use callables instead of Jinja2 strings.** Each callable receives keyword arguments and returns a t-string. The manager raises `TemplateTypeError` if any interpolation is not a string.
+
+Package root — Public API exports
+----------------------------------
+
+**The package root re-exports all public classes through `__all__`.**
+
+Import from the package root:
+
+.. code-block:: python
+
+   from macpymessenger import IMessageClient, Configuration, TemplateManager
+   from macpymessenger.exceptions import MessageSendError
+
+**All primary classes are available at the top level.** You do not need to import from submodules.
+
+osascript directory — AppleScript implementation
+-------------------------------------------------
+
+**The `osascript` directory contains the AppleScript that interacts with Messages.app.**
+
+The bundled script:
+
+- **`sendMessage.scpt`** — sends a text message to a recipient
+
+**The `Configuration` class resolves the script path automatically.** You do not need to reference this directory unless you are providing a custom script.
+
+Module architecture
+-------------------
+
+**Each module has a focused responsibility:**
+
+- `client` — orchestrates message sending and template management
+- `configuration` — validates AppleScript paths and provides logging options
+- `exceptions` — defines the error hierarchy for explicit error handling
+- `templates` — manages template storage and t-string rendering
+
+**Understanding the module structure helps you navigate the codebase and extend functionality.**

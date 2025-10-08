@@ -1,12 +1,16 @@
 Configuration
 =============
 
-macpymessenger provides a :class:`~macpymessenger.configuration.Configuration` class that allows you to customize the AppleScript path used by the library. In this section, we outline how the configuration discovers the packaged script, how it validates readability, and the logging defaults applied by the client.
+**The `Configuration` class validates the AppleScript path and provides logging options.**
 
-Customizing Script Paths
-------------------------
+By default, the configuration uses the bundled AppleScript. You can customize the script path and logging behavior.
 
-By default, :class:`~macpymessenger.configuration.Configuration` resolves the bundled AppleScript located at ``osascript/sendMessage.scpt`` inside the package. You can point to a different script by instantiating the configuration with an explicit path:
+Use a custom AppleScript path
+------------------------------
+
+**By default, macpymessenger uses the bundled AppleScript at `osascript/sendMessage.scpt`.**
+
+Provide a custom path if needed:
 
 .. code-block:: python
 
@@ -15,17 +19,51 @@ By default, :class:`~macpymessenger.configuration.Configuration` resolves the bu
 
    config = Configuration(send_script_path=Path("/path/to/custom/sendMessage.scpt"))
 
-Validation and Error Handling
------------------------------
+**The configuration validates the path at initialization.** If the file does not exist or is not readable, `Configuration` raises `ScriptNotFoundError`.
 
-During initialization the configuration normalizes the provided path and guarantees that the AppleScript both exists and is readable before it is stored. The private :meth:`~macpymessenger.configuration.Configuration._determine_script_path` helper checks:
+How validation works
+--------------------
 
-* the path exists on disk;
-* the process can open the file in binary mode, surfacing permission issues immediately.
+**The configuration validates the AppleScript at initialization, not at send time.**
 
-If either check fails a :class:`~macpymessenger.exceptions.ScriptNotFoundError` is raised, keeping runtime execution of ``osascript`` free of surprises.
+Validation checks:
 
-Logging Defaults
-----------------
+1. **File exists.** The path points to an existing file on disk.
+2. **File is readable.** The process can open the file in binary mode.
 
-Instances of :class:`~macpymessenger.client.IMessageClient` rely on the handlers already configured on the provided ``logger``. To persist events to disk you can opt in by instantiating the client with ``enable_file_logging=True``, which attaches a ``macpymessenger.log`` :class:`logging.FileHandler` when one is not present. Supplying a pre-configured logger remains the recommended approach when you need custom destinations or formatting.
+**Validation raises `ScriptNotFoundError` if either check fails.** This keeps runtime execution of `osascript` predictable.
+
+Enable file logging
+-------------------
+
+**By default, `IMessageClient` logs to the console only.**
+
+Enable file logging to persist events to disk:
+
+.. code-block:: python
+
+   from macpymessenger import Configuration, IMessageClient
+
+   config = Configuration()
+   client = IMessageClient(config, enable_file_logging=True)
+
+**This creates a `macpymessenger.log` file in the current directory.**
+
+Provide a custom logger
+------------------------
+
+**Pass a pre-configured logger for custom destinations or formatting:**
+
+.. code-block:: python
+
+   import logging
+   from macpymessenger import Configuration, IMessageClient
+
+   logger = logging.getLogger("my_app")
+   logger.setLevel(logging.DEBUG)
+   # Add custom handlers here
+
+   config = Configuration()
+   client = IMessageClient(config, logger=logger)
+
+**The client uses the logger's existing handlers.** It does not add or remove handlers automatically.

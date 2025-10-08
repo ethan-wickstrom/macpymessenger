@@ -7,7 +7,7 @@ This document is a concise contributor guide for macpymessenger. It explains how
 - Source code: `src/macpymessenger/`
   - `client.py` — public `IMessageClient` and command runner.
   - `configuration.py` — immutable `Configuration` and AppleScript resolution.
-  - `templates.py` — Jinja2-backed `TemplateManager` and template models.
+- `templates.py` — TemplateManager backed by Python 3.14 t-strings.
   - `exceptions.py` — error hierarchy (e.g., `MessageSendError`).
   - `osascript/` — packaged AppleScript (`sendMessage.scpt`).
 - Tests: `tests/` (pytest-based unit tests).
@@ -28,7 +28,7 @@ Use Astral's uv for a fast, reproducible workflow.
 
 ## Coding Style & Naming Conventions
 
-- Python ≥ 3.10 with full type hints (see `tool.mypy` in `pyproject.toml`).
+- Python ≥ 3.14 with full type hints (see `tool.mypy` in `pyproject.toml`).
 - Linting via Ruff (line length 100). Keep code formatted accordingly.
 - Naming: modules and functions `snake_case`, classes `CamelCase`, constants `UPPER_SNAKE_CASE`.
 - Prefer dataclasses with `slots=True` where appropriate and explicit immutability where used.
@@ -63,10 +63,10 @@ Use Astral's uv for a fast, reproducible workflow.
 
 - `IMessageClient` orchestrates sending by composing:
   - `Configuration` for script discovery and validation.
-  - `TemplateManager` for rendering Jinja2 templates.
+  - `TemplateManager` for rendering callable-based t-strings while enforcing `TemplateTypeError` for non-string interpolations.
   - A pluggable command runner (default uses `subprocess.run`).
 - Error handling is explicit: delivery failures raise `MessageSendError` instead of returning booleans.
-- Templates use Jinja2 syntax (`{{ name }}`); duplicate identifiers are rejected to prevent conflicts.
+- Templates are defined as callables returning t-strings; duplicate identifiers are rejected to prevent conflicts.
 
 ## Docs Authoring
 
@@ -86,5 +86,5 @@ Use Astral's uv for a fast, reproducible workflow.
 - When modifying public behavior, update `docs/usage.rst`, `docs/modules.rst`, and `CHANGELOG.md`.
 - Prefer raising defined exceptions over introducing new ad-hoc error types.
 - Keep tests fast and hermetic; stub subprocess calls instead of executing AppleScript.
-- Use Jinja2 `{{ ... }}` in docs/examples; avoid `{...}` placeholders.
+- Use t-string examples (`t"Hello, {name}!"`) in docs/examples.
 

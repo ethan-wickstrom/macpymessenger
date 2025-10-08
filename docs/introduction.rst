@@ -1,28 +1,39 @@
 Introduction
 ============
 
-macpymessenger is a Python library that simplifies the process of sending iMessages on macOS. It provides a high-level interface for interacting with the Messages app, allowing you to send text messages programmatically from your Python scripts.
+**macpymessenger sends iMessages from Python scripts on macOS.**
 
-Whether you want to automate messaging tasks, build chatbots, or integrate iMessage functionality into your applications, macpymessenger makes it easy to achieve your goals. With just a few lines of code, you can start sending iMessages to any phone number or email address.
+The library provides a type-safe interface to the Messages app through AppleScript, with template rendering powered by Python 3.14 t-strings. Send text messages to phone numbers or email addresses with explicit error handling and no hidden state.
 
-Why Use macpymessenger?
------------------------
+Why use macpymessenger
+----------------------
 
-- **Simplicity**: macpymessenger provides a clean and intuitive API, making it effortless to send iMessages from your Python code.
-- **Efficiency**: Save time and effort by automating repetitive messaging tasks and streamlining your workflow.
-- **Customization**: The library offers flexibility through its configuration options, allowing you to adapt it to your specific needs.
-- **Reliability**: macpymessenger includes a comprehensive test suite to ensure the stability and reliability of the library.
-- **Integration**: Seamlessly integrate iMessage functionality into your existing Python projects or build new applications around it.
+**Simple API.** Send a message in three lines of code. Define templates as callables that return t-strings.
 
-Use Cases
----------
+**Explicit error handling.** All errors raise typed exceptions, including `TemplateTypeError` for non-string interpolation values.
 
-- Sending automated notifications or alerts via iMessage
-- Developing chatbots that respond to incoming iMessages
-- Creating personalized messaging campaigns
-- Integrating iMessage communication into your business processes
-- Building custom applications that leverage iMessage capabilities
+**Testable design.** Dependency injection isolates subprocess calls from business logic. Write fast tests without executing AppleScript.
 
-macpymessenger opens up a wide range of possibilities for leveraging iMessage in your Python projects. Whether you're a developer, a business owner, or an automation enthusiast, this library empowers you to explore new ways of utilizing iMessage programmatically.
+**Validated configuration.** The `Configuration` class checks that the AppleScript file exists and is readable at initialization, not at send time.
 
-In the following sections, you'll learn how to install and set up macpymessenger, dive into its usage and configuration options, and explore advanced features and examples. Let's get started!
+**Comprehensive type hints.** Every function includes type annotations. The codebase passes `mypy` strict mode.
+
+What you can build
+------------------
+
+**Automated notifications.** Send alerts or reminders to users via iMessage when events occur in your application.
+
+**Personalized campaigns.** Use templates to send customized messages to multiple recipients with variable substitution.
+
+**Business process integration.** Trigger iMessages from workflows, approval processes, or monitoring systems.
+
+**Custom applications.** Build tools that leverage iMessage for communication without requiring third-party APIs.
+
+Next steps
+----------
+
+**Read the installation guide** to install macpymessenger with `uv` or `pip`.
+
+**Follow the usage guide** to send your first message and learn about templates.
+
+**Explore the configuration options** to customize logging and AppleScript paths.

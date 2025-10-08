@@ -1,29 +1,42 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+All notable changes to macpymessenger are documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-<!-- note: add changes here after each major change -->
+<!-- Add changes here after each significant change -->
 
 ### Changed
-- `IMessageClient` no longer creates ``macpymessenger.log`` automatically; use ``enable_file_logging=True`` or provide a pre-configured logger to persist events.
-- Documented `IMessageClient.get_chat_history` and `IMessageClient.send_with_attachment` as experimental stubs that raise ``NotImplementedError`` until the features ship.
+
+**File logging is now opt-in.** `IMessageClient` no longer creates `macpymessenger.log` automatically. Pass `enable_file_logging=True` to the constructor or provide a pre-configured logger to persist events.
+
+**Template system migrated to t-strings.** The library now requires Python 3.14 and uses callable templates that return t-strings with strict string interpolation checks.
+
+**Experimental methods are now documented.** `IMessageClient.get_chat_history` and `IMessageClient.send_with_attachment` are marked as experimental stubs. Both raise `NotImplementedError` until fully implemented.
 
 ## [0.2.0] - 2025-10-07
+
 ### Added
-- A refreshed macpymessenger package with a discoverable public API (`Configuration`, `IMessageClient`, `TemplateManager`, etc.), making new integrations as simple as `from macpymessenger import ...` (see `docs/index.rst`).
-- Richer template management powered by Jinja2 plus ready-to-use examples (`welcome`, `reminder`, `thank_you`), helping teams send personalised messages quickly (`docs/usage.rst`).
-- Full Sphinx docs covering installation, usage, configuration, testing, and module overviews so readers can get from setup to production without guesswork (`docs/index.rst`, `docs/installation.rst`, `docs/usage.rst`).
-- A maintained changelog and release automation, giving downstream consumers predictable upgrade notes.
+
+**Discoverable public API.** All primary classes (`Configuration`, `IMessageClient`, `TemplateManager`) are importable from the package root: `from macpymessenger import ...`. See `docs/index.rst`.
+
+**Jinja2-powered templates.** The `TemplateManager` previously relied on Jinja2 with ready-to-use examples (`welcome`, `reminder`, `thank_you`). Historical details are retained for context.
+
+**Complete Sphinx documentation.** Guides cover installation, usage, configuration, testing, and module overviews. See `docs/index.rst`, `docs/installation.rst`, and `docs/usage.rst`.
+
+**Maintained changelog.** Each release includes upgrade notes for downstream consumers.
 
 ### Changed
-- `IMessageClient.send` surfaces delivery errors via `MessageSendError`, encouraging explicit error handling as demonstrated in the updated usage guide (`docs/usage.rst`).
-- The README and docs now emphasise templated messaging, context dictionaries, and best practices for handling failures, reducing the time to a reliable rollout.
-- Installation is standardised on `pyproject.toml` + Hatchling with `uv`-backed publishing, so wheels install faster and are easier for DevOps teams to audit (`docs/installation.rst`).
+
+**Explicit error handling.** `IMessageClient.send` raises `MessageSendError` on delivery failures instead of returning boolean values. See `docs/usage.rst` for error handling examples.
+
+**Template-focused documentation.** The README and usage guide emphasize templated messaging, context dictionaries, and failure handling best practices.
+
+**Standardized packaging.** The project uses `pyproject.toml` with Hatchling and `uv` for faster installations and easier audits. See `docs/installation.rst`.
 
 ### Removed
-- The legacy `i_py_messenger` package layout and verbose promotional templates were retired in favour of the streamlined examples and modern API described above.
+
+**Legacy package layout.** The `i_py_messenger` package name and verbose promotional templates were removed in favor of the streamlined `macpymessenger` API.

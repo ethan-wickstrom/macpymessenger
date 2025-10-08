@@ -1,36 +1,79 @@
 Testing
 =======
 
-macpymessenger ships with a focused automated test suite. The recommended workflow uses `uv` to provision tooling.
+**macpymessenger includes a comprehensive test suite with static analysis.**
 
-Running the Tests
------------------
+The project uses `pytest` for tests, `ruff` for linting, and `mypy` for type checking.
+
+Run tests with pytest
+---------------------
+
+**Install dependencies first:**
 
 .. code-block:: bash
 
    uv sync
+
+**Run the test suite:**
+
+.. code-block:: bash
+
    uv run pytest
 
-``uv sync`` installs both runtime and development dependencies declared in ``pyproject.toml`` into an isolated environment. ``uv run`` executes the requested command within that environment.
+**`uv sync` installs all dependencies from `pyproject.toml` into an isolated environment.** `uv run` executes commands within that environment.
 
-Static Analysis and Linting
----------------------------
+Run linting and type checking
+------------------------------
+
+**Check code style with ruff:**
 
 .. code-block:: bash
 
    uv run ruff check
+
+**Check types with mypy:**
+
+.. code-block:: bash
+
    uv run mypy
 
-These commands enforce style and type constraints so regressions are caught early.
+**Both tools enforce code quality standards.** Fix any issues before committing.
 
-Interpreting Results
---------------------
+Understand test results
+-----------------------
 
-- A passing run prints ``OK`` from ``pytest``.
-- Failures include tracebacks with explicit assertions for quick diagnosis.
-- Ruff and mypy exit with non-zero status codes when issues are detected; inspect their output for remediation guidance.
+**Passing tests:**
 
-Custom Tests
-------------
+- `pytest` prints a summary with green dots and "passed" counts
+- `ruff` and `mypy` exit with status code 0 and no output
 
-Add new ``test_*.py`` files under ``tests/`` and run ``uv run pytest`` again to execute them. The fixtures in the test suite demonstrate how to stub the subprocess runner for deterministic behaviour.
+**Failing tests:**
+
+- `pytest` shows tracebacks with assertion details for quick debugging
+- `ruff` and `mypy` print error messages with file paths and line numbers
+
+**Fix failures before committing code.**
+
+Write custom tests
+------------------
+
+**Add new test files to the `tests` directory:**
+
+Test files must:
+
+- Follow the naming pattern `test_*.py`
+- Import `pytest` fixtures as needed
+- Use stubbed subprocess runners to avoid executing AppleScript
+
+**Example test structure:**
+
+.. code-block:: python
+
+   from macpymessenger import IMessageClient, Configuration
+   
+   def test_send_message_success():
+       config = Configuration()
+       client = IMessageClient(config)
+       # Add assertions here
+
+**Run new tests with `uv run pytest`.** The test suite includes fixtures that demonstrate how to stub the subprocess runner for deterministic behavior.

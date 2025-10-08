@@ -1,72 +1,116 @@
 # macpymessenger
 
-macpymessenger is a modern, strongly typed Python toolkit for orchestrating macOS iMessage automation through AppleScript. The library focuses on clear composition, predictable data flow, and modular design so that message sending, template management, and configuration remain easy to reason about and extend.
+**macpymessenger** is a Python library for sending iMessages on macOS through AppleScript.
 
-## Features
+The library provides a type-safe, testable interface for message automation with clear error handling and no hidden state.
 
-- Deterministic `Configuration` that validates the packaged AppleScript before use.
-- Composable `TemplateManager` powered by Jinja2 with in-memory storage for safe inheritance and inclusion.
-- Dependency-injected `IMessageClient` that isolates subprocess execution for straightforward testing.
-- Type-driven API surface with explicit error handling and no hidden global state.
-- Clearly signposted experimental APIs for future chat history retrieval and attachment sending.
+## What macpymessenger provides
+
+**Validated configuration.** The `Configuration` class checks that the packaged AppleScript exists and is readable before any messages are sent.
+
+**Template management.** The `TemplateManager` stores callables that return Python 3.14 t-strings. Template rendering enforces that every interpolated value is a `str`, delivering strict type safety.
+
+**Isolated subprocess execution.** The `IMessageClient` uses dependency injection to separate subprocess calls from business logic, making tests straightforward.
+
+**Explicit error handling.** All errors raise typed exceptions. No boolean return values or hidden failures.
+
+**Experimental APIs for future features.** Methods for chat history retrieval and attachment sending are defined but raise `NotImplementedError` until they are fully implemented.
 
 ## Installation
 
-macpymessenger is published on PyPI. You can install it with [Astral's `uv`](https://docs.astral.sh/uv/) (recommended) or with `pip`.
+**macpymessenger requires Python 3.10 or newer and runs only on macOS.**
+
+Install from PyPI with `uv` (recommended) or `pip`:
 
 ```bash
 uv pip install macpymessenger
-# or
+```
+
+Or with `pip`:
+
+```bash
 pip install macpymessenger
 ```
 
-The package targets Python 3.10 and newer.
-
 ## Quick start
 
+Send a message in three lines:
+
 ```python
-from macpymessenger import Configuration, IMessageClient, TemplateManager
+from macpymessenger import Configuration, IMessageClient
 
 configuration = Configuration()
 client = IMessageClient(configuration)
+client.send("+15555555555", "Hello from macpymessenger!")
+```
 
-client.create_template("welcome", "Hello, {{ name }}! Welcome aboard.")
+**Use templates for reusable messages:**
+
+```python
+from string.templatelib import Template
+
+client.create_template(
+    "welcome",
+    lambda name: t"Hello, {name}! Welcome aboard."
+)
 client.send_template("+15555555555", "welcome", {"name": "Ada"})
 ```
 
-Templates are stored in-memory and rendered via Jinja2. They support inheritance and inclusion without touching the filesystem unless you opt into loading a directory of templates.
+Templates are defined as callables that return t-strings. The manager validates that all interpolated values are strings before rendering.
 
 ## Experimental features
 
-`IMessageClient.get_chat_history` and `IMessageClient.send_with_attachment` are present on the
-public API to stabilise their signatures, but both methods are **experimental**. Each raises a
-`NotImplementedError` prefixed with "Experimental" to ensure callers do not rely on behaviour that
-is not yet available. Roadmap planning is underway for a future minor release; until then these
-helpers should be considered placeholders.
+**Two methods are defined but not yet implemented:**
+
+- `IMessageClient.get_chat_history` — for retrieving message history
+- `IMessageClient.send_with_attachment` — for sending files with messages
+
+Both methods raise `NotImplementedError` with an "Experimental" prefix when called.
+
+These methods exist to stabilize the API signature before the features ship in a future release. Do not call them in production code.
 
 ## Configuration
+
+**By default, macpymessenger uses the bundled AppleScript.**
+
+You can provide a custom script path if needed:
 
 ```python
 from pathlib import Path
 from macpymessenger import Configuration
 
-configuration = Configuration(Path("/path/to/custom/sendMessage.scpt"))
+configuration = Configuration(send_script_path=Path("/path/to/custom/sendMessage.scpt"))
 ```
 
-`Configuration` will raise `ScriptNotFoundError` if the AppleScript is missing, keeping runtime failures obvious. The [configuration guide](docs/configuration.rst) explains the readability validation in more detail and covers how to opt into the optional ``macpymessenger.log`` handler via ``IMessageClient(enable_file_logging=True)``.
+**Configuration validates the script at initialization.** If the AppleScript file is missing or unreadable, `Configuration` raises `ScriptNotFoundError` immediately.
 
-## Development workflow
+**Enable file logging if needed:**
 
-This repository is now managed with `uv`. The following commands assume you have `uv` installed:
+```python
+client = IMessageClient(configuration, enable_file_logging=True)
+```
+
+This creates a `macpymessenger.log` file in the current directory. See the [configuration guide](docs/configuration.rst) for details.
+
+## Development
+
+**macpymessenger uses `uv` for dependency management.**
+
+Install dependencies:
 
 ```bash
-uv sync              # install dependencies into the local virtual environment
-uv run ruff check    # lint the codebase
-uv run mypy          # static type analysis
-uv run pytest        # run the automated tests
+uv sync
 ```
 
-Each command runs inside the isolated environment declared in `pyproject.toml`, ensuring reproducible tooling without polluting the global interpreter.
+Run linters and tests:
+
+```bash
+uv run ruff check    # lint
+uv run mypy          # type checking
+uv run pytest        # tests
+```
+
+All commands run in an isolated environment defined by `pyproject.toml`.
 
 ## License
 

@@ -1,50 +1,55 @@
-Welcome to macpymessenger's Documentation!
-==========================================
+macpymessenger Documentation
+============================
 
-**macpymessenger** is a Python library that provides a clear, type-safe interface for sending iMessages on macOS. It embraces dependency injection and deterministic configuration so that every component can be tested in isolation.
+**macpymessenger** is a Python library for sending iMessages on macOS through AppleScript.
 
-Key Features
-------------
+The library provides a type-safe, testable interface with explicit error handling and no hidden state.
 
-- 🚀 Send text messages with explicit subprocess control.
-- 📝 Create and manage message templates rendered by Jinja2.
-- 🔌 Seamless integration with the Messages app on macOS via packaged AppleScript.
-- 📂 Customizable configuration without implicit globals.
-- 🧪 Comprehensive tests and static analysis driven by `uv`.
+What macpymessenger does
+-------------------------
 
-Getting Started
----------------
+**Sends text messages.** The `IMessageClient` sends iMessages to phone numbers or email addresses using AppleScript and explicit subprocess control.
 
-1. Install macpymessenger using `uv`:
+**Manages message templates.** The `TemplateManager` stores callables that return t-strings. Rendering is validated so that every interpolated value is a string.
 
-   .. code-block:: bash
+**Validates configuration upfront.** The `Configuration` class checks that the AppleScript file exists and is readable before any messages are sent.
 
-      uv pip install macpymessenger
+**Isolates subprocess calls.** Dependency injection separates subprocess execution from business logic, making tests straightforward.
 
-2. Import the necessary classes in your Python script:
+**Uses comprehensive static analysis.** The codebase includes type hints for all functions and is validated with `mypy` and `ruff`.
 
-   .. code-block:: python
+Send your first message
+-----------------------
 
-      from macpymessenger import IMessageClient, Configuration
+**Install macpymessenger:**
 
-3. Create an instance of the ``Configuration`` class and customise the settings if needed.
+.. code-block:: bash
 
-4. Initialise the ``IMessageClient`` with the configuration:
+   uv pip install macpymessenger
 
-   .. code-block:: python
+**Import the required classes:**
 
-      configuration = Configuration()
-      client = IMessageClient(configuration)
+.. code-block:: python
 
-5. Send an iMessage using the ``send`` method:
+   from macpymessenger import IMessageClient, Configuration
 
-   .. code-block:: python
+**Create a configuration and client:**
 
-      phone_number = "+15555555555"
-      message = "Hello, this is a test message sent using macpymessenger!"
-      client.send(phone_number, message)
+.. code-block:: python
 
-For more detailed information and examples, explore the following sections:
+   configuration = Configuration()
+   client = IMessageClient(configuration)
+
+**Send a message:**
+
+.. code-block:: python
+
+   client.send("+15555555555", "Hello from macpymessenger!")
+
+The `send` method raises `MessageSendError` if delivery fails.
+
+Explore the documentation
+--------------------------
 
 .. toctree::
    :maxdepth: 2
@@ -57,17 +62,21 @@ For more detailed information and examples, explore the following sections:
    testing
    modules
 
-Community and Support
----------------------
+Get help and contribute
+-----------------------
 
-If you encounter any issues, have questions, or would like to contribute to macpymessenger, please visit our GitHub repository: https://github.com/ethan-wickstrom/macpymessenger
+**Report issues or request features** on GitHub: https://github.com/ethan-wickstrom/macpymessenger
 
-We welcome contributions, bug reports, and feature requests from the community. Feel free to open an issue or submit a pull request on GitHub.
+**Submit pull requests** with bug fixes or new features. See the repository for contribution guidelines.
 
-License
--------
+**Ask questions** by opening a GitHub issue with the "question" label.
 
-macpymessenger is licensed under the Apache License 2.0. See the `LICENSE <https://github.com/ethan-wickstrom/macpymessenger/blob/main/LICENSE>`_ file for more information.
+License information
+-------------------
+
+macpymessenger is licensed under the Apache License 2.0.
+
+See the `LICENSE file <https://github.com/ethan-wickstrom/macpymessenger/blob/main/LICENSE>`_ for details.
 
 Indices and Tables
 ------------------

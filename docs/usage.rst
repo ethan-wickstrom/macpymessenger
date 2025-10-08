@@ -1,142 +1,141 @@
 Usage
 =====
 
-Using macpymessenger is straightforward and intuitive. In this section, we'll walk through the basic usage of the library and provide code examples to help you get started.
+**macpymessenger provides a simple API for sending iMessages and managing templates.**
 
-Sending Messages
-----------------
+This guide covers sending messages, creating templates, and handling errors.
 
-To send an iMessage using macpymessenger, follow these steps:
+Send a message
+--------------
 
-1. Import the necessary classes:
-
-   .. code-block:: python
-
-      from macpymessenger import IMessageClient, Configuration
-      from macpymessenger.exceptions import MessageSendError
-
-2. Create an instance of the `Configuration` class:
-
-   .. code-block:: python
-
-      config = Configuration()
-
-3. Initialize the `IMessageClient` with the configuration:
-
-   .. code-block:: python
-
-      client = IMessageClient(config)
-
-4. Use the `send` method to send a message:
-
-   .. code-block:: python
-
-      phone_number = "1234567890"
-      message = "Hello, this is a test message sent using macpymessenger!"
-      try:
-          client.send(phone_number, message)
-      except MessageSendError as error:
-          # Handle delivery failures, e.g. retry or log the error.
-          print(f"Could not deliver message: {error}")
-
-   The `send` method takes the recipient's phone number and the message content as arguments. It returns ``None`` on success and raises :class:`macpymessenger.exceptions.MessageSendError` if delivery fails. A :class:`ValueError` is raised when an invalid ``delay_seconds`` value (such as a negative number) is provided.
-
-Managing Message Templates
---------------------------
-
-macpymessenger allows you to create and manage message templates for convenient reuse. Here's how you can work with message templates:
-
-1. Create a new message template:
-
-   .. code-block:: python
-
-      template_id = "greeting"
-      content = "Hello, {{ name }}! Welcome to macpymessenger."
-      client.create_template(template_id, content)
-
-2. Send a message using a template:
-
-   .. code-block:: python
-
-      phone_number = "1234567890"
-      template_id = "greeting"
-      client.send_template(phone_number, template_id, {"name": "Ada"})
-
-   Provide a context dictionary that includes every placeholder referenced in the template; missing variables render as empty strings.
-
-3. Update an existing template:
-
-   .. code-block:: python
-
-      template_id = "greeting"
-      new_content = "Hello, {{ name }}! Welcome to the updated macpymessenger."
-      client.update_template(template_id, new_content)
-
-4. Delete a template:
-
-   .. code-block:: python
-
-      template_id = "greeting"
-      client.delete_template(template_id)
-
-These are just a few examples of what you can do with macpymessenger. The library provides additional features and customization options, which we'll explore in the following sections.
-
-Templates are rendered using Jinja2 under the hood, so you can leverage familiar features such as filters, conditionals, and loops inside your message content.
-
-Loading Templates from the Filesystem
-------------------------------------
-
-If you have a directory of template files, :class:`~macpymessenger.templates.TemplateManager` can ingest them in a single call via :meth:`~macpymessenger.templates.TemplateManager.load_directory`. Files ending in ``.txt`` or ``.j2`` become addressable by their stem (filename without the extension). Duplicate identifiers raise :class:`~macpymessenger.exceptions.DuplicateTemplateIdentifierError`, helping you keep templates distinct.
+**Import the required classes:**
 
 .. code-block:: python
 
-   from pathlib import Path
-   from macpymessenger import TemplateManager
+   from macpymessenger import IMessageClient, Configuration
+   from macpymessenger.exceptions import MessageSendError
 
-   manager = TemplateManager()
-   manager.load_directory(Path("./templates"))
+**Create a configuration and client:**
 
-   # access the loaded template definitions if you want to inspect them
-   definitions = manager.list_templates()
+.. code-block:: python
 
-Listing Available Templates
+   config = Configuration()
+   client = IMessageClient(config)
+
+**Send a message:**
+
+.. code-block:: python
+
+   phone_number = "+15555555555"
+   message = "Hello from macpymessenger!"
+   
+   try:
+       client.send(phone_number, message)
+   except MessageSendError as error:
+       print(f"Delivery failed: {error}")
+
+**The `send` method raises exceptions on failure:**
+
+- `MessageSendError` — delivery failed
+- `ValueError` — invalid `delay_seconds` parameter (negative values are not allowed)
+
+**Success returns `None`.** No boolean return values.
+
+Create and use templates
+------------------------
+
+**Templates let you reuse message patterns with variable substitution.**
+
+Create a template:
+
+.. code-block:: python
+
+   template_id = "greeting"
+   template_factory = lambda name: t"Hello, {name}! Welcome to macpymessenger."
+   client.create_template(template_id, template_factory)
+
+**Send a message using the template:**
+
+.. code-block:: python
+
+   phone_number = "+15555555555"
+   client.send_template(phone_number, "greeting", {"name": "Ada"})
+
+**Templates rely on callables that return t-strings.** Jinja2 is no longer used.
+
+.. code-block:: python
+
+   def premium_greeting(name: str, premium: str) -> Template:
+       return t"Hello, {name}! {premium}"
+
+   client.create_template("premium_greeting", premium_greeting)
+
+**Update an existing template:**
+
+.. code-block:: python
+
+   client.update_template("greeting", lambda name: t"Hi {name}, welcome!")
+
+**Delete a template:**
+
+.. code-block:: python
+
+   client.delete_template("greeting")
+
+**Provide all variables in the context dictionary.** Missing values trigger `TypeError` because callables receive keyword arguments and forward them to t-strings.
+
+**Return only strings from template callables.** If any interpolation resolves to a non-string value, the manager raises `TemplateTypeError`.
+
+List all templates
+------------------
+
+**Get a dictionary of all registered template callables:**
+
+.. code-block:: python
+
+   factories = manager.list_templates()
+   
+   for identifier, factory in factories.items():
+       print(f"{identifier}: {factory.__name__}")
+
+**The returned dictionary is a shallow copy.** Modifying it does not affect the manager's internal state.
+
+Send to multiple recipients
 ---------------------------
 
-Call :meth:`~macpymessenger.templates.TemplateManager.list_templates` to retrieve a dictionary of identifiers mapped to :class:`~macpymessenger.templates.TemplateDefinition` instances. The dictionary is a shallow copy, so mutating it will not impact the manager's internal state:
-
-.. code-block:: python
-
-   definitions = manager.list_templates()
-   for identifier, definition in definitions.items():
-       print(identifier, definition.content)
-
-Bulk Sending
-------------
-
-To send the same message to multiple recipients, :meth:`~macpymessenger.client.IMessageClient.send_bulk` iterates through each number and reports which deliveries succeeded:
+**The `send_bulk` method sends the same message to multiple phone numbers.**
 
 .. code-block:: python
 
    numbers = ["+15551234567", "+15557654321"]
-   successful, failed = client.send_bulk(numbers, "Reminder: stand-up at 10 AM.")
+   successful, failed = client.send_bulk(numbers, "Reminder: meeting at 10 AM.")
+
+**The method returns two lists:**
+
+- `successful` — phone numbers where delivery succeeded
+- `failed` — phone numbers where delivery failed
+
+**Use the failed list to retry or log errors:**
+
+.. code-block:: python
 
    if failed:
-       print("These numbers need attention:", failed)
+       print(f"Failed deliveries: {failed}")
+       # Retry logic or alert
 
-The method returns two lists—successful deliveries and failures—so you can decide whether to retry or escalate based on the recipients that encountered errors.
+Experimental features
+---------------------
 
-For more detailed information on the available methods and their parameters, please refer to the API reference documentation.
+**Two methods are defined but not yet implemented:**
 
-Experimental APIs
------------------
+- `get_chat_history` — for retrieving message history
+- `send_with_attachment` — for sending files with messages
 
-Two helper methods on :class:`~macpymessenger.client.IMessageClient` are intentionally
-non-functional today:
+**Both methods raise `NotImplementedError` when called:**
 
-* :meth:`~macpymessenger.client.IMessageClient.get_chat_history`
-* :meth:`~macpymessenger.client.IMessageClient.send_with_attachment`
+.. code-block:: python
 
-Both raise :class:`NotImplementedError` with an "Experimental" prefix to highlight that chat
-history retrieval and attachment delivery are scoped for a future minor release. The signatures are
-published early so downstream projects can plan integrations without taking a hard dependency on
-unfinished behaviour.
+   # This will raise NotImplementedError
+   client.get_chat_history("+15555555555")
+
+**These methods exist to stabilize the API signature.** Do not call them in production code until they are fully implemented in a future release.

@@ -15,6 +15,10 @@ class TemplateError(MacPyMessengerError):
     """Base exception for template-related errors."""
 
 
+class TemplateTypeError(TemplateError):
+    """Raised when template interpolation values are not strings."""
+
+
 class TemplateNotFoundError(TemplateError):
     """Raised when a template cannot be located."""
 

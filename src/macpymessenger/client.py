@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import logging
 import subprocess
-from collections.abc import Sequence as SequenceABC
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import List, Mapping, Optional, Protocol, Sequence, Tuple
+from string.templatelib import Template
+
+from typing import Protocol
 
 from .configuration import Configuration
 from .exceptions import MessageSendError
@@ -24,7 +26,7 @@ class SubprocessCommandRunner:
     """Command runner that delegates to :func:`subprocess.run`."""
 
     def __call__(self, command: Sequence[str]) -> None:
-        if not isinstance(command, SequenceABC) or isinstance(command, (str, bytes)):
+        if not isinstance(command, Sequence) or isinstance(command, (str, bytes)):
             raise TypeError("Command must be a sequence of strings.")
         for segment in command:
             if not isinstance(segment, str):
@@ -60,14 +62,11 @@ class IMessageClient:
 
     def __post_init__(self) -> None:
         has_file_handler = any(
-            isinstance(handler, logging.FileHandler)
-            for handler in self.logger.handlers
+            isinstance(handler, logging.FileHandler) for handler in self.logger.handlers
         )
         if self.enable_file_logging and not has_file_handler:
             file_handler = logging.FileHandler("macpymessenger.log")
-            formatter = logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-            )
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
             file_handler.setFormatter(formatter)
             self.logger.addHandler(file_handler)
         self.logger.setLevel(logging.INFO)
@@ -75,7 +74,7 @@ class IMessageClient:
     def send(self, phone_number: str, message: str, delay_seconds: int = 0) -> None:
         if delay_seconds < 0:
             raise ValueError("Delay must be non-negative.")
-        command: List[str] = [
+        command: list[str] = [
             "osascript",
             str(self.configuration.send_script_path),
             phone_number,
@@ -87,20 +86,16 @@ class IMessageClient:
             self.logger.info("Message sent to %s", phone_number)
         except subprocess.CalledProcessError as error:
             self.logger.error("Failed to send message to %s: %s", phone_number, error)
-            raise MessageSendError(
-                f"Failed to send message to {phone_number}"
-            ) from error
+            raise MessageSendError(f"Failed to send message to {phone_number}") from error
         except OSError as error:
             self.logger.error("Execution error while sending to %s: %s", phone_number, error)
-            raise MessageSendError(
-                f"Failed to execute osascript for {phone_number}"
-            ) from error
+            raise MessageSendError(f"Failed to execute osascript for {phone_number}") from error
 
     def send_template(
         self,
         phone_number: str,
         template_id: str,
-        context: Optional[Mapping[str, object]] = None,
+        context: Mapping[str, str] | None = None,
         delay_seconds: int = 0,
     ) -> None:
         rendered_template: RenderedTemplate = self.template_manager.compose_template(
@@ -109,19 +104,21 @@ class IMessageClient:
         return self.send(phone_number, rendered_template.content, delay_seconds)
 
     def create_template(
-        self, template_id: str, content: str, parent_identifier: Optional[str] = None
+        self,
+        template_id: str,
+        factory: Callable[..., "Template"],
     ) -> None:
-        self.template_manager.create_template(template_id, content, parent_identifier)
+        self.template_manager.create_template(template_id, factory)
 
-    def update_template(self, template_id: str, new_content: str) -> None:
-        self.template_manager.update_template(template_id, new_content)
+    def update_template(self, template_id: str, factory: Callable[..., "Template"]) -> None:
+        self.template_manager.update_template(template_id, factory)
 
     def delete_template(self, template_id: str) -> None:
         self.template_manager.delete_template(template_id)
 
-    def send_bulk(self, phone_numbers: Sequence[str], message: str) -> Tuple[List[str], List[str]]:
-        successful: List[str] = []
-        failed: List[str] = []
+    def send_bulk(self, phone_numbers: Sequence[str], message: str) -> tuple[list[str], list[str]]:
+        successful: list[str] = []
+        failed: list[str] = []
         for number in phone_numbers:
             try:
                 self.send(number, message)
@@ -130,7 +127,7 @@ class IMessageClient:
                 failed.append(number)
         return successful, failed
 
-    def get_chat_history(self, phone_number: str, limit: int = 10) -> List[Mapping[str, object]]:
+    def get_chat_history(self, phone_number: str, limit: int = 10) -> list[Mapping[str, object]]:
         """Experimental: Chat history retrieval is not yet implemented.
 
         Parameters
@@ -161,13 +158,9 @@ class IMessageClient:
         Until then, callers must not rely on this method.
         """
 
-        raise NotImplementedError(
-            "Experimental: Chat history retrieval is not yet implemented."
-        )
+        raise NotImplementedError("Experimental: Chat history retrieval is not yet implemented.")
 
-    def send_with_attachment(
-        self, phone_number: str, message: str, attachment_path: str
-    ) -> bool:
+    def send_with_attachment(self, phone_number: str, message: str, attachment_path: str) -> bool:
         """Experimental: Sending messages with attachments is not yet implemented.
 
         Parameters

@@ -142,6 +142,8 @@ macpymessenger is available under the [Apache 2.0 license](LICENSE).
 
 Created and maintained by [Ethan Wickstrom](https://github.com/ethan-wickstrom).
 
+macpymessenger was originally forked from [Rolstenhouse/py-iMessage](https://github.com/Rolstenhouse/py-iMessage). I would like to express our gratitude to the developers of the libraries and tools used in this project, as well as the open-source community for their contributions.
+
 This project uses AppleScript to interact with macOS's Messages application and Python 3.14's t-string feature for template rendering.
 
 For more detailed documentation, see the [docs](docs/) directory.

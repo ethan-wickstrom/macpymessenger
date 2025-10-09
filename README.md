@@ -1,29 +1,24 @@
 # macpymessenger
 
-**macpymessenger** is a Python library for sending iMessages on macOS through AppleScript.
+A Python library for sending iMessages on macOS through AppleScript with template support and explicit error handling.
 
-The library provides a type-safe, testable interface for message automation with clear error handling and no hidden state.
+## Features
 
-## What macpymessenger provides
-
-**Validated configuration.** The `Configuration` class checks that the packaged AppleScript exists and is readable before any messages are sent.
-
-**Template management.** The `TemplateManager` stores callables that return Python 3.14 t-strings. Template rendering enforces that every interpolated value is a `str`, delivering strict type safety.
-
-**Isolated subprocess execution.** The `IMessageClient` uses dependency injection to separate subprocess calls from business logic, making tests straightforward.
-
-**Explicit error handling.** All errors raise typed exceptions. No boolean return values or hidden failures.
-
-**Experimental APIs for future features.** Methods for chat history retrieval and attachment sending are defined but raise `NotImplementedError` until they are fully implemented.
+- Send iMessages to phone numbers or email addresses from Python scripts
+- Create and manage message templates with Python 3.14 t-strings
+- Send bulk messages to multiple recipients
+- Type-safe interface with comprehensive error handling
+- Configurable logging options
+- macOS-only solution that works with the built-in Messages app
 
 ## Installation
 
-**macpymessenger requires Python 3.10 or newer and runs only on macOS.**
+macpymessenger requires Python 3.14 or newer and runs only on macOS.
 
-Install from PyPI with `uv` (recommended) or `pip`:
+Install from PyPI with `uv` (recommended):
 
 ```bash
-uv pip install macpymessenger
+uv add macpymessenger
 ```
 
 Or with `pip`:
@@ -32,9 +27,9 @@ Or with `pip`:
 pip install macpymessenger
 ```
 
-## Quick start
+## Usage Examples
 
-Send a message in three lines:
+### Send a simple message
 
 ```python
 from macpymessenger import Configuration, IMessageClient
@@ -44,57 +39,81 @@ client = IMessageClient(configuration)
 client.send("+15555555555", "Hello from macpymessenger!")
 ```
 
-**Use templates for reusable messages:**
+### Using templates
 
 ```python
 from string.templatelib import Template
 
+# Create a template
 client.create_template(
     "welcome",
     lambda name: t"Hello, {name}! Welcome aboard."
 )
+
+# Send a message using the template
 client.send_template("+15555555555", "welcome", {"name": "Ada"})
 ```
 
-Templates are defined as callables that return t-strings. The manager validates that all interpolated values are strings before rendering.
+### Send bulk messages
 
-## Experimental features
+```python
+numbers = ["+15551234567", "+15557654321", "+15558765432"]
+successful, failed = client.send_bulk(numbers, "Reminder: Meeting at 10 AM.")
 
-**Two methods are defined but not yet implemented:**
+print(f"Successfully sent to: {successful}")
+print(f"Failed to send to: {failed}")
+```
 
-- `IMessageClient.get_chat_history` — for retrieving message history
-- `IMessageClient.send_with_attachment` — for sending files with messages
+## Configuration Options
 
-Both methods raise `NotImplementedError` with an "Experimental" prefix when called.
+### Custom AppleScript path
 
-These methods exist to stabilize the API signature before the features ship in a future release. Do not call them in production code.
-
-## Configuration
-
-**By default, macpymessenger uses the bundled AppleScript.**
-
-You can provide a custom script path if needed:
+By default, macpymessenger uses the bundled AppleScript. You can provide a custom script path:
 
 ```python
 from pathlib import Path
 from macpymessenger import Configuration
 
 configuration = Configuration(send_script_path=Path("/path/to/custom/sendMessage.scpt"))
+client = IMessageClient(configuration)
 ```
 
-**Configuration validates the script at initialization.** If the AppleScript file is missing or unreadable, `Configuration` raises `ScriptNotFoundError` immediately.
-
-**Enable file logging if needed:**
+### Enable file logging
 
 ```python
 client = IMessageClient(configuration, enable_file_logging=True)
 ```
 
-This creates a `macpymessenger.log` file in the current directory. See the [configuration guide](docs/configuration.rst) for details.
+This creates a `macpymessenger.log` file in the current directory.
 
-## Development
+### Custom logger
 
-**macpymessenger uses `uv` for dependency management.**
+```python
+import logging
+from macpymessenger import Configuration, IMessageClient
+
+logger = logging.getLogger("my_app")
+logger.setLevel(logging.DEBUG)
+# Add custom handlers here
+
+configuration = Configuration()
+client = IMessageClient(configuration, logger=logger)
+```
+
+## Contribution Guidelines
+
+We welcome contributions! Please follow these guidelines:
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature-name`
+3. Make your changes and ensure they follow the project's code style
+4. Run tests and linting: `uv run pytest`, `uv run ruff check`, `uv run mypy`
+5. Commit your changes with clear, descriptive messages
+6. Push to your fork and submit a pull request
+
+Please ensure your code follows the existing style and conventions. See the AGENTS.md file for detailed contribution guidelines.
+
+## Testing Instructions
 
 Install dependencies:
 
@@ -102,16 +121,27 @@ Install dependencies:
 uv sync
 ```
 
-Run linters and tests:
+Run the test suite:
+
+```bash
+uv run pytest
+```
+
+Run linting and type checking:
 
 ```bash
 uv run ruff check    # lint
 uv run mypy          # type checking
-uv run pytest        # tests
 ```
-
-All commands run in an isolated environment defined by `pyproject.toml`.
 
 ## License
 
 macpymessenger is available under the [Apache 2.0 license](LICENSE).
+
+## Acknowledgements/Credits
+
+Created and maintained by [Ethan Wickstrom](https://github.com/ethan-wickstrom).
+
+This project uses AppleScript to interact with macOS's Messages application and Python 3.14's t-string feature for template rendering.
+
+For more detailed documentation, see the [docs](docs/) directory.

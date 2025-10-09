@@ -21,14 +21,14 @@ Use Astral's uv for a fast, reproducible workflow.
 
 - Create/refresh environment: `uv sync`
 - Lint: `uv run ruff check`
-- Type check: `uv run mypy`
+- Type check: `uv run ty check`
 - Run tests: `uv run pytest`
 - Build sdist/wheel: `uvx --from build pyproject-build`
 - Build docs (HTML): `uv run sphinx-build docs docs/_build/html`
 
 ## Coding Style & Naming Conventions
 
-- Python ≥ 3.14 with full type hints (see `tool.mypy` in `pyproject.toml`).
+- Python >= 3.14 with full type hints.
 - Linting via Ruff (line length 100). Keep code formatted accordingly.
 - Naming: modules and functions `snake_case`, classes `CamelCase`, constants `UPPER_SNAKE_CASE`.
 - Prefer dataclasses with `slots=True` where appropriate and explicit immutability where used.

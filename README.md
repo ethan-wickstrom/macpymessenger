@@ -107,7 +107,7 @@ We welcome contributions! Please follow these guidelines:
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature-name`
 3. Make your changes and ensure they follow the project's code style
-4. Run tests and linting: `uv run pytest`, `uv run ruff check`, `uv run mypy`
+4. Run tests and linting: `uv run pytest`, `uv run ruff check`, `uv run ty check`
 5. Commit your changes with clear, descriptive messages
 6. Push to your fork and submit a pull request
 
@@ -131,7 +131,7 @@ Run linting and type checking:
 
 ```bash
 uv run ruff check    # lint
-uv run mypy          # type checking
+uv run ty check      # type checking
 ```
 
 ## License

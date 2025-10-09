@@ -3,7 +3,7 @@ Testing
 
 **macpymessenger includes a comprehensive test suite with static analysis.**
 
-The project uses `pytest` for tests, `ruff` for linting, and `mypy` for type checking.
+The project uses `pytest` for tests, `ruff` for linting, and `ty` for type checking.
 
 Run tests with pytest
 ---------------------
@@ -31,11 +31,11 @@ Run linting and type checking
 
    uv run ruff check
 
-**Check types with mypy:**
+**Check types with ty:**
 
 .. code-block:: bash
 
-   uv run mypy
+   uv run ty check
 
 **Both tools enforce code quality standards.** Fix any issues before committing.
 
@@ -45,12 +45,12 @@ Understand test results
 **Passing tests:**
 
 - `pytest` prints a summary with green dots and "passed" counts
-- `ruff` and `mypy` exit with status code 0 and no output
+- `ruff` and `ty` exit with status code 0 and no output
 
 **Failing tests:**
 
 - `pytest` shows tracebacks with assertion details for quick debugging
-- `ruff` and `mypy` print error messages with file paths and line numbers
+- `ruff` and `ty` print error messages with file paths and line numbers
 
 **Fix failures before committing code.**
 

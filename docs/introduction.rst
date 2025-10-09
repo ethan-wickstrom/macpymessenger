@@ -16,7 +16,7 @@ Why use macpymessenger
 
 **Validated configuration.** The `Configuration` class checks that the AppleScript file exists and is readable at initialization, not at send time.
 
-**Comprehensive type hints.** Every function includes type annotations. The codebase passes `mypy` strict mode.
+**Comprehensive type hints.** Every function includes type annotations. The codebase passes `ty` strict mode.
 
 What you can build
 ------------------

@@ -16,7 +16,7 @@ What macpymessenger does
 
 **Isolates subprocess calls.** Dependency injection separates subprocess execution from business logic, making tests straightforward.
 
-**Uses comprehensive static analysis.** The codebase includes type hints for all functions and is validated with `mypy` and `ruff`.
+**Uses comprehensive static analysis.** The codebase includes type hints for all functions and is validated with `ty` and `ruff`.
 
 Send your first message
 -----------------------

@@ -2,12 +2,14 @@ import inspect
 import logging
 import subprocess
 from pathlib import Path
-from typing import List, Sequence
+from typing import Callable, List, Sequence, cast
 
 import pytest
+from string.templatelib import Template
 
 from macpymessenger import Configuration, IMessageClient, TemplateManager
 from macpymessenger.exceptions import (
+    ConfigurationError,
     MessageSendError,
     TemplateNotFoundError,
     TemplateTypeError,
@@ -86,6 +88,14 @@ def test_send_message_rejects_negative_delay(client: tuple[IMessageClient, StubR
         instance.send("1234567890", "Hello", delay_seconds=-1)
 
 
+def test_send_message_requires_integer_delay(client: tuple[IMessageClient, StubRunner]) -> None:
+    instance, _ = client
+    with pytest.raises(TypeError, match="Delay must be provided as an integer"):
+        instance.send("1234567890", "Hello", delay_seconds=1.5)
+    with pytest.raises(TypeError, match="Delay must be provided as an integer"):
+        instance.send("1234567890", "Hello", delay_seconds=True)
+
+
 def test_send_template_renders_content(
     client: tuple[IMessageClient, StubRunner], template_manager: TemplateManager
 ) -> None:
@@ -111,6 +121,13 @@ def test_template_non_string_value_raises(template_manager: TemplateManager) -> 
     with pytest.raises(TemplateTypeError):
         context: dict[str, object] = {"name": 123}
         template_manager.render_template("greeting", context=context)
+
+
+def test_template_factory_must_return_t_string(template_manager: TemplateManager) -> None:
+    bad_factory = cast(Callable[..., Template], lambda name: f"Hello, {name}!")
+    template_manager.create_template("greeting", bad_factory)
+    with pytest.raises(TemplateTypeError, match="must return a string.templatelib.Template"):
+        template_manager.render_template("greeting", context={"name": "Ada"})
 
 
 def test_update_and_delete_template(
@@ -272,6 +289,58 @@ def test_client_file_logging_opt_in_uses_existing_log_file(
         assert has_file_handler
     finally:
         _remove_file_handlers(client_instance.logger)
+
+
+def test_client_file_logging_uses_custom_path(
+    configuration: Configuration,
+    template_manager: TemplateManager,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    custom_path = tmp_path / "logs" / "custom.log"
+    custom_path.parent.mkdir()
+    logger = logging.getLogger("macpymessenger.client")
+    _remove_file_handlers(logger)
+    client_instance = IMessageClient(
+        configuration=configuration,
+        template_manager=template_manager,
+        command_runner=StubRunner(),
+        enable_file_logging=True,
+        log_file_path=custom_path,
+    )
+    try:
+        assert custom_path.exists() is True
+        file_handlers = [
+            handler
+            for handler in client_instance.logger.handlers
+            if isinstance(handler, logging.FileHandler)
+        ]
+        assert file_handlers
+        assert Path(file_handlers[0].baseFilename) == custom_path
+    finally:
+        _remove_file_handlers(client_instance.logger)
+
+
+def test_client_file_logging_raises_configuration_error_on_oserror(
+    configuration: Configuration,
+    template_manager: TemplateManager,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    log_directory = tmp_path / "logs"
+    log_directory.mkdir()
+    logger = logging.getLogger("macpymessenger.client")
+    _remove_file_handlers(logger)
+    with pytest.raises(ConfigurationError, match="Unable to configure file logging"):
+        IMessageClient(
+            configuration=configuration,
+            template_manager=template_manager,
+            command_runner=StubRunner(),
+            enable_file_logging=True,
+            log_file_path=log_directory,
+        )
 
 
 def test_get_chat_history_is_experimental(client: tuple[IMessageClient, StubRunner]) -> None:

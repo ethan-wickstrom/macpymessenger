@@ -76,6 +76,10 @@ class TemplateManager:
             ) from error
         kwargs = dict(context) if context is not None else {}
         template = factory(**kwargs)
+        if not isinstance(template, Template):
+            raise TemplateTypeError(
+                "Template factories must return a string.templatelib.Template instance."
+            )
         return _process_template(template)
 
     def compose_template(

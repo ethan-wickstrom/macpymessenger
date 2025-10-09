@@ -5,13 +5,13 @@ from __future__ import annotations
 import logging
 import subprocess
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from pathlib import Path
 from string.templatelib import Template
 
-from typing import Protocol
+from typing import Protocol, overload
 
 from .configuration import Configuration
-from .exceptions import MessageSendError
+from .exceptions import ConfigurationError, MessageSendError
 from .templates import RenderedTemplate, TemplateManager
 
 
@@ -34,7 +34,6 @@ class SubprocessCommandRunner:
         subprocess.run(tuple(command), check=True, text=True, shell=False)
 
 
-@dataclass(slots=True)
 class IMessageClient:
     """A client for sending messages via iMessage on macOS.
 
@@ -47,39 +46,98 @@ class IMessageClient:
     command_runner:
         Callable responsible for executing the generated AppleScript command.
     logger:
-        Logger instance used for emitting operational events.
+        Logger instance used for emitting operational events. When omitted a module-scoped
+        logger is created and defaulted to ``INFO`` only if no handlers are configured.
     enable_file_logging:
-        When ``True`` a ``macpymessenger.log`` :class:`logging.FileHandler` is attached during
-        initialization if one is not already configured. The default ``False`` value respects the
-        handlers supplied on ``logger`` and prevents creating files implicitly.
+        When ``True`` a :class:`logging.FileHandler` is attached during initialization if one is not
+        already configured. The default ``False`` value respects the handlers supplied on
+        ``logger`` and prevents creating files implicitly.
+    log_file_path:
+        Optional location for file logging output when ``enable_file_logging`` is ``True``. When
+        omitted the handler writes to ``macpymessenger.log`` in the current working directory.
     """
 
-    configuration: Configuration
-    template_manager: TemplateManager = field(default_factory=TemplateManager)
-    command_runner: CommandRunner = field(default_factory=SubprocessCommandRunner)
-    logger: logging.Logger = field(default_factory=lambda: logging.getLogger(__name__))
-    enable_file_logging: bool = False
+    __slots__ = (
+        "configuration",
+        "template_manager",
+        "command_runner",
+        "enable_file_logging",
+        "log_file_path",
+        "_logger",
+    )
 
-    def __post_init__(self) -> None:
+    def __init__(
+        self,
+        configuration: Configuration,
+        template_manager: TemplateManager | None = None,
+        command_runner: CommandRunner | None = None,
+        logger: logging.Logger | None = None,
+        enable_file_logging: bool = False,
+        log_file_path: str | Path | None = None,
+    ) -> None:
+        self.configuration = configuration
+        self.template_manager = template_manager if template_manager is not None else TemplateManager()
+        self.command_runner = command_runner if command_runner is not None else SubprocessCommandRunner()
+        self.enable_file_logging = enable_file_logging
+        self.log_file_path = log_file_path
+
+        created_default_logger = logger is None
+        logger_instance = logging.getLogger(__name__) if created_default_logger else logger
+        assert logger_instance is not None  # for type checkers
+
+        if (
+            created_default_logger
+            and not logger_instance.handlers
+            and logger_instance.level == logging.NOTSET
+        ):
+            logger_instance.setLevel(logging.INFO)
+
         has_file_handler = any(
-            isinstance(handler, logging.FileHandler) for handler in self.logger.handlers
+            isinstance(handler, logging.FileHandler) for handler in logger_instance.handlers
         )
         if self.enable_file_logging and not has_file_handler:
-            file_handler = logging.FileHandler("macpymessenger.log")
+            log_file_path_obj = (
+                Path(self.log_file_path)
+                if self.log_file_path is not None
+                else Path.cwd() / "macpymessenger.log"
+            )
+            try:
+                file_handler = logging.FileHandler(log_file_path_obj)
+            except OSError as error:
+                error_message = error.strerror or str(error)
+                raise ConfigurationError(
+                    f"Unable to configure file logging using '{log_file_path_obj}': {error_message}"
+                ) from error
             formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
             file_handler.setFormatter(formatter)
-            self.logger.addHandler(file_handler)
-        self.logger.setLevel(logging.INFO)
+            logger_instance.addHandler(file_handler)
 
+        self._logger = logger_instance
+
+    @property
+    def logger(self) -> logging.Logger:
+        return self._logger
+
+    @overload
     def send(self, phone_number: str, message: str, delay_seconds: int = 0) -> None:
+        ...
+
+    @overload
+    def send(self, phone_number: str, message: str, delay_seconds: object = 0) -> None:
+        ...
+
+    def send(self, phone_number: str, message: str, delay_seconds: object = 0) -> None:
+        if isinstance(delay_seconds, bool) or not isinstance(delay_seconds, int):
+            raise TypeError("Delay must be provided as an integer number of seconds.")
         if delay_seconds < 0:
             raise ValueError("Delay must be non-negative.")
+        delay_value: int = delay_seconds
         command: list[str] = [
             "osascript",
             str(self.configuration.send_script_path),
             phone_number,
             message,
-            str(delay_seconds),
+            str(delay_value),
         ]
         try:
             self.command_runner(command)

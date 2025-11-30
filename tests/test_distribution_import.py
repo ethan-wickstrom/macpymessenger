@@ -25,10 +25,11 @@ def test_installed_wheel_exports_configuration(tmp_path: Path) -> None:
     wheel_path = _build_wheel(tmp_path)
     install_dir = tmp_path / "site-packages"
     install_dir.mkdir()
-    with ZipFile(wheel_path) as archive:
-        archive.extractall(install_dir)
+    subprocess.run(
+        [sys.executable, "-m", "pip", "install", "--target", str(install_dir), str(wheel_path)],
+        check=True,
+    )
     command = "\n".join(
-        [
             "import sys",
             f"sys.path.insert(0, '{install_dir.as_posix()}')",
             "from macpymessenger import Configuration",

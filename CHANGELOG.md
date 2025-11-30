@@ -17,6 +17,12 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 **Experimental methods are now documented.** `IMessageClient.get_chat_history` and `IMessageClient.send_with_attachment` are marked as experimental stubs. Both raise `NotImplementedError` until fully implemented.
 
+### Fixed
+
+**PyPI sdist now ships code.** Source distributions now include the Python modules so wheels built from PyPI artifacts expose the `Configuration` API documented in `README.md`.
+
+**Wheel build retains public API.** Corrected Hatch package discovery so installing macpymessenger via pip exposes `Configuration` at the package root, with regression coverage that builds and imports from the wheel artifact.
+
 ## [0.2.0] - 2025-10-07
 
 ### Added

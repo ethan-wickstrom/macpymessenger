@@ -27,15 +27,22 @@ Repository = "https://github.com/ethan-wickstrom/macpymessenger"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/macpymessenger"]
+sources = ["src"]
 force-include = { "src/macpymessenger/osascript/sendMessage.scpt" = "macpymessenger/osascript/sendMessage.scpt" }
 
 [tool.hatch.build.targets.sdist]
 include = [
-  "src/macpymessenger/osascript/sendMessage.scpt",
+  "src/macpymessenger",
+  "CHANGELOG.md",
+  "LICENSE",
+  "README.md",
+  "templates",
+  "docs",
 ]
 
 [dependency-groups]
 dev = [
+  "build>=1.2.2",
   "pytest>=8.3.2",
   "ruff>=0.6.9",
 ]

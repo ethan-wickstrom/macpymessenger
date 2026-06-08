@@ -1,48 +1,134 @@
 [build-system]
-requires = ["hatchling>=1.25.0"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.11.19,<0.12"]
+build-backend = "uv_build"
 
 [project]
 name = "macpymessenger"
 version = "0.2.0"
-description = "A type-safe Python library for sending macOS iMessages via AppleScript with template support and explicit error handling."
+description = "macpymessenger is a Python 3.14+ library for sending macOS iMessages through AppleScript."
 readme = "README.md"
 requires-python = ">=3.14"
-license = { file = "LICENSE" }
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 authors = [{ name = "Ethan Wickstrom" }]
+keywords = ["applescript", "imessage", "macos", "messages", "t-strings"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: Apache Software License",
   "Operating System :: MacOS :: MacOS X",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.14",
+  "Typing :: Typed",
 ]
 dependencies = []
 
 [project.urls]
+Changelog = "https://github.com/ethan-wickstrom/macpymessenger/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/ethan-wickstrom/macpymessenger/tree/main/docs"
 Homepage = "https://github.com/ethan-wickstrom/macpymessenger"
+Issues = "https://github.com/ethan-wickstrom/macpymessenger/issues"
 Repository = "https://github.com/ethan-wickstrom/macpymessenger"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/macpymessenger"]
-force-include = { "src/macpymessenger/osascript/sendMessage.scpt" = "macpymessenger/osascript/sendMessage.scpt" }
-
-[tool.hatch.build.targets.sdist]
-include = [
-  "src/macpymessenger/osascript/sendMessage.scpt",
-]
 
 [dependency-groups]
 dev = [
-  "pytest>=8.3.2",
-  "ruff>=0.6.9",
+  "pytest>=9.0.3",
+  "ruff>=0.15.16",
+  "sphinx>=9.1.0",
+  "ty>=0.0.44",
 ]
 
+[tool.uv.build-backend]
+module-name = "macpymessenger"
+module-root = "src"
+
 [tool.pytest.ini_options]
+addopts = [
+  "--strict-config",
+  "--strict-markers",
+]
+minversion = "9.0"
 testpaths = ["tests"]
+xfail_strict = true
 
 [tool.ruff]
 line-length = 100
-src = ["src", "tests"]
+required-version = ">=0.15.16"
+src = ["src"]
+target-version = "py314"
+
+[tool.ruff.lint]
+select = [
+  "A",    # flake8-builtins
+  "ANN",  # flake8-annotations
+  "ARG",  # flake8-unused-arguments
+  "B",    # flake8-bugbear
+  "BLE",  # flake8-blind-except
+  "C4",   # flake8-comprehensions
+  "COM",  # flake8-commas
+  "DTZ",  # flake8-datetimez
+  "E",    # pycodestyle errors
+  "EM",   # flake8-errmsg
+  "ERA",  # eradicate
+  "F",    # Pyflakes
+  "FBT",  # flake8-boolean-trap
+  "FLY",  # flynt
+  "FURB", # refurb
+  "G",    # flake8-logging-format
+  "I",    # isort
+  "ISC",  # flake8-implicit-str-concat
+  "LOG",  # flake8-logging
+  "N",    # pep8-naming
+  "PERF", # Perflint
+  "PGH",  # pygrep-hooks
+  "PIE",  # flake8-pie
+  "PL",   # Pylint
+  "PT",   # flake8-pytest-style
+  "PTH",  # flake8-use-pathlib
+  "RET",  # flake8-return
+  "RSE",  # flake8-raise
+  "RUF",  # Ruff-specific rules
+  "S",    # flake8-bandit
+  "SIM",  # flake8-simplify
+  "SLOT", # flake8-slots
+  "T10",  # flake8-debugger
+  "T20",  # flake8-print
+  "TC",   # flake8-type-checking
+  "TRY",  # tryceratops
+  "UP",   # pyupgrade
+  "W",    # pycodestyle warnings
+]
+ignore = [
+  "COM812", # conflicts with Ruff formatter
+  "ISC001", # conflicts with Ruff formatter
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["macpymessenger"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+  "ANN401", # tests sometimes monkeypatch dynamically typed callables
+  "S101",   # pytest assertions are required
+]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ty.environment]
+python-version = "3.14"
+python-platform = "darwin"
+root = ["./src", "."]
+
+[tool.ty.src]
+include = ["src", "tests"]
+
+[tool.ty.rules]
+division-by-zero = "error"
+possibly-missing-attribute = "error"
+possibly-missing-import = "error"
+possibly-unresolved-reference = "error"
+redundant-cast = "error"
+unused-ignore-comment = "error"
+unused-type-ignore-comment = "error"

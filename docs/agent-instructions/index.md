@@ -13,5 +13,4 @@ Use this file to choose the smallest useful instruction set for the current task
 
 ## Maintenance references
 
-- [Cleanup candidates](cleanup-candidates.md) when deciding whether an agent instruction belongs in active guidance.
 - [Suggested docs structure](suggested-docs-structure.md) when reorganizing the public documentation tree.

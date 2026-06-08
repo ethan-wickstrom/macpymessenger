@@ -33,7 +33,6 @@ docs/
     |-- documentation.md
     |-- git-release.md
     |-- security.md
-    |-- cleanup-candidates.md
     `-- suggested-docs-structure.md
 ```
 

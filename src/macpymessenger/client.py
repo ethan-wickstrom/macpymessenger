@@ -5,14 +5,34 @@ from __future__ import annotations
 import logging
 import subprocess
 from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
+from importlib import import_module
 from pathlib import Path
-from string.templatelib import Template
+from typing import TYPE_CHECKING, Protocol, overload
 
-from typing import Protocol, overload
+from .exceptions import (
+    ConfigurationError,
+    InvalidCommandError,
+    InvalidDelayTypeError,
+    MessageSendError,
+    NegativeDelayError,
+)
+from .templates import TemplateManager
 
-from .configuration import Configuration
-from .exceptions import ConfigurationError, MessageSendError
-from .templates import RenderedTemplate, TemplateManager
+if TYPE_CHECKING:
+    from string.templatelib import Template
+
+    from .configuration import Configuration
+else:
+    Template = import_module("string.templatelib").Template
+    Configuration = import_module("macpymessenger.configuration").Configuration
+
+
+@dataclass(frozen=True, slots=True)
+class FileLoggingConfiguration:
+    """File logging destination for client operational events."""
+
+    path: str | Path | None = None
 
 
 class CommandRunner(Protocol):
@@ -27,11 +47,11 @@ class SubprocessCommandRunner:
 
     def __call__(self, command: Sequence[str]) -> None:
         if not isinstance(command, Sequence) or isinstance(command, (str, bytes)):
-            raise TypeError("Command must be a sequence of strings.")
+            raise InvalidCommandError.non_sequence()
         for segment in command:
             if not isinstance(segment, str):
-                raise TypeError("Command segments must be strings.")
-        subprocess.run(tuple(command), check=True, text=True, shell=False)
+                raise InvalidCommandError.non_string_segment()
+        subprocess.run(tuple(command), check=True, text=True, shell=False)  # noqa: S603
 
 
 class IMessageClient:
@@ -48,22 +68,18 @@ class IMessageClient:
     logger:
         Logger instance used for emitting operational events. When omitted a module-scoped
         logger is created and defaulted to ``INFO`` only if no handlers are configured.
-    enable_file_logging:
-        When ``True`` a :class:`logging.FileHandler` is attached during initialization if one is not
-        already configured. The default ``False`` value respects the handlers supplied on
-        ``logger`` and prevents creating files implicitly.
-    log_file_path:
-        Optional location for file logging output when ``enable_file_logging`` is ``True``. When
-        omitted the handler writes to ``macpymessenger.log`` in the current working directory.
+    file_logging:
+        Optional file logging destination. When provided, a :class:`logging.FileHandler` is
+        attached if one is not already configured. When the path is omitted, the handler writes
+        to ``macpymessenger.log`` in the current working directory.
     """
 
     __slots__ = (
-        "configuration",
-        "template_manager",
-        "command_runner",
-        "enable_file_logging",
-        "log_file_path",
         "_logger",
+        "command_runner",
+        "configuration",
+        "file_logging",
+        "template_manager",
     )
 
     def __init__(
@@ -72,18 +88,23 @@ class IMessageClient:
         template_manager: TemplateManager | None = None,
         command_runner: CommandRunner | None = None,
         logger: logging.Logger | None = None,
-        enable_file_logging: bool = False,
-        log_file_path: str | Path | None = None,
+        file_logging: FileLoggingConfiguration | None = None,
     ) -> None:
         self.configuration = configuration
-        self.template_manager = template_manager if template_manager is not None else TemplateManager()
-        self.command_runner = command_runner if command_runner is not None else SubprocessCommandRunner()
-        self.enable_file_logging = enable_file_logging
-        self.log_file_path = log_file_path
+        self.template_manager = (
+            template_manager if template_manager is not None else TemplateManager()
+        )
+        self.command_runner = (
+            command_runner if command_runner is not None else SubprocessCommandRunner()
+        )
+        self.file_logging = file_logging
 
-        created_default_logger = logger is None
-        logger_instance = logging.getLogger(__name__) if created_default_logger else logger
-        assert logger_instance is not None  # for type checkers
+        if logger is None:
+            created_default_logger = True
+            logger_instance = logging.getLogger(__name__)
+        else:
+            created_default_logger = False
+            logger_instance = logger
 
         if (
             created_default_logger
@@ -95,18 +116,18 @@ class IMessageClient:
         has_file_handler = any(
             isinstance(handler, logging.FileHandler) for handler in logger_instance.handlers
         )
-        if self.enable_file_logging and not has_file_handler:
+        if self.file_logging is not None and not has_file_handler:
             log_file_path_obj = (
-                Path(self.log_file_path)
-                if self.log_file_path is not None
+                Path(self.file_logging.path)
+                if self.file_logging.path is not None
                 else Path.cwd() / "macpymessenger.log"
             )
             try:
-                file_handler = logging.FileHandler(log_file_path_obj)
+                file_handler = logging.FileHandler(log_file_path_obj, encoding="utf-8")
             except OSError as error:
                 error_message = error.strerror or str(error)
-                raise ConfigurationError(
-                    f"Unable to configure file logging using '{log_file_path_obj}': {error_message}"
+                raise ConfigurationError.file_logging_unavailable(
+                    log_file_path_obj, error_message
                 ) from error
             formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
             file_handler.setFormatter(formatter)
@@ -119,18 +140,16 @@ class IMessageClient:
         return self._logger
 
     @overload
-    def send(self, phone_number: str, message: str, delay_seconds: int = 0) -> None:
-        ...
+    def send(self, phone_number: str, message: str, delay_seconds: int = 0) -> None: ...
 
     @overload
-    def send(self, phone_number: str, message: str, delay_seconds: object = 0) -> None:
-        ...
+    def send(self, phone_number: str, message: str, delay_seconds: object = 0) -> None: ...
 
     def send(self, phone_number: str, message: str, delay_seconds: object = 0) -> None:
         if isinstance(delay_seconds, bool) or not isinstance(delay_seconds, int):
-            raise TypeError("Delay must be provided as an integer number of seconds.")
+            raise InvalidDelayTypeError
         if delay_seconds < 0:
-            raise ValueError("Delay must be non-negative.")
+            raise NegativeDelayError
         delay_value: int = delay_seconds
         command: list[str] = [
             "osascript",
@@ -143,11 +162,11 @@ class IMessageClient:
             self.command_runner(command)
             self.logger.info("Message sent to %s", phone_number)
         except subprocess.CalledProcessError as error:
-            self.logger.error("Failed to send message to %s: %s", phone_number, error)
-            raise MessageSendError(f"Failed to send message to {phone_number}") from error
+            self.logger.exception("Failed to send message to %s", phone_number)
+            raise MessageSendError.delivery_failed(phone_number) from error
         except OSError as error:
-            self.logger.error("Execution error while sending to %s: %s", phone_number, error)
-            raise MessageSendError(f"Failed to execute osascript for {phone_number}") from error
+            self.logger.exception("Execution error while sending to %s", phone_number)
+            raise MessageSendError.command_failed(phone_number) from error
 
     def send_template(
         self,
@@ -156,19 +175,17 @@ class IMessageClient:
         context: Mapping[str, object] | None = None,
         delay_seconds: int = 0,
     ) -> None:
-        rendered_template: RenderedTemplate = self.template_manager.compose_template(
-            template_id, context
-        )
+        rendered_template = self.template_manager.compose_template(template_id, context)
         return self.send(phone_number, rendered_template.content, delay_seconds)
 
     def create_template(
         self,
         template_id: str,
-        factory: Callable[..., "Template"],
+        factory: Callable[..., Template],
     ) -> None:
         self.template_manager.create_template(template_id, factory)
 
-    def update_template(self, template_id: str, factory: Callable[..., "Template"]) -> None:
+    def update_template(self, template_id: str, factory: Callable[..., Template]) -> None:
         self.template_manager.update_template(template_id, factory)
 
     def delete_template(self, template_id: str) -> None:
@@ -216,7 +233,8 @@ class IMessageClient:
         Until then, callers must not rely on this method.
         """
 
-        raise NotImplementedError("Experimental: Chat history retrieval is not yet implemented.")
+        message = "Experimental: Chat history retrieval is not yet implemented."
+        raise NotImplementedError(message)
 
     def send_with_attachment(self, phone_number: str, message: str, attachment_path: str) -> bool:
         """Experimental: Sending messages with attachments is not yet implemented.
@@ -249,6 +267,5 @@ class IMessageClient:
         but must not be invoked in production workflows yet.
         """
 
-        raise NotImplementedError(
-            "Experimental: Sending messages with attachments is not yet implemented."
-        )
+        message = "Experimental: Sending messages with attachments is not yet implemented."
+        raise NotImplementedError(message)

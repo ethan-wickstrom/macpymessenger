@@ -1,9 +1,9 @@
 Configuration
 =============
 
-**The `Configuration` class validates the AppleScript path and provides logging options.**
+**The `Configuration` class validates the AppleScript path.**
 
-By default, the configuration uses the bundled AppleScript. You can customize the script path and logging behavior.
+By default, the configuration uses the bundled AppleScript. You can customize the script path when tests or deployments need a different AppleScript entry point.
 
 Use a custom AppleScript path
 ------------------------------
@@ -42,10 +42,10 @@ Enable file logging to persist events to disk:
 
 .. code-block:: python
 
-   from macpymessenger import Configuration, IMessageClient
+   from macpymessenger import Configuration, FileLoggingConfiguration, IMessageClient
 
    config = Configuration()
-   client = IMessageClient(config, enable_file_logging=True)
+   client = IMessageClient(config, file_logging=FileLoggingConfiguration())
 
 **This creates a `macpymessenger.log` file in the current directory.**
 

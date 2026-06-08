@@ -72,7 +72,7 @@ By default, macpymessenger uses the bundled AppleScript. You can provide a custo
 
 ```python
 from pathlib import Path
-from macpymessenger import Configuration
+from macpymessenger import Configuration, IMessageClient
 
 configuration = Configuration(send_script_path=Path("/path/to/custom/sendMessage.scpt"))
 client = IMessageClient(configuration)
@@ -81,7 +81,9 @@ client = IMessageClient(configuration)
 ### Enable file logging
 
 ```python
-client = IMessageClient(configuration, enable_file_logging=True)
+from macpymessenger import FileLoggingConfiguration
+
+client = IMessageClient(configuration, file_logging=FileLoggingConfiguration())
 ```
 
 This creates a `macpymessenger.log` file in the current directory.
@@ -111,7 +113,8 @@ We welcome contributions! Please follow these guidelines:
 5. Commit your changes with clear, descriptive messages
 6. Push to your fork and submit a pull request
 
-Please ensure your code follows the existing style and conventions. See the AGENTS.md file for detailed contribution guidelines.
+Please ensure your code follows the existing style and conventions. The [AGENTS.md](AGENTS.md)
+file links coding agents to task-specific project guidance.
 
 ## Testing Instructions
 

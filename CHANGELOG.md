@@ -11,7 +11,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
-**File logging is now opt-in.** `IMessageClient` no longer creates `macpymessenger.log` automatically. Pass `enable_file_logging=True` to the constructor or provide a pre-configured logger to persist events.
+**File logging is now opt-in.** `IMessageClient` no longer creates `macpymessenger.log` automatically. Pass `file_logging=FileLoggingConfiguration()` to the constructor or provide a pre-configured logger to persist events.
+
+**Packaging now uses uv's build backend.** The project builds with `uv_build` and uses uv-managed development tooling baselines.
 
 **Template system migrated to t-strings.** The library now requires Python 3.14 and uses callable templates that return t-strings with strict string interpolation checks.
 

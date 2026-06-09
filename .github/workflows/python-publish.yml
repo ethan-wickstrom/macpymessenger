@@ -18,7 +18,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
 
       - name: Build package (sdist + wheel) with uv
-        run: uvx --from build pyproject-build
+        run: uv build
 
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

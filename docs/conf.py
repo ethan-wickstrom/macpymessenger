@@ -9,10 +9,9 @@ from __future__ import annotations
 
 import importlib
 import sys
+import tomllib
 import warnings
 from pathlib import Path
-
-import tomllib
 
 # Add the project source to sys.path so Sphinx can import macpymessenger.
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -34,26 +33,19 @@ author = ", ".join(name for name in _authors if name) or "Unknown"
 
 # Import the package to extract the public API from __all__.
 # This enables Sphinx to document only the classes and functions we export.
-if sys.version_info >= (3, 14):
-    try:
-        _module = importlib.import_module(project)
-    except Exception as import_error:  # pragma: no cover - defensive for older doc builders
-        warnings.warn(
-            f"Unable to import project package '{project}' while configuring docs: {import_error}",
-            RuntimeWarning,
-        )
-        public_api: tuple[str, ...] = ()
-    else:
-        public_api = tuple(sorted(getattr(_module, "__all__", ())))
-else:  # pragma: no cover - executed only on unsupported interpreters
-    warnings.warn(
-        "Skipping project import because the docs builder is running on Python < 3.10.",
-        RuntimeWarning,
+try:
+    _module = importlib.import_module(project)
+except Exception as import_error:  # noqa: BLE001
+    warning_message = (
+        f"Unable to import project package '{project}' while configuring docs: {import_error}"
     )
-    public_api = ()
+    warnings.warn(warning_message, RuntimeWarning, stacklevel=2)
+    public_api: tuple[str, ...] = ()
+else:
+    public_api = tuple(sorted(getattr(_module, "__all__", ())))
 
 copyright_year = "2025"
-copyright = f"{copyright_year}, {author}"
+copyright = f"{copyright_year}, {author}"  # noqa: A001
 
 # -- General Sphinx configuration --------------------------------------------
 
@@ -73,7 +65,7 @@ master_doc = "index"
 # -- HTML output configuration -----------------------------------------------
 
 html_theme = "alabaster"
-html_static_path = ["_static"]
+html_static_path: list[str] = []
 
 # -- autodoc extension configuration -----------------------------------------
 # Controls how API documentation is generated from docstrings.
@@ -96,10 +88,6 @@ autodoc_mock_imports = [
 # -- autosummary extension configuration -------------------------------------
 
 autosummary_generate = True  # Automatically generate stub files
-
-# -- viewcode extension configuration ----------------------------------------
-
-viewcode_import = True  # Import modules for source links
 
 # -- HTMLHelp output configuration -------------------------------------------
 

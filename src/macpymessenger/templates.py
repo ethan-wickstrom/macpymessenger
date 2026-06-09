@@ -31,12 +31,17 @@ def _process_template(template: Template) -> str:
         match item:
             case str() as text:
                 parts.append(text)
-            case Interpolation(value, expression, conversion, format_spec):
+            case Interpolation(
+                value=value,
+                expression=expression,
+                conversion=conversion,
+                format_spec=format_spec,
+            ):
                 if not isinstance(value, str):
                     raise TemplateTypeError.non_string_interpolation(
                         expression, type(value).__name__
                     )
-                parts.append(format(convert(value, conversion), format_spec))
+                parts.append(format(convert(value, conversion), format_spec or ""))
             case _:
                 raise TemplateTypeError.unexpected_element(type(item).__name__)
     return "".join(parts)

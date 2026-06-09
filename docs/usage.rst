@@ -86,6 +86,12 @@ Create a template:
 
 **Return only strings from template callables.** If any interpolation resolves to a non-string value, the manager raises `TemplateTypeError`.
 
+**Conversions and format specs are honored.** Interpolations may use ``!s``, ``!r``, or ``!a`` conversions and standard format specs, which are applied after the string type check:
+
+.. code-block:: python
+
+   client.create_template("quoted", lambda name: t"Hello, {name!r:>10}!")
+
 List all templates
 ------------------
 

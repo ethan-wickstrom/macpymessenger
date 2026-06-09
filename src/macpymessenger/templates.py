@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping, MutableMapping
 from dataclasses import dataclass
-from string.templatelib import Interpolation, Template
+from string.templatelib import Interpolation, Template, convert
 
 from .exceptions import TemplateAlreadyExistsError, TemplateNotFoundError, TemplateTypeError
 
@@ -20,22 +20,25 @@ class RenderedTemplate:
 
 
 def _process_template(template: Template) -> str:
-    """Render a t-string Template object ensuring all interpolations are strings."""
+    """Render a t-string Template object ensuring all interpolations are strings.
+
+    Each interpolation must resolve to ``str``; its conversion (``!s``, ``!r``,
+    ``!a``) and format spec (for example ``:>10``) are then applied.
+    """
 
     parts: list[str] = []
     for item in template:
-        if isinstance(item, str):
-            parts.append(item)
-            continue
-        if isinstance(item, Interpolation):
-            value = item.value
-            if not isinstance(value, str):
-                raise TemplateTypeError.non_string_interpolation(
-                    item.expression, type(value).__name__
-                )
-            parts.append(value)
-            continue
-        raise TemplateTypeError.unexpected_element(type(item).__name__)
+        match item:
+            case str() as text:
+                parts.append(text)
+            case Interpolation(value, expression, conversion, format_spec):
+                if not isinstance(value, str):
+                    raise TemplateTypeError.non_string_interpolation(
+                        expression, type(value).__name__
+                    )
+                parts.append(format(convert(value, conversion), format_spec))
+            case _:
+                raise TemplateTypeError.unexpected_element(type(item).__name__)
     return "".join(parts)
 
 

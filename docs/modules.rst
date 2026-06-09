@@ -54,7 +54,7 @@ Key classes:
 - **`RenderedTemplate`** — contains the rendered message after processing a t-string
 - **`TemplateTypeError`** — raised when a template interpolation resolves to a non-string value
 
-**Templates use callables instead of Jinja2 strings.** Each callable receives keyword arguments and returns a t-string. The manager raises `TemplateTypeError` if any interpolation is not a string.
+**Templates use callables instead of Jinja2 strings.** Each callable receives keyword arguments and returns a t-string. The manager raises `TemplateTypeError` if any interpolation is not a string, then applies any conversion (``!s``, ``!r``, ``!a``) and format spec when rendering.
 
 Package root — Public API exports
 ----------------------------------

@@ -1,74 +1,92 @@
 # macpymessenger
 
-A Python library for sending iMessages on macOS through AppleScript with template support and explicit error handling.
+macpymessenger sends iMessages from Python on macOS.
+
+It talks to the built-in Messages app through AppleScript. It also gives you Python 3.14 t-string templates, clear return values, and typed errors when something goes wrong.
 
 ## Features
 
-- Send iMessages to phone numbers or email addresses from Python scripts
-- Create and manage message templates with Python 3.14 t-strings
-- Send bulk messages to multiple recipients
-- Type-safe interface with comprehensive error handling
-- Configurable logging options
-- macOS-only solution that works with the built-in Messages app
+- Send iMessages to phone numbers or email addresses from Python.
+- Use Python 3.14 t-strings for message templates.
+- Send the same message to many recipients.
+- Delay a send with `delay_seconds`.
+- Handle delivery, delay, template, and configuration errors explicitly.
+- Opt in to file logging when you want a local log file.
+
+## Requirements
+
+macpymessenger requires macOS and Python 3.14 or newer.
+
+It uses AppleScript, so it is not a cross-platform messaging gateway. It sends through the Messages app on the Mac that runs your script.
 
 ## Installation
 
-macpymessenger requires Python 3.14 or newer and runs only on macOS.
-
-Install from PyPI with `uv` (recommended):
+Add macpymessenger to a project with `uv`:
 
 ```bash
 uv add macpymessenger
 ```
 
-Or with `pip`:
+Or install it with `pip`:
 
 ```bash
 pip install macpymessenger
 ```
 
-## Usage Examples
-
-### Send a simple message
+## Quick start
 
 ```python
 from macpymessenger import Configuration, IMessageClient
+from macpymessenger.exceptions import MessageSendError
 
-configuration = Configuration()
-client = IMessageClient(configuration)
-client.send("+15555555555", "Hello from macpymessenger!")
+client = IMessageClient(Configuration())
+
+try:
+    client.send("+15555555555", "Hello from macpymessenger!")
+except MessageSendError as error:
+    print(f"Delivery failed: {error}")
 ```
 
-### Using templates
+`send()` returns `None` when the message is sent. It raises `MessageSendError` when delivery fails.
+
+You can also wait before sending:
 
 ```python
-from string.templatelib import Template
+client.send("+15555555555", "I will arrive soon.", delay_seconds=60)
+```
 
-# Create a template
+`delay_seconds` must be a non-negative `int`.
+
+## Templates
+
+Templates are Python callables that return Python 3.14 t-strings. Jinja2 is not used, and there is no `templates/` directory.
+
+```python
 client.create_template(
     "welcome",
-    lambda name: t"Hello, {name}! Welcome aboard."
+    lambda name: t"Hello, {name}! Welcome aboard.",
 )
 
-# Send a message using the template
 client.send_template("+15555555555", "welcome", {"name": "Ada"})
 ```
 
-### Send bulk messages
+Every interpolation must resolve to a `str`. If one does not, macpymessenger raises `TemplateTypeError`.
+
+## Bulk sending
 
 ```python
-numbers = ["+15551234567", "+15557654321", "+15558765432"]
-successful, failed = client.send_bulk(numbers, "Reminder: Meeting at 10 AM.")
+numbers = ["+15555555555", "+15555555556", "+15555555557"]
+successful, failed = client.send_bulk(numbers, "Reminder: meeting at 10 AM.")
 
-print(f"Successfully sent to: {successful}")
-print(f"Failed to send to: {failed}")
+print(f"Sent: {successful}")
+print(f"Failed: {failed}")
 ```
 
-## Configuration Options
+`send_bulk()` returns two lists. The first list contains successful recipients. The second list contains failed recipients.
 
-### Custom AppleScript path
+## Configuration and logging
 
-By default, macpymessenger uses the bundled AppleScript. You can provide a custom script path:
+By default, macpymessenger uses the bundled AppleScript. You can pass a custom script path when you need one:
 
 ```python
 from pathlib import Path
@@ -78,75 +96,61 @@ configuration = Configuration(send_script_path=Path("/path/to/custom/sendMessage
 client = IMessageClient(configuration)
 ```
 
-### Enable file logging
+`Configuration` checks that the AppleScript exists and is readable when you create it. It raises `ScriptNotFoundError` if the file cannot be used.
+
+File logging is opt-in:
 
 ```python
-from macpymessenger import FileLoggingConfiguration
+from macpymessenger import Configuration, FileLoggingConfiguration, IMessageClient
 
-client = IMessageClient(configuration, file_logging=FileLoggingConfiguration())
+client = IMessageClient(Configuration(), file_logging=FileLoggingConfiguration())
 ```
 
-This creates a `macpymessenger.log` file in the current directory.
+This writes `macpymessenger.log` in the current working directory. You can also pass your own `logging.Logger` to `IMessageClient`.
 
-### Custom logger
+## Public API
+
+These classes are importable from the package root:
 
 ```python
-import logging
-from macpymessenger import Configuration, IMessageClient
-
-logger = logging.getLogger("my_app")
-logger.setLevel(logging.DEBUG)
-# Add custom handlers here
-
-configuration = Configuration()
-client = IMessageClient(configuration, logger=logger)
+from macpymessenger import (
+    Configuration,
+    FileLoggingConfiguration,
+    IMessageClient,
+    RenderedTemplate,
+    SubprocessCommandRunner,
+    TemplateManager,
+)
 ```
 
-## Contribution Guidelines
+Custom exceptions live in `macpymessenger.exceptions`.
 
-We welcome contributions! Please follow these guidelines:
+## Development
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Make your changes and ensure they follow the project's code style
-4. Run tests and linting: `uv run pytest`, `uv run ruff check`, `uv run ty check`
-5. Commit your changes with clear, descriptive messages
-6. Push to your fork and submit a pull request
-
-Please ensure your code follows the existing style and conventions. The [AGENTS.md](AGENTS.md)
-file links coding agents to task-specific project guidance.
-
-## Testing Instructions
-
-Install dependencies:
+Install development dependencies:
 
 ```bash
 uv sync
 ```
 
-Run the test suite:
+Run the checks:
 
 ```bash
+uv run ruff check
+uv run ty check
 uv run pytest
-```
-
-Run linting and type checking:
-
-```bash
-uv run ruff check    # lint
-uv run ty check      # type checking
+uv build
+uv run sphinx-build docs docs/_build/html
 ```
 
 ## License
 
-macpymessenger is available under the [Apache 2.0 license](LICENSE).
+macpymessenger is available under the [Apache-2.0 license](LICENSE).
 
-## Acknowledgements/Credits
+## Credits
 
 Created and maintained by [Ethan Wickstrom](https://github.com/ethan-wickstrom).
 
-macpymessenger was originally forked from [Rolstenhouse/py-iMessage](https://github.com/Rolstenhouse/py-iMessage). I would like to express our gratitude to the developers of the libraries and tools used in this project, as well as the open-source community for their contributions.
+macpymessenger was originally forked from [Rolstenhouse/py-iMessage](https://github.com/Rolstenhouse/py-iMessage). Thanks to the developers of the libraries and tools used in this project, and to the open-source community.
 
-This project uses AppleScript to interact with macOS's Messages application and Python 3.14's t-string feature for template rendering.
-
-For more detailed documentation, see the [docs](docs/) directory.
+For more detail, see the [docs](docs/) directory.

@@ -1,153 +1,169 @@
 Usage
 =====
 
-**macpymessenger provides a simple API for sending iMessages and managing templates.**
-
-This guide covers sending messages, creating templates, and handling errors.
+**macpymessenger keeps the main path small.** You create a client, send a message, and handle typed errors.
 
 Send a message
 --------------
 
-**Import the required classes:**
+**Create a client from the default configuration.**
 
 .. code-block:: python
 
-   from macpymessenger import IMessageClient, Configuration
+   from macpymessenger import Configuration, IMessageClient
    from macpymessenger.exceptions import MessageSendError
 
-**Create a configuration and client:**
+   client = IMessageClient(Configuration())
+
+**Call ``send()`` with a recipient and a message.**
 
 .. code-block:: python
 
-   config = Configuration()
-   client = IMessageClient(config)
-
-**Send a message:**
-
-.. code-block:: python
-
-   phone_number = "+15555555555"
-   message = "Hello from macpymessenger!"
-   
    try:
-       client.send(phone_number, message)
+       client.send("+15555555555", "Hello from macpymessenger!")
    except MessageSendError as error:
        print(f"Delivery failed: {error}")
 
-**The `send` method raises exceptions on failure:**
+``send()`` returns ``None`` when delivery succeeds.
 
-- `MessageSendError` — delivery failed
-- `InvalidDelayTypeError` — `delay_seconds` is not an integer
-- `NegativeDelayError` — `delay_seconds` is negative
+Handle send errors
+------------------
 
-**Success returns `None`.** No boolean return values.
+**The client raises typed exceptions instead of returning status flags.**
+
+- ``MessageSendError`` means delivery failed or AppleScript could not run.
+- ``InvalidDelayTypeError`` means ``delay_seconds`` was not an ``int``. ``bool`` is not accepted.
+- ``NegativeDelayError`` means ``delay_seconds`` was less than zero.
 
 Delay a message
 ---------------
 
-**Pass `delay_seconds` to wait before sending.**
+**Pass ``delay_seconds`` to wait before sending.**
 
 .. code-block:: python
 
-   client.send("+15555555555", "See you in a minute!", delay_seconds=60)
+   client.send("+15555555555", "See you in a minute.", delay_seconds=60)
 
-The bundled AppleScript waits the requested number of seconds before delivering the message. The delay must be a non-negative integer.
+The bundled AppleScript honors the delay. It waits first, then sends. If delivery fails, ``osascript`` exits non-zero and the client raises ``MessageSendError``.
 
-Create and use templates
-------------------------
+Create a template
+-----------------
 
-**Templates let you reuse message patterns with variable substitution.**
-
-Create a template:
+**A template is a callable that returns a Python 3.14 t-string.**
 
 .. code-block:: python
 
-   template_id = "greeting"
-   template_factory = lambda name: t"Hello, {name}! Welcome to macpymessenger."
-   client.create_template(template_id, template_factory)
+   client.create_template(
+       "greeting",
+       lambda name: t"Hello, {name}! Welcome to macpymessenger.",
+   )
 
-**Send a message using the template:**
+Jinja2 is not used. There is no ``templates/`` directory.
 
-.. code-block:: python
+Send a template
+---------------
 
-   phone_number = "+15555555555"
-   client.send_template(phone_number, "greeting", {"name": "Ada"})
-
-**Templates rely on callables that return t-strings.** Jinja2 is no longer used.
-
-.. code-block:: python
-
-   def premium_greeting(name: str, premium: str) -> Template:
-       return t"Hello, {name}! {premium}"
-
-   client.create_template("premium_greeting", premium_greeting)
-
-**Update an existing template:**
+**Pass the template identifier and a context dictionary.**
 
 .. code-block:: python
 
-   client.update_template("greeting", lambda name: t"Hi {name}, welcome!")
+   client.send_template("+15555555555", "greeting", {"name": "Ada"})
 
-**Delete a template:**
+The call is equivalent to rendering the template and then calling ``send()``.
+
+You can also delay a templated message:
+
+.. code-block:: python
+
+   client.send_template(
+       "+15555555555",
+       "greeting",
+       {"name": "Ada"},
+       delay_seconds=30,
+   )
+
+Update and delete templates
+---------------------------
+
+**Use the same identifier when you want to replace a template.**
+
+.. code-block:: python
+
+   client.update_template("greeting", lambda name: t"Hi {name}, welcome back.")
+
+**Delete templates you no longer need.**
 
 .. code-block:: python
 
    client.delete_template("greeting")
 
-**Provide all variables in the context dictionary.** Missing values trigger `TypeError` because callables receive keyword arguments and forward them to t-strings.
+Missing identifiers raise ``TemplateNotFoundError``. Duplicate identifiers raise ``TemplateAlreadyExistsError``.
 
-**Return only strings from template callables.** If any interpolation resolves to a non-string value, the manager raises `TemplateTypeError`.
+Keep template values as strings
+-------------------------------
 
-List all templates
-------------------
-
-**Get a dictionary of all registered template callables:**
+**Every interpolation must resolve to ``str``.**
 
 .. code-block:: python
 
-   factories = manager.list_templates()
-   
-   for identifier, factory in factories.items():
-       print(f"{identifier}: {factory.__name__}")
+   client.create_template("status", lambda name, status: t"Hi {name}. Status: {status}.")
+   client.send_template("+15555555555", "status", {"name": "Ada", "status": "ready"})
 
-**The returned dictionary is a shallow copy.** Modifying it does not affect the manager's internal state.
+If ``status`` is an ``int`` or another non-string value, rendering raises ``TemplateTypeError``.
+
+Missing context values are regular Python call errors. The callable receives the context as keyword arguments.
+
+Use TemplateManager directly
+----------------------------
+
+**Use ``TemplateManager`` when you want rendering without a client.**
+
+.. code-block:: python
+
+   from macpymessenger import TemplateManager
+
+   manager = TemplateManager()
+   manager.create_template("welcome", lambda name: t"Welcome, {name}.")
+
+   rendered = manager.compose_template("welcome", {"name": "Ada"})
+   print(rendered.content)
+
+``compose_template()`` returns ``RenderedTemplate``. ``render_template()`` returns only the rendered string.
 
 Send to multiple recipients
 ---------------------------
 
-**The `send_bulk` method sends the same message to multiple phone numbers.**
+**Use ``send_bulk()`` to send one message to many recipients.**
 
 .. code-block:: python
 
-   numbers = ["+15551234567", "+15557654321"]
+   numbers = ["+15555555555", "+15555555556", "+15555555557"]
    successful, failed = client.send_bulk(numbers, "Reminder: meeting at 10 AM.")
 
-**The method returns two lists:**
+``send_bulk()`` returns ``(successful, failed)``.
 
-- `successful` — phone numbers where delivery succeeded
-- `failed` — phone numbers where delivery failed
+- ``successful`` contains recipients where ``send()`` completed.
+- ``failed`` contains recipients where ``MessageSendError`` was raised.
 
-**Use the failed list to retry or log errors:**
+Use the failed list to retry or log the result:
 
 .. code-block:: python
 
    if failed:
-       print(f"Failed deliveries: {failed}")
-       # Retry logic or alert
+       print(f"Could not send to: {failed}")
 
-Experimental features
----------------------
+Experimental stubs
+------------------
 
-**Two methods are defined but not yet implemented:**
+**Two methods exist, but they are not implemented yet.**
 
-- `get_chat_history` — for retrieving message history
-- `send_with_attachment` — for sending files with messages
+- ``get_chat_history(phone_number, limit=10)``
+- ``send_with_attachment(phone_number, message, attachment_path)``
 
-**Both methods raise `NotImplementedError` when called:**
+Both methods always raise ``NotImplementedError``.
 
 .. code-block:: python
 
-   # This will raise NotImplementedError
-   client.get_chat_history("+15555555555")
+   client.get_chat_history("+15555555555")  # raises NotImplementedError
 
-**These methods exist to stabilize the API signature.** Do not call them in production code until they are fully implemented in a future release.
+Do not use these methods in production code yet.

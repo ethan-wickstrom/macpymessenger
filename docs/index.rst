@@ -1,55 +1,43 @@
 macpymessenger Documentation
 ============================
 
-**macpymessenger** is a Python library for sending iMessages on macOS through AppleScript.
+**macpymessenger sends iMessages from Python on macOS.** It uses AppleScript, the Messages app, and Python 3.14 t-string templates.
 
-The library provides a type-safe, testable interface with explicit error handling and no hidden state.
+It is built for scripts that should be easy to read and easy to test. The public API is small. Errors are explicit. Configuration is checked before a message is sent.
 
-What macpymessenger does
--------------------------
+Start here
+----------
 
-**Sends text messages.** The `IMessageClient` sends iMessages to phone numbers or email addresses using AppleScript and explicit subprocess control.
+**Install the package.** Use ``uv add macpymessenger`` or ``pip install macpymessenger``.
 
-**Manages message templates.** The `TemplateManager` stores callables that return t-strings. Rendering is validated so that every interpolated value is a string.
-
-**Validates configuration upfront.** The `Configuration` class checks that the AppleScript file exists and is readable before any messages are sent.
-
-**Isolates subprocess calls.** Dependency injection separates subprocess execution from business logic, making tests straightforward.
-
-**Uses comprehensive static analysis.** The codebase includes type hints for all functions and is validated with `ty` and `ruff`.
-
-Send your first message
------------------------
-
-**Install macpymessenger:**
-
-.. code-block:: bash
-
-   uv pip install macpymessenger
-
-**Import the required classes:**
+**Send one message.** Create ``Configuration`` and ``IMessageClient``, then call ``send()``.
 
 .. code-block:: python
 
-   from macpymessenger import IMessageClient, Configuration
+   from macpymessenger import Configuration, IMessageClient
 
-**Create a configuration and client:**
-
-.. code-block:: python
-
-   configuration = Configuration()
-   client = IMessageClient(configuration)
-
-**Send a message:**
-
-.. code-block:: python
-
+   client = IMessageClient(Configuration())
    client.send("+15555555555", "Hello from macpymessenger!")
 
-The `send` method raises `MessageSendError` if delivery fails.
+``send()`` returns ``None`` when delivery succeeds. It raises ``MessageSendError`` when delivery fails.
+
+What is in these docs
+---------------------
+
+**Introduction.** Learn what the library does and where it fits.
+
+**Installation.** Install with ``uv`` or ``pip`` and confirm your environment.
+
+**Usage.** Send messages, use t-string templates, handle errors, and send in bulk.
+
+**Configuration.** Use the bundled AppleScript, set a custom path, and configure logging.
+
+**Testing.** Run the development checks for this repository.
+
+**Modules.** See the public classes and how the package is organized.
 
 Explore the documentation
---------------------------
+-------------------------
 
 .. toctree::
    :maxdepth: 2
@@ -65,20 +53,18 @@ Explore the documentation
 Get help and contribute
 -----------------------
 
-**Report issues or request features** on GitHub: https://github.com/ethan-wickstrom/macpymessenger
+**Report bugs and request features on GitHub.** Open an issue at https://github.com/ethan-wickstrom/macpymessenger/issues
 
-**Submit pull requests** with bug fixes or new features. See the repository for contribution guidelines.
+**Send pull requests for focused changes.** Keep examples free of real phone numbers and secrets.
 
-**Ask questions** by opening a GitHub issue with the "question" label.
+License
+-------
 
-License information
--------------------
-
-macpymessenger is licensed under the Apache License 2.0.
+macpymessenger is licensed under Apache-2.0.
 
 See the `LICENSE file <https://github.com/ethan-wickstrom/macpymessenger/blob/main/LICENSE>`_ for details.
 
-Indices and Tables
+Indices and tables
 ------------------
 
 * :ref:`genindex`

@@ -1,69 +1,107 @@
 Configuration
 =============
 
-**The `Configuration` class validates the AppleScript path.**
+**``Configuration`` tells the client which AppleScript to run.** It also checks that the script can be used.
 
-By default, the configuration uses the bundled AppleScript. You can customize the script path when tests or deployments need a different AppleScript entry point.
+Use the bundled AppleScript
+---------------------------
+
+**The default configuration uses the AppleScript packaged with macpymessenger.**
+
+.. code-block:: python
+
+   from macpymessenger import Configuration, IMessageClient
+
+   client = IMessageClient(Configuration())
+
+This is the right choice for most users.
 
 Use a custom AppleScript path
-------------------------------
+-----------------------------
 
-**By default, macpymessenger uses the bundled AppleScript at `osascript/sendMessage.scpt`.**
-
-Provide a custom path if needed:
+**Pass ``send_script_path`` when you need your own script.**
 
 .. code-block:: python
 
    from pathlib import Path
-   from macpymessenger import Configuration
+   from macpymessenger import Configuration, IMessageClient
 
    config = Configuration(send_script_path=Path("/path/to/custom/sendMessage.scpt"))
+   client = IMessageClient(config)
 
-**The configuration validates the path at initialization.** If the file does not exist or is not readable, `Configuration` raises `ScriptNotFoundError`.
+``Configuration`` validates the path during initialization. If the file is missing or unreadable, it raises ``ScriptNotFoundError``.
 
 How validation works
 --------------------
 
-**The configuration validates the AppleScript at initialization, not at send time.**
+**Validation happens before you send a message.** This catches path problems early.
 
-Validation checks:
+The check is simple:
 
-1. **File exists.** The path points to an existing file on disk.
-2. **File is readable.** The process can open the file in binary mode.
+1. The path must point to an existing file.
+2. The current process must be able to read the file.
 
-**Validation raises `ScriptNotFoundError` if either check fails.** This keeps runtime execution of `osascript` predictable.
+If either check fails, ``Configuration`` raises ``ScriptNotFoundError``.
 
 Enable file logging
 -------------------
 
-**By default, `IMessageClient` logs to the console only.**
-
-Enable file logging to persist events to disk:
+**File logging is off by default.** Turn it on when you want client events written to disk.
 
 .. code-block:: python
 
    from macpymessenger import Configuration, FileLoggingConfiguration, IMessageClient
 
-   config = Configuration()
-   client = IMessageClient(config, file_logging=FileLoggingConfiguration())
+   client = IMessageClient(Configuration(), file_logging=FileLoggingConfiguration())
 
-**This creates a `macpymessenger.log` file in the current directory.**
+This writes ``macpymessenger.log`` in the current working directory.
 
-Provide a custom logger
-------------------------
+Choose a log file path
+----------------------
 
-**Pass a pre-configured logger for custom destinations or formatting:**
+**Pass a path to ``FileLoggingConfiguration`` when you want a different file.**
+
+.. code-block:: python
+
+   from pathlib import Path
+   from macpymessenger import Configuration, FileLoggingConfiguration, IMessageClient
+
+   logging_config = FileLoggingConfiguration(path=Path("logs/messages.log"))
+   client = IMessageClient(Configuration(), file_logging=logging_config)
+
+If the file handler cannot be created, the client raises ``ConfigurationError``.
+
+Pass your own logger
+--------------------
+
+**Use a custom logger when your app already owns logging.**
 
 .. code-block:: python
 
    import logging
    from macpymessenger import Configuration, IMessageClient
 
-   logger = logging.getLogger("my_app")
-   logger.setLevel(logging.DEBUG)
-   # Add custom handlers here
+   logger = logging.getLogger("my_app.messages")
+   logger.setLevel(logging.INFO)
 
-   config = Configuration()
-   client = IMessageClient(config, logger=logger)
+   client = IMessageClient(Configuration(), logger=logger)
 
-**The client uses the logger's existing handlers.** It does not add or remove handlers automatically.
+The client uses the logger you pass. It does not remove your handlers.
+
+Combine custom logging options
+------------------------------
+
+**You can pass both ``logger`` and ``file_logging``.** If the logger does not already have a file handler, the client adds one.
+
+.. code-block:: python
+
+   import logging
+   from macpymessenger import Configuration, FileLoggingConfiguration, IMessageClient
+
+   logger = logging.getLogger("my_app.messages")
+
+   client = IMessageClient(
+       Configuration(),
+       logger=logger,
+       file_logging=FileLoggingConfiguration(),
+   )

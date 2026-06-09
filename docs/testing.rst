@@ -1,79 +1,93 @@
 Testing
 =======
 
-**macpymessenger includes a comprehensive test suite with static analysis.**
+**macpymessenger uses uv for development commands.** The project checks tests, lint, types, builds, and documentation.
 
-The project uses `pytest` for tests, `ruff` for linting, and `ty` for type checking.
+Set up the environment
+----------------------
 
-Run tests with pytest
----------------------
-
-**Install dependencies first:**
+**Install the development dependencies first.**
 
 .. code-block:: bash
 
    uv sync
 
-**Run the test suite:**
+``uv sync`` creates or updates the local environment from the project files.
+
+Run tests
+---------
+
+**Use pytest for the test suite.**
 
 .. code-block:: bash
 
    uv run pytest
 
-**`uv sync` installs all dependencies from `pyproject.toml` into an isolated environment.** `uv run` executes commands within that environment.
+The tests use stubs for command execution where possible. They do not need to send real iMessages.
 
-Run linting and type checking
-------------------------------
+Run lint and type checks
+------------------------
 
-**Check code style with ruff:**
+**Use ruff for linting.**
 
 .. code-block:: bash
 
    uv run ruff check
 
-**Check types with ty:**
+**Use ty for type checking.**
 
 .. code-block:: bash
 
    uv run ty check
 
-**Both tools enforce code quality standards.** Fix any issues before committing.
+Both commands should exit with status code 0 before you open a pull request.
 
-Understand test results
+Build the package
+-----------------
+
+**Use uv to build the distribution files.**
+
+.. code-block:: bash
+
+   uv build
+
+This checks that the package can be built from the current source tree.
+
+Build the documentation
 -----------------------
 
-**Passing tests:**
+**Use Sphinx to build the HTML documentation.**
 
-- `pytest` prints a summary with green dots and "passed" counts
-- `ruff` and `ty` exit with status code 0 and no output
+.. code-block:: bash
 
-**Failing tests:**
+   uv run sphinx-build docs docs/_build/html
 
-- `pytest` shows tracebacks with assertion details for quick debugging
-- `ruff` and `ty` print error messages with file paths and line numbers
+When you are checking for warnings, add ``-W`` so warnings fail the build.
 
-**Fix failures before committing code.**
+Understand failures
+-------------------
 
-Write custom tests
-------------------
+**pytest failures show the failing assertion and traceback.** Start with the first failure.
 
-**Add new test files to the `tests` directory:**
+**ruff failures show file paths and rule codes.** Fix the reported line, then run the command again.
 
-Test files must:
+**ty failures show type mismatches.** Keep public examples aligned with the typed API.
 
-- Follow the naming pattern `test_*.py`
-- Import `pytest` fixtures as needed
-- Use stubbed subprocess runners to avoid executing AppleScript
+**Sphinx failures often point to invalid reStructuredText.** Check heading underlines, code-block directives, and inline markup.
 
-**Example test structure:**
+Write tests for changes
+-----------------------
+
+**Add tests under ``tests/`` when behavior changes.** Test files use the ``test_*.py`` naming pattern.
+
+For message sending behavior, prefer a stub command runner. That keeps tests fast and avoids AppleScript.
 
 .. code-block:: python
 
-   from macpymessenger import IMessageClient, Configuration
-   
-   def test_send_message_success():
-       config = Configuration()
-       client = IMessageClient(config)
-       # Add assertions here
+   from macpymessenger import Configuration, IMessageClient
 
-**Run new tests with `uv run pytest`.** The test suite includes fixtures that demonstrate how to stub the subprocess runner for deterministic behavior.
+   def test_send_message_success(stub_command_runner):
+       client = IMessageClient(Configuration(), command_runner=stub_command_runner)
+       client.send("+15555555555", "Hello")
+
+Run new tests with ``uv run pytest``.

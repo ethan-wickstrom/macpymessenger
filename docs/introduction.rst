@@ -1,39 +1,50 @@
 Introduction
 ============
 
-**macpymessenger sends iMessages from Python scripts on macOS.**
+**macpymessenger sends iMessages from Python on macOS.** It uses AppleScript to talk to the built-in Messages app.
 
-The library provides a type-safe interface to the Messages app through AppleScript, with template rendering powered by Python 3.14 t-strings. Send text messages to phone numbers or email addresses with explicit error handling and no hidden state.
+Use it when you want a small Python library, not a hosted messaging service. Your script runs on a Mac. Messages.app sends the iMessage.
 
-Why use macpymessenger
-----------------------
+What macpymessenger gives you
+-----------------------------
 
-**Simple API.** Send a message in three lines of code. Define templates as callables that return t-strings.
+**A short sending path.** Create a ``Configuration``. Create an ``IMessageClient``. Call ``send()``.
 
-**Explicit error handling.** All errors raise typed exceptions, including `TemplateTypeError` for non-string interpolation values.
+**Clear errors.** Delivery failures raise ``MessageSendError``. Bad delays raise ``InvalidDelayTypeError`` or ``NegativeDelayError``.
 
-**Testable design.** Dependency injection isolates subprocess calls from business logic. Write fast tests without executing AppleScript.
+**Real t-string templates.** Templates are callables that return Python 3.14 t-strings, such as ``lambda name: t"Hello, {name}!"``. Jinja2 is not used.
 
-**Validated configuration.** The `Configuration` class checks that the AppleScript file exists and is readable at initialization, not at send time.
+**Safe template rendering.** Every interpolation must resolve to ``str``. If not, macpymessenger raises ``TemplateTypeError``.
 
-**Comprehensive type hints.** Every function includes type annotations. The codebase passes `ty` strict mode.
+**Early configuration checks.** ``Configuration`` checks that the AppleScript file exists and is readable when you create it.
 
-What you can build
-------------------
+**Testable seams.** The client accepts a custom command runner. Tests can avoid running AppleScript.
 
-**Automated notifications.** Send alerts or reminders to users via iMessage when events occur in your application.
+When to use it
+--------------
 
-**Personalized campaigns.** Use templates to send customized messages to multiple recipients with variable substitution.
+**Personal automation.** Send yourself reminders or small alerts from a script.
 
-**Business process integration.** Trigger iMessages from workflows, approval processes, or monitoring systems.
+**Team workflows.** Send iMessage notices from approval flows, monitoring jobs, or local tools.
 
-**Custom applications.** Build tools that leverage iMessage for communication without requiring third-party APIs.
+**Message templates.** Reuse message text while changing names, dates, or short status text.
+
+**Bulk sends.** Send the same message to a list of recipients and collect successes and failures.
+
+Important limits
+----------------
+
+**macOS is required.** The library depends on AppleScript and Messages.app.
+
+**Python 3.14 or newer is required.** Templates use Python t-strings.
+
+**Attachments and chat history are not ready.** ``send_with_attachment`` and ``get_chat_history`` are experimental stubs. They always raise ``NotImplementedError``.
 
 Next steps
 ----------
 
-**Read the installation guide** to install macpymessenger with `uv` or `pip`.
+**Install the package.** Start with the installation guide.
 
-**Follow the usage guide** to send your first message and learn about templates.
+**Send a first message.** Follow the usage guide for sending, templates, bulk sends, and errors.
 
-**Explore the configuration options** to customize logging and AppleScript paths.
+**Tune configuration.** Read the configuration guide if you need a custom AppleScript path, file logging, or your own logger.

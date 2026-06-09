@@ -35,7 +35,8 @@ def test_configuration_raises_for_unreadable_script(
 
     def fake_open(self: Path, *args: Any, **kwargs: Any) -> Any:
         if self == script_path:
-            raise PermissionError("permission denied")
+            message = "permission denied"
+            raise PermissionError(message)
         return original_open(self, *args, **kwargs)
 
     monkeypatch.setattr(Path, "open", fake_open)

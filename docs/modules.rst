@@ -13,6 +13,7 @@ client module — Send messages and manage templates
 Key classes:
 
 - **`IMessageClient`** — sends messages, manages templates, and handles errors
+- **`FileLoggingConfiguration`** — describes optional file logging for client events
 - **`SubprocessCommandRunner`** — executes AppleScript via subprocess
 
 **The client wraps AppleScript execution and surfaces delivery failures through `MessageSendError`.**
@@ -27,7 +28,6 @@ The `Configuration` class:
 - Discovers the bundled AppleScript at `osascript/sendMessage.scpt`
 - Validates that the script exists and is readable
 - Allows custom script paths
-- Provides logging configuration options
 
 exceptions module — Define the error hierarchy
 -----------------------------------------------
@@ -65,7 +65,12 @@ Import from the package root:
 
 .. code-block:: python
 
-   from macpymessenger import IMessageClient, Configuration, TemplateManager
+   from macpymessenger import (
+       Configuration,
+       FileLoggingConfiguration,
+       IMessageClient,
+       TemplateManager,
+   )
    from macpymessenger.exceptions import MessageSendError
 
 **All primary classes are available at the top level.** You do not need to import from submodules.
@@ -87,7 +92,7 @@ Module architecture
 **Each module has a focused responsibility:**
 
 - `client` — orchestrates message sending and template management
-- `configuration` — validates AppleScript paths and provides logging options
+- `configuration` — validates AppleScript paths
 - `exceptions` — defines the error hierarchy for explicit error handling
 - `templates` — manages template storage and t-string rendering
 

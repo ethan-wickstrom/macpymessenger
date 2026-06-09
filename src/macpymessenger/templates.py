@@ -4,11 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping, MutableMapping
 from dataclasses import dataclass
-
 from string.templatelib import Interpolation, Template
 
 from .exceptions import TemplateAlreadyExistsError, TemplateNotFoundError, TemplateTypeError
-
 
 TemplateCallable = Callable[..., Template]
 
@@ -32,13 +30,12 @@ def _process_template(template: Template) -> str:
         if isinstance(item, Interpolation):
             value = item.value
             if not isinstance(value, str):
-                raise TemplateTypeError(
-                    f"Interpolation '{item.expression}' resolved to "
-                    f"{type(value).__name__}; expected str"
+                raise TemplateTypeError.non_string_interpolation(
+                    item.expression, type(value).__name__
                 )
             parts.append(value)
             continue
-        raise TemplateTypeError(f"Unexpected template element of type {type(item).__name__}")
+        raise TemplateTypeError.unexpected_element(type(item).__name__)
     return "".join(parts)
 
 
@@ -50,17 +47,17 @@ class TemplateManager:
 
     def create_template(self, identifier: str, factory: TemplateCallable) -> None:
         if identifier in self._templates:
-            raise TemplateAlreadyExistsError(f"Template with ID '{identifier}' already exists.")
+            raise TemplateAlreadyExistsError.duplicate_identifier(identifier)
         self._templates[identifier] = factory
 
     def update_template(self, identifier: str, factory: TemplateCallable) -> None:
         if identifier not in self._templates:
-            raise TemplateNotFoundError(f"Template with ID '{identifier}' does not exist.")
+            raise TemplateNotFoundError.missing_identifier(identifier)
         self._templates[identifier] = factory
 
     def delete_template(self, identifier: str) -> None:
         if identifier not in self._templates:
-            raise TemplateNotFoundError(f"Template with ID '{identifier}' does not exist.")
+            raise TemplateNotFoundError.missing_identifier(identifier)
         del self._templates[identifier]
 
     def render_template(
@@ -71,15 +68,11 @@ class TemplateManager:
         try:
             factory = self._templates[identifier]
         except KeyError as error:
-            raise TemplateNotFoundError(
-                f"Template with ID '{identifier}' does not exist."
-            ) from error
+            raise TemplateNotFoundError.missing_identifier(identifier) from error
         kwargs = dict(context) if context is not None else {}
         template = factory(**kwargs)
         if not isinstance(template, Template):
-            raise TemplateTypeError(
-                "Template factories must return a string.templatelib.Template instance."
-            )
+            raise TemplateTypeError.invalid_factory_return()
         return _process_template(template)
 
     def compose_template(

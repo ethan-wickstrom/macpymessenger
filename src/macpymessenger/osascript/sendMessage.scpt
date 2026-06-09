@@ -8,13 +8,8 @@ on sendMessage(phoneNumber, messageText)
         set targetService to first service whose service type = iMessage
         set targetBuddy to buddy phoneNumber of targetService
 
-        -- Attempt to send the message
-        try
-            send messageText to targetBuddy
-            return "Success"
-        on error errMsg
-            return "Error: " & errMsg
-        end try
+        -- Let delivery errors propagate so osascript exits non-zero
+        send messageText to targetBuddy
     end tell
 end sendMessage
 
@@ -23,6 +18,12 @@ on run argv
     set phoneNumber to item 1 of argv
     set messageText to item 2 of argv
 
-    set result to sendMessage(phoneNumber, messageText)
-    return result
+    set delaySeconds to 0
+    if (count of argv) >= 3 then
+        set delaySeconds to (item 3 of argv) as integer
+    end if
+    if delaySeconds > 0 then delay delaySeconds
+
+    sendMessage(phoneNumber, messageText)
+    return "Success"
 end run

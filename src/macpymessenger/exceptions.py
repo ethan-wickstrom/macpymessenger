@@ -97,10 +97,6 @@ class TemplateAlreadyExistsError(TemplateError):
         return cls(message)
 
 
-class DuplicateTemplateIdentifierError(TemplateError):
-    """Raised when duplicate template identifiers are detected while loading."""
-
-
 class ConfigurationError(MacPyMessengerError):
     """Base class for configuration-related errors."""
 

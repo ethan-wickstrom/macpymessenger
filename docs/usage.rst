@@ -37,9 +37,21 @@ Send a message
 **The `send` method raises exceptions on failure:**
 
 - `MessageSendError` — delivery failed
-- `ValueError` — invalid `delay_seconds` parameter (negative values are not allowed)
+- `InvalidDelayTypeError` — `delay_seconds` is not an integer
+- `NegativeDelayError` — `delay_seconds` is negative
 
 **Success returns `None`.** No boolean return values.
+
+Delay a message
+---------------
+
+**Pass `delay_seconds` to wait before sending.**
+
+.. code-block:: python
+
+   client.send("+15555555555", "See you in a minute!", delay_seconds=60)
+
+The bundled AppleScript waits the requested number of seconds before delivering the message. The delay must be a non-negative integer.
 
 Create and use templates
 ------------------------

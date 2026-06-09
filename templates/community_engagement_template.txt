@@ -1,1 +1,0 @@
-Hello {{ name }}, we're excited to have you in our community! Check out our latest updates at {{ link }}.

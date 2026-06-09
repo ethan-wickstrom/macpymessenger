@@ -37,9 +37,11 @@ exceptions module — Define the error hierarchy
 Key exceptions:
 
 - **`MessageSendError`** — raised when message delivery fails
+- **`InvalidDelayTypeError`** — raised when ``delay_seconds`` is not an integer
+- **`NegativeDelayError`** — raised when ``delay_seconds`` is negative
 - **`TemplateError`** — raised for template rendering or management issues
 - **`TemplateNotFoundError`** — raised when a requested template does not exist
-- **`DuplicateTemplateIdentifierError`** — raised when loading templates with duplicate identifiers
+- **`TemplateAlreadyExistsError`** — raised when creating a template with an identifier that already exists
 - **`ConfigurationError`** — raised for configuration validation failures
 - **`ScriptNotFoundError`** — raised when the AppleScript file is missing or unreadable
 
@@ -82,7 +84,7 @@ osascript directory — AppleScript implementation
 
 The bundled script:
 
-- **`sendMessage.scpt`** — sends a text message to a recipient
+- **`sendMessage.scpt`** — sends a text message to a recipient, honoring an optional delay in seconds and raising an error on delivery failure so Python receives a non-zero exit code
 
 **The `Configuration` class resolves the script path automatically.** You do not need to reference this directory unless you are providing a custom script.
 

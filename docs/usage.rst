@@ -104,6 +104,12 @@ Keep template values as strings
 
 **Every interpolation must resolve to ``str``.**
 
+**Conversions and format specs are honored.** Interpolations may use ``!s``, ``!r``, or ``!a`` conversions and standard format specs, which are applied after the string type check:
+
+.. code-block:: python
+
+   client.create_template("quoted", lambda name: t"Hello, {name!r:>10}!")
+
 .. code-block:: python
 
    client.create_template("status", lambda name, status: t"Hi {name}. Status: {status}.")
@@ -112,6 +118,20 @@ Keep template values as strings
 If ``status`` is an ``int`` or another non-string value, rendering raises ``TemplateTypeError``.
 
 Missing context values are regular Python call errors. The callable receives the context as keyword arguments.
+
+List all templates
+------------------
+
+**Get a dictionary of all registered template callables:**
+
+.. code-block:: python
+
+   factories = manager.list_templates()
+
+   for identifier, factory in factories.items():
+       print(f"{identifier}: {factory.__name__}")
+
+**The returned dictionary is a shallow copy.** Modifying it does not affect the manager's internal state.
 
 Use TemplateManager directly
 ----------------------------

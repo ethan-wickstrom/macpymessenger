@@ -22,6 +22,27 @@ def test_template_non_string_value_raises(template_manager: TemplateManager) -> 
         template_manager.render_template("greeting", context=context)
 
 
+def test_template_applies_conversion(template_manager: TemplateManager) -> None:
+    template_manager.create_template("greeting", lambda name: t"Hello, {name!r}!")
+    assert template_manager.render_template("greeting", context={"name": "Ada"}) == "Hello, 'Ada'!"
+
+
+def test_template_applies_format_spec(template_manager: TemplateManager) -> None:
+    template_manager.create_template("greeting", lambda name: t"[{name:>5}]")
+    assert template_manager.render_template("greeting", context={"name": "Ada"}) == "[  Ada]"
+
+
+def test_template_conversion_does_not_bypass_type_check(
+    template_manager: TemplateManager,
+) -> None:
+    template_manager.create_template("count", lambda count: t"Count: {count!s}")
+    context: dict[str, object] = {"count": 123}
+    with pytest.raises(
+        TemplateTypeError, match=r"Interpolation 'count' resolved to int; expected str"
+    ):
+        template_manager.render_template("count", context=context)
+
+
 def test_template_factory_must_return_t_string(template_manager: TemplateManager) -> None:
     bad_factory = cast("Callable[..., Template]", lambda name: f"Hello, {name}!")
     template_manager.create_template("greeting", bad_factory)

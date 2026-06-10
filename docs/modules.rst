@@ -62,7 +62,7 @@ Common methods:
 - ``compose_template(identifier, context=None)`` returns ``RenderedTemplate``.
 - ``list_templates()`` returns a shallow copy of registered factories.
 
-Template factories receive context values as keyword arguments. Every interpolation must resolve to ``str``. Non-string values raise ``TemplateTypeError``.
+Template factories receive context values as keyword arguments. Every interpolation must resolve to ``str``. Non-string values raise ``TemplateTypeError``. Conversions (``!s``, ``!r``, ``!a``) and format specs are applied after the type check.
 
 Template errors
 ---------------

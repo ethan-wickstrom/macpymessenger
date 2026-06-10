@@ -1,67 +1,12 @@
 Modules
 =======
 
-**macpymessenger is organized into focused modules, each with a specific responsibility.**
+**macpymessenger keeps its public API small.** Most users can import what they need from the package root.
 
-This guide provides an overview of each module and its key classes.
+Public API exports
+------------------
 
-client module — Send messages and manage templates
----------------------------------------------------
-
-**The `client` module provides the main public interface.**
-
-Key classes:
-
-- **`IMessageClient`** — sends messages, manages templates, and handles errors
-- **`FileLoggingConfiguration`** — describes optional file logging for client events
-- **`SubprocessCommandRunner`** — executes AppleScript via subprocess
-
-**The client wraps AppleScript execution and surfaces delivery failures through `MessageSendError`.**
-
-configuration module — Validate AppleScript paths
---------------------------------------------------
-
-**The `configuration` module defines the `Configuration` class.**
-
-The `Configuration` class:
-
-- Discovers the bundled AppleScript at `osascript/sendMessage.scpt`
-- Validates that the script exists and is readable
-- Allows custom script paths
-
-exceptions module — Define the error hierarchy
------------------------------------------------
-
-**The `exceptions` module defines all custom exceptions.**
-
-Key exceptions:
-
-- **`MessageSendError`** — raised when message delivery fails
-- **`TemplateError`** — raised for template rendering or management issues
-- **`TemplateNotFoundError`** — raised when a requested template does not exist
-- **`DuplicateTemplateIdentifierError`** — raised when loading templates with duplicate identifiers
-- **`ConfigurationError`** — raised for configuration validation failures
-- **`ScriptNotFoundError`** — raised when the AppleScript file is missing or unreadable
-
-templates module — Manage and render message templates
--------------------------------------------------------
-
-**The `templates` module provides template management with Python 3.14 t-strings.**
-
-Key classes:
-
-- **`TemplateManager`** — stores callables that return t-strings, renders them, and enforces that all interpolations resolve to `str`
-- **`RenderedTemplate`** — contains the rendered message after processing a t-string
-- **`TemplateTypeError`** — raised when a template interpolation resolves to a non-string value
-
-**Templates use callables instead of Jinja2 strings.** Each callable receives keyword arguments and returns a t-string. The manager raises `TemplateTypeError` if any interpolation is not a string, then applies any conversion (``!s``, ``!r``, ``!a``) and format spec when rendering.
-
-Package root — Public API exports
-----------------------------------
-
-**The package root re-exports all public classes through `__all__`.**
-
-Import from the package root:
+**These classes are available from ``macpymessenger``.**
 
 .. code-block:: python
 
@@ -69,31 +14,91 @@ Import from the package root:
        Configuration,
        FileLoggingConfiguration,
        IMessageClient,
+       RenderedTemplate,
+       SubprocessCommandRunner,
        TemplateManager,
    )
-   from macpymessenger.exceptions import MessageSendError
 
-**All primary classes are available at the top level.** You do not need to import from submodules.
+Custom exceptions are available from ``macpymessenger.exceptions``.
 
-osascript directory — AppleScript implementation
--------------------------------------------------
+client module
+-------------
 
-**The `osascript` directory contains the AppleScript that interacts with Messages.app.**
+**The client module sends messages and connects the other pieces.**
 
-The bundled script:
+Key classes:
 
-- **`sendMessage.scpt`** — sends a text message to a recipient
+- ``IMessageClient`` sends messages, sends templates, manages templates, and sends bulk messages.
+- ``FileLoggingConfiguration`` opts in to file logging. The default path is ``macpymessenger.log`` in the current working directory.
+- ``SubprocessCommandRunner`` runs ``osascript`` with ``subprocess.run(..., shell=False)``.
 
-**The `Configuration` class resolves the script path automatically.** You do not need to reference this directory unless you are providing a custom script.
+``IMessageClient.send(phone_number, message, delay_seconds=0)`` returns ``None`` on success. It raises ``MessageSendError`` when delivery fails. The bundled AppleScript honors ``delay_seconds`` and reports delivery errors through a non-zero ``osascript`` exit code.
 
-Module architecture
--------------------
+configuration module
+--------------------
 
-**Each module has a focused responsibility:**
+**The configuration module defines ``Configuration``.**
 
-- `client` — orchestrates message sending and template management
-- `configuration` — validates AppleScript paths
-- `exceptions` — defines the error hierarchy for explicit error handling
-- `templates` — manages template storage and t-string rendering
+``Configuration(send_script_path=None)`` uses the bundled AppleScript by default. If you pass a path, it uses that path instead.
 
-**Understanding the module structure helps you navigate the codebase and extend functionality.**
+The path is checked during initialization. The file must exist and be readable. If not, ``Configuration`` raises ``ScriptNotFoundError``.
+
+templates module
+----------------
+
+**The templates module stores and renders t-string templates.**
+
+Key classes:
+
+- ``TemplateManager`` stores callables that return Python 3.14 t-strings.
+- ``RenderedTemplate`` contains a template identifier and rendered message content.
+
+Common methods:
+
+- ``create_template(identifier, factory)`` stores a new template.
+- ``update_template(identifier, factory)`` replaces an existing template.
+- ``delete_template(identifier)`` removes an existing template.
+- ``render_template(identifier, context=None)`` returns the rendered string.
+- ``compose_template(identifier, context=None)`` returns ``RenderedTemplate``.
+- ``list_templates()`` returns a shallow copy of registered factories.
+
+Template factories receive context values as keyword arguments. Every interpolation must resolve to ``str``. Non-string values raise ``TemplateTypeError``. Conversions (``!s``, ``!r``, ``!a``) and format specs are applied after the type check.
+
+Template errors
+---------------
+
+**Template errors tell you whether storage or rendering failed.**
+
+- ``TemplateNotFoundError`` means the identifier does not exist.
+- ``TemplateAlreadyExistsError`` means the identifier already exists.
+- ``TemplateTypeError`` means the factory did not return a t-string, or an interpolation was not a string.
+
+exceptions module
+-----------------
+
+**The exceptions module defines the project error hierarchy.**
+
+Common exceptions include:
+
+- ``MessageSendError`` for failed delivery or command execution.
+- ``InvalidDelayTypeError`` for a delay that is not an ``int``.
+- ``NegativeDelayError`` for a delay below zero.
+- ``ScriptNotFoundError`` for a missing or unreadable AppleScript.
+- ``ConfigurationError`` for configuration failures, including unavailable file logging.
+
+Experimental methods
+--------------------
+
+**Two client methods are present but not implemented.**
+
+- ``get_chat_history`` always raises ``NotImplementedError``.
+- ``send_with_attachment`` always raises ``NotImplementedError``.
+
+They exist to reserve the API shape for future work. Do not call them in production code.
+
+AppleScript resource
+--------------------
+
+**The package includes the AppleScript used for sending.** ``Configuration`` finds it automatically.
+
+You only need to think about the script path when you pass ``send_script_path`` yourself.

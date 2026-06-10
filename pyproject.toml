@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "macpymessenger"
-version = "0.2.0"
+version = "0.3.0"
 description = "macpymessenger is a Python 3.14+ library for sending macOS iMessages through AppleScript."
 readme = "README.md"
 requires-python = ">=3.14"

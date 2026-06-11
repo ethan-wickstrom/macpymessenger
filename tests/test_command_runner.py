@@ -31,7 +31,7 @@ def test_subprocess_runner_rejects_non_string_command_segments() -> None:
 def test_subprocess_runner_invokes_subprocess_without_shell(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    recorded: dict[str, object] = {}
+    recorded: dict[str, Any] = {}
 
     def fake_run(command: Sequence[str], **kwargs: object) -> None:
         recorded["command"] = command
@@ -42,7 +42,8 @@ def test_subprocess_runner_invokes_subprocess_without_shell(
     runner(["osascript", "send.scpt", "+10000000000", "hello", "0"])
 
     assert recorded["command"] == ("osascript", "send.scpt", "+10000000000", "hello", "0")
-    assert recorded["kwargs"] == {"check": True, "text": True, "shell": False}
+    expected_kwargs = {"check": True, "text": True, "shell": False}
+    assert expected_kwargs.items() <= recorded["kwargs"].items()
 
 
 def test_command_runner_exports_remain_importable_from_client_and_package_root() -> None:

@@ -1,12 +1,12 @@
 Usage
 =====
 
-**macpymessenger keeps the main path small.** You create a client, send a message, and handle typed errors.
+The main path is short: create a client, send a message, handle typed errors.
 
 Send a message
 --------------
 
-**Create a client from the default configuration.**
+Create a client from the default configuration.
 
 .. code-block:: python
 
@@ -15,7 +15,7 @@ Send a message
 
    client = IMessageClient(Configuration())
 
-**Call ``send()`` with a recipient and a message.**
+Call ``send()`` with a recipient and a message.
 
 .. code-block:: python
 
@@ -29,7 +29,7 @@ Send a message
 Handle send errors
 ------------------
 
-**The client raises typed exceptions instead of returning status flags.**
+The client raises typed exceptions instead of returning status flags.
 
 - ``MessageSendError`` means delivery failed or AppleScript could not run.
 - ``InvalidDelayTypeError`` means ``delay_seconds`` was not an ``int``. ``bool`` is not accepted.
@@ -38,18 +38,18 @@ Handle send errors
 Delay a message
 ---------------
 
-**Pass ``delay_seconds`` to wait before sending.**
+Pass ``delay_seconds`` to wait before sending.
 
 .. code-block:: python
 
    client.send("+15555555555", "See you in a minute.", delay_seconds=60)
 
-The bundled AppleScript honors the delay. It waits first, then sends. If delivery fails, ``osascript`` exits non-zero and the client raises ``MessageSendError``.
+The bundled AppleScript waits, then sends. If delivery fails, ``osascript`` exits non-zero and the client raises ``MessageSendError``.
 
 Create a template
 -----------------
 
-**A template is a callable that returns a Python 3.14 t-string.**
+A template is a callable that returns a Python 3.14 t-string.
 
 .. code-block:: python
 
@@ -63,13 +63,13 @@ Jinja2 is not used. There is no ``templates/`` directory.
 Send a template
 ---------------
 
-**Pass the template identifier and a context dictionary.**
+Pass the template identifier and a context dictionary.
 
 .. code-block:: python
 
    client.send_template("+15555555555", "greeting", {"name": "Ada"})
 
-The call is equivalent to rendering the template and then calling ``send()``.
+This renders the template and calls ``send()``.
 
 You can also delay a templated message:
 
@@ -85,13 +85,11 @@ You can also delay a templated message:
 Update and delete templates
 ---------------------------
 
-**Use the same identifier when you want to replace a template.**
+Use the same identifier when you want to replace a template.
 
 .. code-block:: python
 
    client.update_template("greeting", lambda name: t"Hi {name}, welcome back.")
-
-**Delete templates you no longer need.**
 
 .. code-block:: python
 
@@ -102,9 +100,8 @@ Missing identifiers raise ``TemplateNotFoundError``. Duplicate identifiers raise
 Keep template values as strings
 -------------------------------
 
-**Every interpolation must resolve to ``str``.**
-
-**Conversions and format specs are honored.** Interpolations may use ``!s``, ``!r``, or ``!a`` conversions and standard format specs, which are applied after the string type check:
+Every interpolation must resolve to ``str``. ``!s``, ``!r``, and ``!a``
+conversions and standard format specs are applied after the type check:
 
 .. code-block:: python
 
@@ -117,12 +114,13 @@ Keep template values as strings
 
 If ``status`` is an ``int`` or another non-string value, rendering raises ``TemplateTypeError``.
 
-Missing context values are regular Python call errors. The callable receives the context as keyword arguments.
+The callable receives the context as keyword arguments, so missing values are
+regular Python call errors.
 
 List all templates
 ------------------
 
-**Get a dictionary of all registered template callables:**
+Get a dictionary of registered template callables:
 
 .. code-block:: python
 
@@ -131,12 +129,13 @@ List all templates
    for identifier, factory in factories.items():
        print(f"{identifier}: {factory.__name__}")
 
-**The returned dictionary is a shallow copy.** Modifying it does not affect the manager's internal state.
+The returned dictionary is a shallow copy, so modifying it does not affect the
+manager.
 
 Use TemplateManager directly
 ----------------------------
 
-**Use ``TemplateManager`` when you want rendering without a client.**
+Use ``TemplateManager`` for rendering without a client.
 
 .. code-block:: python
 
@@ -153,7 +152,7 @@ Use TemplateManager directly
 Send to multiple recipients
 ---------------------------
 
-**Use ``send_bulk()`` to send one message to many recipients.**
+``send_bulk()`` sends one message to many recipients.
 
 .. code-block:: python
 
@@ -175,15 +174,15 @@ Use the failed list to retry or log the result:
 Experimental stubs
 ------------------
 
-**Two methods exist, but they are not implemented yet.**
+Two methods are not implemented yet:
 
 - ``get_chat_history(phone_number, limit=10)``
 - ``send_with_attachment(phone_number, message, attachment_path)``
 
-Both methods always raise ``NotImplementedError``.
+Both always raise ``NotImplementedError``.
 
 .. code-block:: python
 
    client.get_chat_history("+15555555555")  # raises NotImplementedError
 
-Do not use these methods in production code yet.
+Do not use them in production yet.

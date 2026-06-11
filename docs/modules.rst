@@ -1,12 +1,13 @@
 Modules
 =======
 
-**macpymessenger keeps its public API small.** Most users can import what they need from the package root.
+The public API is small. Most users can import everything they need from the
+package root.
 
 Public API exports
 ------------------
 
-**These classes are available from ``macpymessenger``.**
+These classes are available from ``macpymessenger``.
 
 .. code-block:: python
 
@@ -24,7 +25,7 @@ Custom exceptions are available from ``macpymessenger.exceptions``.
 client module
 -------------
 
-**The client module sends messages and connects the other pieces.**
+The client module sends messages and connects the other pieces.
 
 Key classes:
 
@@ -32,21 +33,22 @@ Key classes:
 - ``FileLoggingConfiguration`` opts in to file logging. The default path is ``macpymessenger.log`` in the current working directory.
 - ``SubprocessCommandRunner`` runs ``osascript`` with ``subprocess.run(..., shell=False)``.
 
-``IMessageClient.send(phone_number, message, delay_seconds=0)`` returns ``None`` on success. It raises ``MessageSendError`` when delivery fails. The bundled AppleScript honors ``delay_seconds`` and reports delivery errors through a non-zero ``osascript`` exit code.
+``IMessageClient.send(phone_number, message, delay_seconds=0)`` returns ``None``
+on success and raises ``MessageSendError`` when delivery fails. The bundled AppleScript honors ``delay_seconds`` and reports delivery errors through a non-zero ``osascript`` exit code.
 
 configuration module
 --------------------
 
-**The configuration module defines ``Configuration``.**
+The configuration module defines ``Configuration``.
 
-``Configuration(send_script_path=None)`` uses the bundled AppleScript by default. If you pass a path, it uses that path instead.
-
-The path is checked during initialization. The file must exist and be readable. If not, ``Configuration`` raises ``ScriptNotFoundError``.
+``Configuration(send_script_path=None)`` uses the bundled AppleScript by
+default. The path is checked at initialization; a missing or unreadable file
+raises ``ScriptNotFoundError``.
 
 templates module
 ----------------
 
-**The templates module stores and renders t-string templates.**
+The templates module stores and renders t-string templates.
 
 Key classes:
 
@@ -62,12 +64,14 @@ Common methods:
 - ``compose_template(identifier, context=None)`` returns ``RenderedTemplate``.
 - ``list_templates()`` returns a shallow copy of registered factories.
 
-Template factories receive context values as keyword arguments. Every interpolation must resolve to ``str``. Non-string values raise ``TemplateTypeError``. Conversions (``!s``, ``!r``, ``!a``) and format specs are applied after the type check.
+Template factories receive context values as keyword arguments. Non-string
+interpolations raise ``TemplateTypeError``. Conversions (``!s``, ``!r``,
+``!a``) and format specs are applied after the type check.
 
 Template errors
 ---------------
 
-**Template errors tell you whether storage or rendering failed.**
+Template errors tell you whether storage or rendering failed.
 
 - ``TemplateNotFoundError`` means the identifier does not exist.
 - ``TemplateAlreadyExistsError`` means the identifier already exists.
@@ -76,7 +80,7 @@ Template errors
 exceptions module
 -----------------
 
-**The exceptions module defines the project error hierarchy.**
+The exceptions module defines the project error hierarchy.
 
 Common exceptions include:
 
@@ -89,16 +93,16 @@ Common exceptions include:
 Experimental methods
 --------------------
 
-**Two client methods are present but not implemented.**
+Two client methods are present but not implemented.
 
 - ``get_chat_history`` always raises ``NotImplementedError``.
 - ``send_with_attachment`` always raises ``NotImplementedError``.
 
-They exist to reserve the API shape for future work. Do not call them in production code.
+They reserve the API shape for future work; do not call them in production.
 
 AppleScript resource
 --------------------
 
-**The package includes the AppleScript used for sending.** ``Configuration`` finds it automatically.
-
-You only need to think about the script path when you pass ``send_script_path`` yourself.
+The package bundles the AppleScript used for sending, and ``Configuration``
+finds it automatically. The path matters only when you pass
+``send_script_path`` yourself.

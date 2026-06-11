@@ -27,6 +27,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+**Installable artifacts.** The 0.2.0 wheel and sdist on PyPI shipped no Python modules: the Hatchling sdist `include` list was restricted to the AppleScript file, and the wheel was built from that sdist. Installing 0.2.0 produced an empty namespace package, so `from macpymessenger import Configuration` failed with `ImportError: cannot import name 'Configuration' from 'macpymessenger' (unknown location)`. Artifacts now build with `uv_build` from `src/macpymessenger`, and the publish workflow imports the public API from the built wheel in a clean environment before uploading. Fixes [#33](https://github.com/ethan-wickstrom/macpymessenger/issues/33).
+
 **Template rendering honors t-string conversions and format specs.** Interpolations such as `t"{name!r}"` or `t"{name:>10}"` now apply their conversion and format spec instead of silently ignoring them. Interpolation values must still be strings.
 
 **The bundled send script now honors `delay_seconds`.** Previously the AppleScript ignored the delay argument that `IMessageClient.send` passed to it. The script now waits the requested number of seconds before sending.
@@ -55,10 +57,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 **Explicit error handling.** `IMessageClient.send` raises `MessageSendError` on delivery failures instead of returning boolean values. See `docs/usage.rst` for error handling examples.
 
-**Template-focused documentation.** The README and usage guide emphasize templated messaging, context dictionaries, and failure handling best practices.
+**Template-focused documentation.** The README and usage guide center on templates, context dictionaries, and error handling.
 
 **Standardized packaging.** The project uses `pyproject.toml` with Hatchling and `uv` for faster installations and easier audits. See `docs/installation.rst`.
 
 ### Removed
 
-**Legacy package layout.** The `i_py_messenger` package name and verbose promotional templates were removed in favor of the streamlined `macpymessenger` API.
+**Legacy package layout.** The `i_py_messenger` package name and the promotional example templates were removed. The package is now just `macpymessenger`.

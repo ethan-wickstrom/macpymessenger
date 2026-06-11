@@ -1,12 +1,13 @@
 Testing
 =======
 
-**macpymessenger uses uv for development commands.** The project checks tests, lint, types, builds, and documentation.
+Development commands run through uv. The checks cover tests, lint, types,
+builds, and documentation.
 
 Set up the environment
 ----------------------
 
-**Install the development dependencies first.**
+Install the development dependencies first.
 
 .. code-block:: bash
 
@@ -17,70 +18,55 @@ Set up the environment
 Run tests
 ---------
 
-**Use pytest for the test suite.**
-
 .. code-block:: bash
 
    uv run pytest
 
-The tests use stubs for command execution where possible. They do not need to send real iMessages.
+The tests stub command execution and send no real iMessages.
 
 Run lint and type checks
 ------------------------
 
-**Use ruff for linting.**
-
 .. code-block:: bash
 
    uv run ruff check
-
-**Use ty for type checking.**
-
-.. code-block:: bash
-
    uv run ty check
 
-Both commands should exit with status code 0 before you open a pull request.
+Both should exit 0 before you open a pull request.
 
 Build the package
 -----------------
-
-**Use uv to build the distribution files.**
 
 .. code-block:: bash
 
    uv build
 
-This checks that the package can be built from the current source tree.
+This checks that the package builds from the source tree.
 
 Build the documentation
 -----------------------
-
-**Use Sphinx to build the HTML documentation.**
 
 .. code-block:: bash
 
    uv run sphinx-build docs docs/_build/html
 
-When you are checking for warnings, add ``-W`` so warnings fail the build.
+Add ``-W`` to make warnings fail the build.
 
 Understand failures
 -------------------
 
-**pytest failures show the failing assertion and traceback.** Start with the first failure.
-
-**ruff failures show file paths and rule codes.** Fix the reported line, then run the command again.
-
-**ty failures show type mismatches.** Keep public examples aligned with the typed API.
-
-**Sphinx failures often point to invalid reStructuredText.** Check heading underlines, code-block directives, and inline markup.
+pytest shows the failing assertion and traceback; start with the first failure.
+ruff reports file paths and rule codes, and ty reports type mismatches. Sphinx
+failures usually mean invalid reStructuredText: check heading underlines,
+code-block directives, and inline markup.
 
 Write tests for changes
 -----------------------
 
-**Add tests under ``tests/`` when behavior changes.** Test files use the ``test_*.py`` naming pattern.
+Add tests under ``tests/`` when behavior changes. Test files use the ``test_*.py`` naming pattern.
 
-For message sending behavior, prefer a stub command runner. That keeps tests fast and avoids AppleScript.
+For sending behavior, use a stub command runner; it keeps tests fast and avoids
+AppleScript.
 
 .. code-block:: python
 
@@ -89,5 +75,3 @@ For message sending behavior, prefer a stub command runner. That keeps tests fas
    def test_send_message_success(stub_command_runner):
        client = IMessageClient(Configuration(), command_runner=stub_command_runner)
        client.send("+15555555555", "Hello")
-
-Run new tests with ``uv run pytest``.

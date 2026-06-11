@@ -1,12 +1,10 @@
 Installation
 ============
 
-**macpymessenger requires macOS and Python 3.14 or newer.** It sends through the Messages app by running AppleScript.
+macpymessenger requires macOS and Python 3.14 or newer. It sends through the Messages app by running AppleScript.
 
 Install with uv
 ---------------
-
-**Use ``uv add`` when you are adding macpymessenger to a project.**
 
 .. code-block:: bash
 
@@ -17,8 +15,6 @@ This updates your project environment and records the dependency.
 Install with pip
 ----------------
 
-**Use ``pip`` when you want a standard Python install.**
-
 .. code-block:: bash
 
    pip install macpymessenger
@@ -26,7 +22,7 @@ Install with pip
 Verify the install
 ------------------
 
-**Import the package to check that Python can find it.**
+Import the package to check that Python can find it:
 
 .. code-block:: bash
 
@@ -43,16 +39,16 @@ Check the installed package metadata if needed:
 Common install issues
 ---------------------
 
-**Python is too old.** Run ``python --version``. You need Python 3.14 or newer.
+Python is too old. Run ``python --version``. You need Python 3.14 or newer.
 
-**The platform is not macOS.** The package can install elsewhere, but sending messages requires macOS, AppleScript, and Messages.app.
+The platform is not macOS. The package can install elsewhere, but sending messages requires macOS, AppleScript, and Messages.app.
 
-**A custom script path fails.** ``Configuration(send_script_path=...)`` checks the file immediately. Make sure the file exists and can be read.
+A custom script path fails. ``Configuration(send_script_path=...)`` checks the file immediately. Make sure the file exists and can be read.
 
 Development setup
 -----------------
 
-**Use ``uv sync`` when you are working on this repository.**
+When working on this repository itself, install the development dependencies:
 
 .. code-block:: bash
 

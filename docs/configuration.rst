@@ -1,12 +1,13 @@
 Configuration
 =============
 
-**``Configuration`` tells the client which AppleScript to run.** It also checks that the script can be used.
+``Configuration`` tells the client which AppleScript to run and checks that the
+script can be used.
 
 Use the bundled AppleScript
 ---------------------------
 
-**The default configuration uses the AppleScript packaged with macpymessenger.**
+The default configuration uses the AppleScript packaged with macpymessenger.
 
 .. code-block:: python
 
@@ -19,7 +20,7 @@ This is the right choice for most users.
 Use a custom AppleScript path
 -----------------------------
 
-**Pass ``send_script_path`` when you need your own script.**
+Pass ``send_script_path`` when you need your own script.
 
 .. code-block:: python
 
@@ -31,22 +32,10 @@ Use a custom AppleScript path
 
 ``Configuration`` validates the path during initialization. If the file is missing or unreadable, it raises ``ScriptNotFoundError``.
 
-How validation works
---------------------
-
-**Validation happens before you send a message.** This catches path problems early.
-
-The check is simple:
-
-1. The path must point to an existing file.
-2. The current process must be able to read the file.
-
-If either check fails, ``Configuration`` raises ``ScriptNotFoundError``.
-
 Enable file logging
 -------------------
 
-**File logging is off by default.** Turn it on when you want client events written to disk.
+File logging is off by default. Turn it on to write client events to disk.
 
 .. code-block:: python
 
@@ -59,7 +48,7 @@ This writes ``macpymessenger.log`` in the current working directory.
 Choose a log file path
 ----------------------
 
-**Pass a path to ``FileLoggingConfiguration`` when you want a different file.**
+Pass a path to ``FileLoggingConfiguration`` for a different file.
 
 .. code-block:: python
 
@@ -74,7 +63,7 @@ If the file handler cannot be created, the client raises ``ConfigurationError``.
 Pass your own logger
 --------------------
 
-**Use a custom logger when your app already owns logging.**
+Use a custom logger when your app already owns logging.
 
 .. code-block:: python
 
@@ -86,12 +75,12 @@ Pass your own logger
 
    client = IMessageClient(Configuration(), logger=logger)
 
-The client uses the logger you pass. It does not remove your handlers.
+The client uses the logger you pass and does not remove your handlers.
 
 Combine custom logging options
 ------------------------------
 
-**You can pass both ``logger`` and ``file_logging``.** If the logger does not already have a file handler, the client adds one.
+You can pass both ``logger`` and ``file_logging``. If the logger does not already have a file handler, the client adds one.
 
 .. code-block:: python
 

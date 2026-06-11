@@ -1,50 +1,49 @@
 Introduction
 ============
 
-**macpymessenger sends iMessages from Python on macOS.** It uses AppleScript to talk to the built-in Messages app.
+macpymessenger sends iMessages from Python on macOS. It uses AppleScript to talk
+to the built-in Messages app.
 
-Use it when you want a small Python library, not a hosted messaging service. Your script runs on a Mac. Messages.app sends the iMessage.
+Use it when you want a small Python library, not a hosted messaging service. Your
+script runs on a Mac, and Messages.app sends the iMessage.
 
-What macpymessenger gives you
------------------------------
+What you get
+------------
 
-**A short sending path.** Create a ``Configuration``. Create an ``IMessageClient``. Call ``send()``.
+The sending path is short: create a ``Configuration``, create an
+``IMessageClient``, call ``send()``. Delivery failures raise ``MessageSendError``,
+and bad delays raise ``InvalidDelayTypeError`` or ``NegativeDelayError``.
 
-**Clear errors.** Delivery failures raise ``MessageSendError``. Bad delays raise ``InvalidDelayTypeError`` or ``NegativeDelayError``.
+Templates are callables that return Python 3.14 t-strings, such as
+``lambda name: t"Hello, {name}!"``. Jinja2 is not used. Every interpolation must
+resolve to ``str``. Anything else raises ``TemplateTypeError``.
 
-**Real t-string templates.** Templates are callables that return Python 3.14 t-strings, such as ``lambda name: t"Hello, {name}!"``. Jinja2 is not used.
-
-**Safe template rendering.** Every interpolation must resolve to ``str``. If not, macpymessenger raises ``TemplateTypeError``.
-
-**Early configuration checks.** ``Configuration`` checks that the AppleScript file exists and is readable when you create it.
-
-**Testable seams.** The client accepts a custom command runner. Tests can avoid running AppleScript.
+``Configuration`` checks that the AppleScript file exists and is readable when
+you create it, so path problems surface before the first send. The client also
+accepts a custom command runner, which lets tests skip AppleScript.
 
 When to use it
 --------------
 
-**Personal automation.** Send yourself reminders or small alerts from a script.
+Sending yourself reminders from a script. Sending notices from approval flows,
+monitoring jobs, or local tools. Reusing message text where only names, dates,
+or status text change. Sending one message to many recipients and collecting
+successes and failures.
 
-**Team workflows.** Send iMessage notices from approval flows, monitoring jobs, or local tools.
+Limits
+------
 
-**Message templates.** Reuse message text while changing names, dates, or short status text.
+macOS is required. The library depends on AppleScript and Messages.app, so the
+package can install elsewhere but cannot send from there.
 
-**Bulk sends.** Send the same message to a list of recipients and collect successes and failures.
+Python 3.14 or newer is required, because templates use t-strings.
 
-Important limits
-----------------
-
-**macOS is required.** The library depends on AppleScript and Messages.app.
-
-**Python 3.14 or newer is required.** Templates use Python t-strings.
-
-**Attachments and chat history are not ready.** ``send_with_attachment`` and ``get_chat_history`` are experimental stubs. They always raise ``NotImplementedError``.
+``send_with_attachment`` and ``get_chat_history`` are stubs that always raise
+``NotImplementedError``.
 
 Next steps
 ----------
 
-**Install the package.** Start with the installation guide.
-
-**Send a first message.** Follow the usage guide for sending, templates, bulk sends, and errors.
-
-**Tune configuration.** Read the configuration guide if you need a custom AppleScript path, file logging, or your own logger.
+Install the package, then follow the usage guide to send a first message. Read
+the configuration guide if you need a custom AppleScript path, file logging, or
+your own logger.

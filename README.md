@@ -2,7 +2,7 @@
 
 macpymessenger sends iMessages from Python on macOS.
 
-It talks to the built-in Messages app through AppleScript. It also gives you Python 3.14 t-string templates, clear return values, and typed errors when something goes wrong.
+It talks to the built-in Messages app through AppleScript, and adds Python 3.14 t-string templates and typed errors.
 
 ## Features
 
@@ -27,7 +27,7 @@ Add macpymessenger to a project with `uv`:
 uv add macpymessenger
 ```
 
-Or install it with `pip`:
+Or with `pip`:
 
 ```bash
 pip install macpymessenger
@@ -47,7 +47,7 @@ except MessageSendError as error:
     print(f"Delivery failed: {error}")
 ```
 
-`send()` returns `None` when the message is sent. It raises `MessageSendError` when delivery fails.
+`send()` returns `None` on success and raises `MessageSendError` when delivery fails.
 
 You can also wait before sending:
 
@@ -70,7 +70,7 @@ client.create_template(
 client.send_template("+15555555555", "welcome", {"name": "Ada"})
 ```
 
-Every interpolation must resolve to a `str`. If one does not, macpymessenger raises `TemplateTypeError`.
+Every interpolation must resolve to a `str`, or rendering raises `TemplateTypeError`.
 
 ## Bulk sending
 
@@ -82,11 +82,11 @@ print(f"Sent: {successful}")
 print(f"Failed: {failed}")
 ```
 
-`send_bulk()` returns two lists. The first list contains successful recipients. The second list contains failed recipients.
+`send_bulk()` returns two lists: successful recipients and failed recipients.
 
 ## Configuration and logging
 
-By default, macpymessenger uses the bundled AppleScript. You can pass a custom script path when you need one:
+macpymessenger uses the bundled AppleScript by default. To use your own:
 
 ```python
 from pathlib import Path
@@ -96,7 +96,7 @@ configuration = Configuration(send_script_path=Path("/path/to/custom/sendMessage
 client = IMessageClient(configuration)
 ```
 
-`Configuration` checks that the AppleScript exists and is readable when you create it. It raises `ScriptNotFoundError` if the file cannot be used.
+`Configuration` checks at creation that the script exists and is readable, and raises `ScriptNotFoundError` if not.
 
 File logging is opt-in:
 
@@ -151,6 +151,6 @@ macpymessenger is available under the [Apache-2.0 license](LICENSE).
 
 Created and maintained by [Ethan Wickstrom](https://github.com/ethan-wickstrom).
 
-macpymessenger was originally forked from [Rolstenhouse/py-iMessage](https://github.com/Rolstenhouse/py-iMessage). Thanks to the developers of the libraries and tools used in this project, and to the open-source community.
+macpymessenger started as a fork of [Rolstenhouse/py-iMessage](https://github.com/Rolstenhouse/py-iMessage).
 
 For more detail, see the [docs](docs/) directory.

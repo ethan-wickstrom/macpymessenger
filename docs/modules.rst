@@ -49,6 +49,22 @@ Key classes:
 For compatibility, both classes also remain importable from
 ``macpymessenger.client`` and the package root.
 
+delivery module
+---------------
+
+The delivery module owns the full message delivery behavior surface.
+
+Key class:
+
+- ``MessageDelivery`` validates the send delay, constructs the ``osascript``
+  command, executes it through the ``CommandRunner`` seam, maps subprocess
+  and OS failures to typed ``MessageSendError`` variants, and logs the
+  outcome.
+
+``IMessageClient.send`` delegates to ``MessageDelivery.deliver`` so the
+client facade stays thin while all delivery concerns are co-located and
+independently testable.
+
 configuration module
 --------------------
 

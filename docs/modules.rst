@@ -12,6 +12,7 @@ These classes are available from ``macpymessenger``.
 .. code-block:: python
 
    from macpymessenger import (
+       CommandRunner,
        Configuration,
        FileLoggingConfiguration,
        IMessageClient,
@@ -31,10 +32,22 @@ Key classes:
 
 - ``IMessageClient`` sends messages, sends templates, manages templates, and sends bulk messages.
 - ``FileLoggingConfiguration`` opts in to file logging. The default path is ``macpymessenger.log`` in the current working directory.
-- ``SubprocessCommandRunner`` runs ``osascript`` with ``subprocess.run(..., shell=False)``.
 
 ``IMessageClient.send(phone_number, message, delay_seconds=0)`` returns ``None``
 on success and raises ``MessageSendError`` when delivery fails. The bundled AppleScript honors ``delay_seconds`` and reports delivery errors through a non-zero ``osascript`` exit code.
+
+commands module
+---------------
+
+The commands module owns command execution.
+
+Key classes:
+
+- ``CommandRunner`` is the protocol for injectable command runners.
+- ``SubprocessCommandRunner`` runs ``osascript`` with ``subprocess.run(..., shell=False)``.
+
+For compatibility, both classes also remain importable from
+``macpymessenger.client`` and the package root.
 
 configuration module
 --------------------

@@ -7,7 +7,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
-<!-- Add changes here after each significant change -->
+### Changed
+
+**Command execution moved to a named module.** The `CommandRunner` protocol and `SubprocessCommandRunner` adapter now live in `macpymessenger.commands`. Existing imports from `macpymessenger.client` and the package root keep working as compatibility exports, and `CommandRunner` is now also exported from the package root. Fixes [#35](https://github.com/ethan-wickstrom/macpymessenger/issues/35).
 
 ## [0.3.0] - 2026-06-09
 

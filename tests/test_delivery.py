@@ -150,7 +150,7 @@ class TestExecute:
 
     def test_oserror_maps_to_command_failed(
         self,
-        delivery: tuple[MessageDelivery, StubRunner],
+        configuration: Configuration,
         delivery_logger: logging.Logger,
     ) -> None:
         def raising_runner(command: object) -> None:  # noqa: ARG001
@@ -158,7 +158,7 @@ class TestExecute:
             raise OSError(msg)
 
         instance = MessageDelivery(
-            configuration=delivery[0]._configuration,
+            configuration=configuration,
             command_runner=raising_runner,
             logger=delivery_logger,
         )
@@ -189,10 +189,10 @@ class TestExecute:
             caplog.at_level(logging.ERROR, logger="test.delivery"),
             pytest.raises(MessageSendError),
         ):
-                instance._execute(
-                    "+19999999999",
-                    ["osascript", "send.scpt", "+19999999999", "hi", "0"],
-                )
+            instance._execute(
+                "+19999999999",
+                ["osascript", "send.scpt", "+19999999999", "hi", "0"],
+            )
         assert any("+19999999999" in record.message for record in caplog.records)
 
 
@@ -254,3 +254,28 @@ class TestDeliver:
         with pytest.raises(MessageSendError) as exc_info:
             instance.deliver("+19999999999", "Hello")
         assert isinstance(exc_info.value.__cause__, subprocess.CalledProcessError)
+
+    def test_oserror_raises_command_failed_and_logs(
+        self,
+        configuration: Configuration,
+        delivery_logger: logging.Logger,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        def raising_runner(command: object) -> None:  # noqa: ARG001
+            msg = "exec failed"
+            raise OSError(msg)
+
+        instance = MessageDelivery(
+            configuration=configuration,
+            command_runner=raising_runner,
+            logger=delivery_logger,
+        )
+        with (
+            caplog.at_level(logging.ERROR, logger="test.delivery"),
+            pytest.raises(MessageSendError, match="Failed to execute osascript"),
+        ):
+            instance.deliver("+10000000000", "Hello")
+        assert any(
+            "Execution error while sending to +10000000000" in record.message
+            for record in caplog.records
+        )

@@ -20,6 +20,12 @@ jobs:
       - name: Build package (sdist + wheel) with uv
         run: uv build
 
+      - name: Smoke test built wheel in a clean environment
+        run: |
+          uv run --isolated --no-project --python 3.14 \
+            --with "$(ls dist/*.whl)" \
+            python -c "from macpymessenger import Configuration, IMessageClient, TemplateManager; print('wheel imports OK')"
+
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:

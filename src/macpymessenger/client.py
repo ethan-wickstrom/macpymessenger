@@ -3,18 +3,16 @@
 from __future__ import annotations
 
 import logging
-import subprocess
 from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
 from typing import TYPE_CHECKING, overload
 
 from .commands import CommandRunner, SubprocessCommandRunner
+from .delivery import MessageDelivery
 from .exceptions import (
     ConfigurationError,
-    InvalidDelayTypeError,
     MessageSendError,
-    NegativeDelayError,
 )
 from .templates import TemplateManager
 
@@ -64,6 +62,7 @@ class IMessageClient:
     """
 
     __slots__ = (
+        "_delivery",
         "_logger",
         "command_runner",
         "configuration",
@@ -123,6 +122,11 @@ class IMessageClient:
             logger_instance.addHandler(file_handler)
 
         self._logger = logger_instance
+        self._delivery = MessageDelivery(
+            configuration=self.configuration,
+            command_runner=self.command_runner,
+            logger=self._logger,
+        )
 
     @property
     def logger(self) -> logging.Logger:
@@ -135,27 +139,7 @@ class IMessageClient:
     def send(self, phone_number: str, message: str, delay_seconds: object = 0) -> None: ...
 
     def send(self, phone_number: str, message: str, delay_seconds: object = 0) -> None:
-        if isinstance(delay_seconds, bool) or not isinstance(delay_seconds, int):
-            raise InvalidDelayTypeError
-        if delay_seconds < 0:
-            raise NegativeDelayError
-        delay_value: int = delay_seconds
-        command: list[str] = [
-            "osascript",
-            str(self.configuration.send_script_path),
-            phone_number,
-            message,
-            str(delay_value),
-        ]
-        try:
-            self.command_runner(command)
-            self.logger.info("Message sent to %s", phone_number)
-        except subprocess.CalledProcessError as error:
-            self.logger.exception("Failed to send message to %s", phone_number)
-            raise MessageSendError.delivery_failed(phone_number) from error
-        except OSError as error:
-            self.logger.exception("Execution error while sending to %s", phone_number)
-            raise MessageSendError.command_failed(phone_number) from error
+        self._delivery.deliver(phone_number, message, delay_seconds)
 
     def send_template(
         self,

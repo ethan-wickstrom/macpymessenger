@@ -4,15 +4,14 @@ from __future__ import annotations
 
 import logging
 import subprocess
-from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
-from typing import TYPE_CHECKING, Protocol, overload
+from typing import TYPE_CHECKING, overload
 
+from .commands import CommandRunner, SubprocessCommandRunner
 from .exceptions import (
     ConfigurationError,
-    InvalidCommandError,
     InvalidDelayTypeError,
     MessageSendError,
     NegativeDelayError,
@@ -20,6 +19,7 @@ from .exceptions import (
 from .templates import TemplateManager
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Mapping, Sequence
     from string.templatelib import Template
 
     from .configuration import Configuration
@@ -35,23 +35,12 @@ class FileLoggingConfiguration:
     path: str | Path | None = None
 
 
-class CommandRunner(Protocol):
-    """Protocol describing callable command runners."""
-
-    def __call__(self, command: Sequence[str]) -> None:  # pragma: no cover - Protocol definition
-        """Execute the provided command."""
-
-
-class SubprocessCommandRunner:
-    """Command runner that delegates to :func:`subprocess.run`."""
-
-    def __call__(self, command: Sequence[str]) -> None:
-        if not isinstance(command, Sequence) or isinstance(command, (str, bytes)):
-            raise InvalidCommandError.non_sequence()
-        for segment in command:
-            if not isinstance(segment, str):
-                raise InvalidCommandError.non_string_segment()
-        subprocess.run(tuple(command), check=True, text=True, shell=False)  # noqa: S603
+__all__ = [
+    "CommandRunner",
+    "FileLoggingConfiguration",
+    "IMessageClient",
+    "SubprocessCommandRunner",
+]
 
 
 class IMessageClient:

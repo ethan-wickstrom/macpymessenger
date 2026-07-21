@@ -27,6 +27,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 **`InvalidCommandError` and the command pre-validation in `SubprocessCommandRunner`.** Commands are built internally and `subprocess.run` rejects invalid argument types itself.
 
+**`TemplateTypeError.unexpected_element`.** `string.templatelib.Template` cannot be subclassed and iterating it yields only `str` and `Interpolation`, so the branch that raised it could never execute.
+
 **Compatibility re-exports of `CommandRunner` and `SubprocessCommandRunner` from `macpymessenger.client`.** Import them from the package root or `macpymessenger.commands`.
 
 ### Earlier unreleased changes

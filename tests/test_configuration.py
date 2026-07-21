@@ -43,3 +43,10 @@ def test_configuration_raises_for_unreadable_script(
 
     with pytest.raises(ScriptNotFoundError):
         Configuration(script_path)
+
+
+def test_unreadable_script_maps_generic_os_error(tmp_path: Path) -> None:
+    directory = tmp_path / "script.scpt"
+    directory.mkdir()
+    with pytest.raises(ScriptNotFoundError, match="cannot be read"):
+        Configuration(directory)

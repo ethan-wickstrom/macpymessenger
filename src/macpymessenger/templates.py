@@ -16,7 +16,9 @@ def _process_template(template: Template) -> str:
     """Render a t-string Template object ensuring all interpolations are strings.
 
     Each interpolation must resolve to ``str``; its conversion (``!s``, ``!r``,
-    ``!a``) and format spec (for example ``:>10``) are then applied.
+    ``!a``) and format spec (for example ``:>10``) are then applied. Iterating
+    a ``Template`` yields only ``str`` and ``Interpolation`` items, and the
+    class cannot be subclassed, so no other cases exist.
     """
 
     parts: list[str] = []
@@ -35,8 +37,6 @@ def _process_template(template: Template) -> str:
                         expression, type(value).__name__
                     )
                 parts.append(format(convert(value, conversion), format_spec or ""))
-            case _:
-                raise TemplateTypeError.unexpected_element(type(item).__name__)
     return "".join(parts)
 
 

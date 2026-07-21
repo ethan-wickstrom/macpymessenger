@@ -26,7 +26,7 @@ def test_subprocess_runner_invokes_subprocess_without_shell(
     runner(["osascript", "send.scpt", "+10000000000", "hello", "0"])
 
     assert recorded["command"] == ["osascript", "send.scpt", "+10000000000", "hello", "0"]
-    expected_kwargs = {"check": True, "text": True, "shell": False}
+    expected_kwargs = {"check": True, "shell": False}
     assert expected_kwargs.items() <= recorded["kwargs"].items()
 
 

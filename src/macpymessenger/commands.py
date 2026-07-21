@@ -30,4 +30,4 @@ class SubprocessCommandRunner:
     """Command runner that delegates to :func:`subprocess.run`."""
 
     def __call__(self, command: Sequence[str]) -> None:
-        subprocess.run(command, check=True, text=True, shell=False)  # noqa: S603
+        subprocess.run(command, check=True, shell=False)  # noqa: S603

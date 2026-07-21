@@ -55,11 +55,6 @@ class TemplateTypeError(TemplateError):
         return cls(message)
 
     @classmethod
-    def unexpected_element(cls, element_type: str) -> Self:
-        message = f"Unexpected template element of type {element_type}"
-        return cls(message)
-
-    @classmethod
     def invalid_factory_return(cls) -> Self:
         message = "Template factories must return a string.templatelib.Template instance."
         return cls(message)

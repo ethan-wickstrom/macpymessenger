@@ -35,7 +35,9 @@ ever receives the send command primitive.
 
 ## Logging rule
 
-Each module logs to `logging.getLogger(__name__)`; the package `__init__`
+Events are emitted through the logger injected into `MessageDelivery`,
+which defaults to the client module's logger
+(`logging.getLogger("macpymessenger.client")`). The package `__init__`
 installs a `NullHandler`. The library never attaches other handlers, sets
 levels, or chooses formats. `IMessageClient` accepts an optional `logger`
 for callers who want events routed to their own logger object.

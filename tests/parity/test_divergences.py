@@ -48,7 +48,9 @@ class TestLibraryNoLongerManagesLogHandlers:
         assert "file_logging" not in parameters
 
     def test_client_does_not_mutate_logger_level(self, script_path: Path) -> None:
-        logger = logging.getLogger("macpymessenger.delivery")
+        # Old: constructing a client without a logger set the default
+        # macpymessenger.client logger's level to INFO.
+        logger = logging.getLogger("macpymessenger.client")
         original_level = logger.level
         IMessageClient(Configuration(script_path), command_runner=StubRunner())
         assert logger.level == original_level == logging.NOTSET
@@ -108,9 +110,26 @@ class TestMigrationShimExportsAreGone:
     (issue #35 compatibility shim).
 
     Justification: the migration is finished; one canonical import path
-    (docs/audit.md § 7). Root exports are unchanged (see baseline).
+    (docs/audit.md § 7). Root exports are unchanged (see baseline). The names
+    remain reachable as ordinary module attributes because the client imports
+    them for its defaults; only the advertised export is gone.
     """
 
     def test_client_module_no_longer_re_exports_runner_names(self) -> None:
         assert "CommandRunner" not in client.__all__
         assert "SubprocessCommandRunner" not in client.__all__
+
+
+class TestUnreachableTemplateErrorIsGone:
+    """Old: TemplateTypeError.unexpected_element existed for a `case _`
+    branch when iterating a template yielded something other than str or
+    Interpolation.
+
+    Justification: string.templatelib.Template cannot be subclassed and its
+    iteration yields only str and Interpolation, so after the isinstance
+    check the branch could never fire; exception types exist only for
+    failures that can occur (docs/foundation.md § Derivations).
+    """
+
+    def test_unexpected_element_factory_is_gone(self) -> None:
+        assert not hasattr(exceptions.TemplateTypeError, "unexpected_element")

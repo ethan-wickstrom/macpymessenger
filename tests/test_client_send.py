@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 import pytest
@@ -36,3 +37,13 @@ def test_send_message_requires_integer_delay(client: tuple[IMessageClient, StubR
         instance.send("1234567890", "Hello", delay_seconds=1.5)  # ty: ignore[invalid-argument-type]
     with pytest.raises(InvalidDelayTypeError, match="Delay must be provided as an integer"):
         instance.send("1234567890", "Hello", delay_seconds=True)
+
+
+def test_client_exposes_logger_and_collaborators(
+    client: tuple[IMessageClient, StubRunner],
+) -> None:
+    instance, runner = client
+    assert isinstance(instance.logger, logging.Logger)
+    assert instance.command_runner is runner
+    assert instance.configuration.send_script_path.exists()
+    assert instance.template_manager is not None

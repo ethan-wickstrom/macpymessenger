@@ -13,14 +13,13 @@ macpymessenger sends macOS iMessages from Python by composing a validated send s
 | Script path | The filesystem path to the send script after configuration resolves it. |
 | Template factory | A callable that returns a Python 3.14 t-string template for a message body. |
 | Template identifier | The caller-supplied name used to register, update, render, or delete a template factory. |
-| Rendered template | A template identifier paired with the rendered message body produced from a template factory. |
 | Command runner | The adapter that executes an argument list for a command. Tests replace it to avoid real AppleScript execution. |
 | Delivery failure | A failed message send caused by Messages.app or `osascript` execution. |
-| Configuration failure | A setup failure that prevents reliable delivery, such as an unreadable send script or unavailable file logging. |
+| Configuration failure | A setup failure that prevents reliable delivery, such as an unreadable send script. |
 
 ## Stable capabilities
 
-- The public client facade exposes message sending, template-backed sending, template management, bulk send classification, and logging configuration.
+- The public client facade exposes message sending, template-backed sending, template management, and bulk send classification. It emits log events to standard `logging` loggers and never manages handlers, levels, or formats.
 - Configuration resolves the send script before delivery starts.
 - Template management enforces t-string template factories and string-only interpolation values.
 - Command execution stays replaceable so tests can verify behavior without invoking real AppleScript.

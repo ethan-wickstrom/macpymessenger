@@ -8,8 +8,8 @@ make it pass. Intentional divergences live in test_divergences.py.
 from __future__ import annotations
 
 import logging
+import re
 import subprocess
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
@@ -36,6 +36,8 @@ from macpymessenger.exceptions import (
 from tests.support import StubRunner
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+    from pathlib import Path
     from string.templatelib import Template
 
 
@@ -92,16 +94,15 @@ class TestSend:
         self, client: tuple[IMessageClient, StubRunner], bad_delay: object
     ) -> None:
         instance, _ = client
-        with pytest.raises(
-            InvalidDelayTypeError, match="Delay must be provided as an integer number of seconds."
-        ):
-            instance.send("+15551234567", "hi", bad_delay)  # type: ignore[invalid-argument-type]
+        expected = re.escape("Delay must be provided as an integer number of seconds.")
+        with pytest.raises(InvalidDelayTypeError, match=expected):
+            instance.send("+15551234567", "hi", bad_delay)  # ty: ignore[invalid-argument-type]
 
     def test_negative_delay_raises_typed_error(
         self, client: tuple[IMessageClient, StubRunner]
     ) -> None:
         instance, _ = client
-        with pytest.raises(NegativeDelayError, match="Delay must be non-negative."):
+        with pytest.raises(NegativeDelayError, match=re.escape("Delay must be non-negative.")):
             instance.send("+15551234567", "hi", -1)
 
     def test_invalid_delay_sends_nothing(self, client: tuple[IMessageClient, StubRunner]) -> None:
@@ -120,8 +121,9 @@ class TestSend:
         assert isinstance(excinfo.value.__cause__, subprocess.CalledProcessError)
 
     def test_os_error_maps_to_message_send_error(self, script_path: Path) -> None:
-        def runner(command: object) -> None:
-            raise OSError("boom")
+        def runner(command: object) -> None:  # noqa: ARG001
+            reason = "boom"
+            raise OSError(reason)
 
         instance = IMessageClient(Configuration(script_path), command_runner=runner)
         with pytest.raises(
@@ -189,38 +191,39 @@ class TestTemplates:
     def test_non_string_interpolation_raises(self) -> None:
         manager = TemplateManager()
         manager.create_template("bad", lambda count: t"{count}")
-        with pytest.raises(
-            TemplateTypeError, match="Interpolation 'count' resolved to int; expected str"
-        ):
+        expected = re.escape("Interpolation 'count' resolved to int; expected str")
+        with pytest.raises(TemplateTypeError, match=expected):
             manager.render_template("bad", {"count": 3})
 
     def test_non_template_factory_return_raises(self) -> None:
         manager = TemplateManager()
-        manager.create_template("plain", lambda: "just a string")  # type: ignore[invalid-argument-type]
-        with pytest.raises(
-            TemplateTypeError,
-            match="Template factories must return a string.templatelib.Template instance.",
-        ):
+        manager.create_template("plain", lambda: "just a string")  # ty: ignore[invalid-argument-type]
+        expected = re.escape(
+            "Template factories must return a string.templatelib.Template instance."
+        )
+        with pytest.raises(TemplateTypeError, match=expected):
             manager.render_template("plain")
 
     def test_duplicate_create_raises(self) -> None:
         manager = TemplateManager()
         manager.create_template("dup", lambda: t"one")
         with pytest.raises(
-            TemplateAlreadyExistsError, match="Template with ID 'dup' already exists."
+            TemplateAlreadyExistsError, match=re.escape("Template with ID 'dup' already exists.")
         ):
             manager.create_template("dup", lambda: t"two")
 
     @pytest.mark.parametrize("operation", ["update", "delete", "render"])
     def test_missing_identifier_raises(self, operation: str) -> None:
         manager = TemplateManager()
-        with pytest.raises(TemplateNotFoundError, match="Template with ID 'ghost' does not exist."):
-            if operation == "update":
-                manager.update_template("ghost", lambda: t"x")
-            elif operation == "delete":
-                manager.delete_template("ghost")
-            else:
-                manager.render_template("ghost")
+        operations: dict[str, Callable[[], object]] = {
+            "update": lambda: manager.update_template("ghost", lambda: t"x"),
+            "delete": lambda: manager.delete_template("ghost"),
+            "render": lambda: manager.render_template("ghost"),
+        }
+        with pytest.raises(
+            TemplateNotFoundError, match=re.escape("Template with ID 'ghost' does not exist.")
+        ):
+            operations[operation]()
 
     def test_update_replaces_and_delete_removes(
         self, client: tuple[IMessageClient, StubRunner]

@@ -57,7 +57,7 @@ class MessageDelivery:
         self,
         recipient_handle: str,
         message_body: str,
-        delay_seconds: object = 0,
+        delay_seconds: int = 0,
     ) -> None:
         """Send *message_body* to *recipient_handle*.
 

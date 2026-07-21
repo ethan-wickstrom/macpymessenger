@@ -38,12 +38,12 @@ package can install elsewhere but cannot send from there.
 
 Python 3.14 or newer is required, because templates use t-strings.
 
-``send_with_attachment`` and ``get_chat_history`` are stubs that always raise
-``NotImplementedError``.
+The library sends messages only. It does not read chat history or send
+attachments.
 
 Next steps
 ----------
 
 Install the package, then follow the usage guide to send a first message. Read
-the configuration guide if you need a custom AppleScript path, file logging, or
-your own logger.
+the configuration guide if you need a custom AppleScript path or want to route
+the library's log events.

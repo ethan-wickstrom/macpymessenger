@@ -12,20 +12,6 @@ class MacPyMessengerError(Exception):
     """Base exception for all macpymessenger errors."""
 
 
-class InvalidCommandError(MacPyMessengerError, TypeError):
-    """Raised when a command runner receives an invalid command."""
-
-    @classmethod
-    def non_sequence(cls) -> Self:
-        message = "Command must be a sequence of strings."
-        return cls(message)
-
-    @classmethod
-    def non_string_segment(cls) -> Self:
-        message = "Command segments must be strings."
-        return cls(message)
-
-
 class InvalidDelayTypeError(MacPyMessengerError, TypeError):
     """Raised when a send delay is not an integer number of seconds."""
 
@@ -99,11 +85,6 @@ class TemplateAlreadyExistsError(TemplateError):
 
 class ConfigurationError(MacPyMessengerError):
     """Base class for configuration-related errors."""
-
-    @classmethod
-    def file_logging_unavailable(cls, log_file_path: Path, reason: str) -> Self:
-        message = f"Unable to configure file logging using '{log_file_path}': {reason}"
-        return cls(message)
 
 
 class ScriptNotFoundError(ConfigurationError):

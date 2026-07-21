@@ -98,15 +98,7 @@ client = IMessageClient(configuration)
 
 `Configuration` checks at creation that the script exists and is readable, and raises `ScriptNotFoundError` if not.
 
-File logging is opt-in:
-
-```python
-from macpymessenger import Configuration, FileLoggingConfiguration, IMessageClient
-
-client = IMessageClient(Configuration(), file_logging=FileLoggingConfiguration())
-```
-
-This writes `macpymessenger.log` in the current working directory. You can also pass your own `logging.Logger` to `IMessageClient`.
+The library logs through `logging.getLogger` behind a `NullHandler`; configure standard `logging` in your application to route its events, or pass your own `logging.Logger` to `IMessageClient`.
 
 ## Public API
 
@@ -114,10 +106,9 @@ These classes are importable from the package root:
 
 ```python
 from macpymessenger import (
+    CommandRunner,
     Configuration,
-    FileLoggingConfiguration,
     IMessageClient,
-    RenderedTemplate,
     SubprocessCommandRunner,
     TemplateManager,
 )

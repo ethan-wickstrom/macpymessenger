@@ -144,10 +144,10 @@ Use ``TemplateManager`` for rendering without a client.
    manager = TemplateManager()
    manager.create_template("welcome", lambda name: t"Welcome, {name}.")
 
-   rendered = manager.compose_template("welcome", {"name": "Ada"})
-   print(rendered.content)
+   rendered = manager.render_template("welcome", {"name": "Ada"})
+   print(rendered)
 
-``compose_template()`` returns ``RenderedTemplate``. ``render_template()`` returns only the rendered string.
+``render_template()`` returns the rendered string.
 
 Send to multiple recipients
 ---------------------------
@@ -171,18 +171,3 @@ Use the failed list to retry or log the result:
    if failed:
        print(f"Could not send to: {failed}")
 
-Experimental stubs
-------------------
-
-Two methods are not implemented yet:
-
-- ``get_chat_history(phone_number, limit=10)``
-- ``send_with_attachment(phone_number, message, attachment_path)``
-
-Both always raise ``NotImplementedError``.
-
-.. code-block:: python
-
-   client.get_chat_history("+15555555555")  # raises NotImplementedError
-
-Do not use them in production yet.

@@ -14,9 +14,7 @@ These classes are available from ``macpymessenger``.
    from macpymessenger import (
        CommandRunner,
        Configuration,
-       FileLoggingConfiguration,
        IMessageClient,
-       RenderedTemplate,
        SubprocessCommandRunner,
        TemplateManager,
    )
@@ -28,10 +26,9 @@ client module
 
 The client module sends messages and connects the other pieces.
 
-Key classes:
+Key class:
 
 - ``IMessageClient`` sends messages, sends templates, manages templates, and sends bulk messages.
-- ``FileLoggingConfiguration`` opts in to file logging. The default path is ``macpymessenger.log`` in the current working directory.
 
 ``IMessageClient.send(phone_number, message, delay_seconds=0)`` returns ``None``
 on success and raises ``MessageSendError`` when delivery fails. The bundled AppleScript honors ``delay_seconds`` and reports delivery errors through a non-zero ``osascript`` exit code.
@@ -46,8 +43,7 @@ Key classes:
 - ``CommandRunner`` is the protocol for injectable command runners.
 - ``SubprocessCommandRunner`` runs ``osascript`` with ``subprocess.run(..., shell=False)``.
 
-For compatibility, both classes also remain importable from
-``macpymessenger.client`` and the package root.
+Both classes are also exported from the package root.
 
 delivery module
 ---------------
@@ -79,10 +75,9 @@ templates module
 
 The templates module stores and renders t-string templates.
 
-Key classes:
+Key class:
 
 - ``TemplateManager`` stores callables that return Python 3.14 t-strings.
-- ``RenderedTemplate`` contains a template identifier and rendered message content.
 
 Common methods:
 
@@ -90,7 +85,6 @@ Common methods:
 - ``update_template(identifier, factory)`` replaces an existing template.
 - ``delete_template(identifier)`` removes an existing template.
 - ``render_template(identifier, context=None)`` returns the rendered string.
-- ``compose_template(identifier, context=None)`` returns ``RenderedTemplate``.
 - ``list_templates()`` returns a shallow copy of registered factories.
 
 Template factories receive context values as keyword arguments. Non-string
@@ -117,17 +111,7 @@ Common exceptions include:
 - ``InvalidDelayTypeError`` for a delay that is not an ``int``.
 - ``NegativeDelayError`` for a delay below zero.
 - ``ScriptNotFoundError`` for a missing or unreadable AppleScript.
-- ``ConfigurationError`` for configuration failures, including unavailable file logging.
-
-Experimental methods
---------------------
-
-Two client methods are present but not implemented.
-
-- ``get_chat_history`` always raises ``NotImplementedError``.
-- ``send_with_attachment`` always raises ``NotImplementedError``.
-
-They reserve the API shape for future work; do not call them in production.
+- ``ConfigurationError`` is the base class for configuration failures.
 
 AppleScript resource
 --------------------

@@ -2,17 +2,19 @@
 
 from __future__ import annotations
 
-from .client import FileLoggingConfiguration, IMessageClient
+import logging
+
+from .client import IMessageClient
 from .commands import CommandRunner, SubprocessCommandRunner
 from .configuration import Configuration
-from .templates import RenderedTemplate, TemplateManager
+from .templates import TemplateManager
 
 __all__ = [
     "CommandRunner",
     "Configuration",
-    "FileLoggingConfiguration",
     "IMessageClient",
-    "RenderedTemplate",
     "SubprocessCommandRunner",
     "TemplateManager",
 ]
+
+logging.getLogger(__name__).addHandler(logging.NullHandler())

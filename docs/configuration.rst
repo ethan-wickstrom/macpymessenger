@@ -32,33 +32,22 @@ Pass ``send_script_path`` when you need your own script.
 
 ``Configuration`` validates the path during initialization. If the file is missing or unreadable, it raises ``ScriptNotFoundError``.
 
-Enable file logging
--------------------
+Route log events
+----------------
 
-File logging is off by default. Turn it on to write client events to disk.
-
-.. code-block:: python
-
-   from macpymessenger import Configuration, FileLoggingConfiguration, IMessageClient
-
-   client = IMessageClient(Configuration(), file_logging=FileLoggingConfiguration())
-
-This writes ``macpymessenger.log`` in the current working directory.
-
-Choose a log file path
-----------------------
-
-Pass a path to ``FileLoggingConfiguration`` for a different file.
+The library emits events to ``logging.getLogger("macpymessenger...")`` behind
+a ``NullHandler`` and never attaches handlers, sets levels, or chooses
+formats. Configure standard :mod:`logging` in your application to see them.
 
 .. code-block:: python
 
-   from pathlib import Path
-   from macpymessenger import Configuration, FileLoggingConfiguration, IMessageClient
+   import logging
 
-   logging_config = FileLoggingConfiguration(path=Path("logs/messages.log"))
-   client = IMessageClient(Configuration(), file_logging=logging_config)
-
-If the file handler cannot be created, the client raises ``ConfigurationError``.
+   logging.basicConfig(
+       filename="macpymessenger.log",
+       level=logging.INFO,
+       format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+   )
 
 Pass your own logger
 --------------------
@@ -71,26 +60,7 @@ Use a custom logger when your app already owns logging.
    from macpymessenger import Configuration, IMessageClient
 
    logger = logging.getLogger("my_app.messages")
-   logger.setLevel(logging.INFO)
 
    client = IMessageClient(Configuration(), logger=logger)
 
-The client uses the logger you pass and does not remove your handlers.
-
-Combine custom logging options
-------------------------------
-
-You can pass both ``logger`` and ``file_logging``. If the logger does not already have a file handler, the client adds one.
-
-.. code-block:: python
-
-   import logging
-   from macpymessenger import Configuration, FileLoggingConfiguration, IMessageClient
-
-   logger = logging.getLogger("my_app.messages")
-
-   client = IMessageClient(
-       Configuration(),
-       logger=logger,
-       file_logging=FileLoggingConfiguration(),
-   )
+The client emits its events to the logger you pass and does not modify it.

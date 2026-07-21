@@ -3,20 +3,13 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, MutableMapping
-from dataclasses import dataclass
 from string.templatelib import Interpolation, Template, convert
 
 from .exceptions import TemplateAlreadyExistsError, TemplateNotFoundError, TemplateTypeError
 
 TemplateCallable = Callable[..., Template]
 
-
-@dataclass(frozen=True, slots=True)
-class RenderedTemplate:
-    """Represents a rendered template instance."""
-
-    identifier: str
-    content: str
+__all__ = ["TemplateCallable", "TemplateManager"]
 
 
 def _process_template(template: Template) -> str:
@@ -82,16 +75,6 @@ class TemplateManager:
         if not isinstance(template, Template):
             raise TemplateTypeError.invalid_factory_return()
         return _process_template(template)
-
-    def compose_template(
-        self,
-        identifier: str,
-        context: Mapping[str, object] | None = None,
-    ) -> RenderedTemplate:
-        return RenderedTemplate(
-            identifier=identifier,
-            content=self.render_template(identifier, context),
-        )
 
     def list_templates(self) -> dict[str, TemplateCallable]:
         return dict(self._templates)

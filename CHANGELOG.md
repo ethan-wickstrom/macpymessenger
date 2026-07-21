@@ -9,9 +9,31 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
-**Message delivery extracted to a dedicated module.** All delivery behavior — delay validation, send command construction, command execution, delivery failure mapping, and send logging — now lives in `macpymessenger.delivery.MessageDelivery`. `IMessageClient.send` delegates to `MessageDelivery.deliver` so the client facade stays thin. The delivery class depends on the `CommandRunner` seam (from `macpymessenger.commands`) rather than embedding subprocess concerns in the client. The public `IMessageClient` API is unchanged. Implements [#36](https://github.com/ethan-wickstrom/macpymessenger/issues/36).
+**The library no longer manages log handlers.** Following the standard library logging contract for libraries, the package installs a `logging.NullHandler` and each module logs to `logging.getLogger(__name__)`. The client never attaches file handlers, sets levels, or chooses formats. Configure standard `logging` in your application to route events, or keep passing a `logger` to `IMessageClient`. See `docs/paradigm.md` for the design verdicts behind this and the other changes below.
 
-**Command execution moved to a named module.** The `CommandRunner` protocol and `SubprocessCommandRunner` adapter now live in `macpymessenger.commands`. Existing imports from `macpymessenger.client` and the package root keep working as compatibility exports, and `CommandRunner` is now also exported from the package root. Fixes [#35](https://github.com/ethan-wickstrom/macpymessenger/issues/35).
+**Template rendering returns plain strings.** `TemplateManager.render_template` is the single rendering API.
+
+**`IMessageClient.send` is typed `delay_seconds: int = 0`.** The runtime validation (rejecting `bool`, non-`int`, and negative values with `InvalidDelayTypeError`/`NegativeDelayError`) is unchanged.
+
+**Parity and property suites.** `tests/parity/` records the pre-rebuild behavior as a frozen characterization baseline plus explicitly justified divergences, and `tests/test_properties.py` verifies the foundation invariants with Hypothesis. The rebuild rationale lives in `docs/paradigm.md`, `docs/audit.md`, and `docs/foundation.md`.
+
+### Removed
+
+**`FileLoggingConfiguration` and the `file_logging` client parameter.** Replaced by standard `logging` configuration owned by the application. `ConfigurationError.file_logging_unavailable` is gone with it.
+
+**Experimental stub methods.** `IMessageClient.get_chat_history` and `IMessageClient.send_with_attachment` only ever raised `NotImplementedError` and are removed.
+
+**`RenderedTemplate` and `TemplateManager.compose_template`.** The wrapper added nothing over the rendered string.
+
+**`InvalidCommandError` and the command pre-validation in `SubprocessCommandRunner`.** Commands are built internally and `subprocess.run` rejects invalid argument types itself.
+
+**Compatibility re-exports of `CommandRunner` and `SubprocessCommandRunner` from `macpymessenger.client`.** Import them from the package root or `macpymessenger.commands`.
+
+### Earlier unreleased changes
+
+**Message delivery extracted to a dedicated module.** All delivery behavior — delay validation, send command construction, command execution, delivery failure mapping, and send logging — now lives in `macpymessenger.delivery.MessageDelivery`. `IMessageClient.send` delegates to `MessageDelivery.deliver` so the client facade stays thin. The delivery class depends on the `CommandRunner` seam (from `macpymessenger.commands`) rather than embedding subprocess concerns in the client. Implements [#36](https://github.com/ethan-wickstrom/macpymessenger/issues/36).
+
+**Command execution moved to a named module.** The `CommandRunner` protocol and `SubprocessCommandRunner` adapter now live in `macpymessenger.commands`. Fixes [#35](https://github.com/ethan-wickstrom/macpymessenger/issues/35).
 
 ## [0.3.0] - 2026-06-09
 

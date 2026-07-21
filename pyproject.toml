@@ -33,6 +33,7 @@ Repository = "https://github.com/ethan-wickstrom/macpymessenger"
 
 [dependency-groups]
 dev = [
+  "hypothesis>=6.157.2",
   "pytest>=9.0.3",
   "ruff>=0.15.16",
   "sphinx>=9.1.0",

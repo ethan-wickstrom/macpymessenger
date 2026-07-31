@@ -9,7 +9,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
-**The library no longer manages log handlers.** Following the standard library logging contract for libraries, the package installs a `logging.NullHandler` and each module logs to `logging.getLogger(__name__)`. The client never attaches file handlers, sets levels, or chooses formats. Configure standard `logging` in your application to route events, or keep passing a `logger` to `IMessageClient`. See `docs/paradigm.md` for the design verdicts behind this and the other changes below.
+**The library no longer manages log handlers.** Following the standard library logging contract for libraries, the package installs a `logging.NullHandler` and emitted events use the client logger by default (`macpymessenger.client`, unless you pass a custom `logger` to `IMessageClient`). The client never attaches file handlers, sets levels, or chooses formats. Configure standard `logging` in your application to route events, or keep passing a `logger` to `IMessageClient`. See `docs/paradigm.md` for the design verdicts behind this and the other changes below.
 
 **Template rendering returns plain strings.** `TemplateManager.render_template` is the single rendering API.
 

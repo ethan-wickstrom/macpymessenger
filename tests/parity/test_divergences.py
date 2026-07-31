@@ -52,8 +52,12 @@ class TestLibraryNoLongerManagesLogHandlers:
         # macpymessenger.client logger's level to INFO.
         logger = logging.getLogger("macpymessenger.client")
         original_level = logger.level
-        IMessageClient(Configuration(script_path), command_runner=StubRunner())
-        assert logger.level == original_level == logging.NOTSET
+        logger.setLevel(logging.WARNING)
+        try:
+            IMessageClient(Configuration(script_path), command_runner=StubRunner())
+            assert logger.level == logging.WARNING
+        finally:
+            logger.setLevel(original_level)
 
     def test_package_installs_null_handler(self) -> None:
         package_logger = logging.getLogger("macpymessenger")

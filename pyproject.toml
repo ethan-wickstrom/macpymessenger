@@ -35,6 +35,9 @@ classifiers = [
 ]
 dependencies = []
 
+[project.scripts]
+macpymessenger = "macpymessenger.__main__:main"
+
 [project.urls]
 Changelog = "https://github.com/ethan-wickstrom/macpymessenger/blob/main/CHANGELOG.md"
 Documentation = "https://macpymessenger.readthedocs.io/en/latest/"

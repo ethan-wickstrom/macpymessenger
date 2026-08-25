@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from importlib.metadata import version
+from inspect import signature
 
 import macpymessenger
 
@@ -35,3 +36,24 @@ def test_removed_placeholder_and_wrapper_types_are_not_public() -> None:
     assert not hasattr(macpymessenger, "FileLoggingConfiguration")
     assert not hasattr(macpymessenger, "RenderedTemplate")
     assert not hasattr(macpymessenger.TemplateManager, "compose_template")
+
+
+def test_send_signatures_use_recipient_terminology() -> None:
+    assert tuple(signature(macpymessenger.IMessageClient.send).parameters) == (
+        "self",
+        "recipient",
+        "message",
+        "delay_seconds",
+    )
+    assert tuple(signature(macpymessenger.IMessageClient.send_template).parameters) == (
+        "self",
+        "recipient",
+        "template_id",
+        "context",
+        "delay_seconds",
+    )
+    assert tuple(signature(macpymessenger.IMessageClient.send_bulk).parameters) == (
+        "self",
+        "recipients",
+        "message",
+    )

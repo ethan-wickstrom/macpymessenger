@@ -1,8 +1,9 @@
 Configure logging
 =================
 
-macpymessenger logs successful and failed delivery events. It does not write a
-log file unless you ask it to.
+macpymessenger emits successful and failed delivery events through Python's
+``logging`` system. It does not create a log file unless you ask it to.
+Delivery records include the recipient handle.
 
 Write the default log file
 --------------------------
@@ -29,6 +30,12 @@ Choose a path
 
    from pathlib import Path
 
+   from macpymessenger import (
+       Configuration,
+       FileLoggingConfiguration,
+       IMessageClient,
+   )
+
    file_logging = FileLoggingConfiguration(path=Path("logs/messages.log"))
    client = IMessageClient(Configuration(), file_logging=file_logging)
 
@@ -42,6 +49,8 @@ Use your application's logger
 
    import logging
 
+   from macpymessenger import Configuration, IMessageClient
+
    logger = logging.getLogger("example.messages")
    client = IMessageClient(Configuration(), logger=logger)
 
@@ -49,8 +58,19 @@ The client keeps your logger's level and handlers. You can also pass both a
 logger and ``FileLoggingConfiguration``. The client adds a file handler only if
 the logger does not already have one.
 
+Understand the default logger
+-----------------------------
+
+If you do not pass a logger, the client uses the ``macpymessenger.client``
+logger. When that logger has no handlers and no explicit level, the client sets
+its level to ``INFO``. Records can then propagate to a root handler configured
+by your application. File logging is opt-in; logging itself is not guaranteed
+to be silent.
+
 Protect recipient information
 -----------------------------
 
-Delivery logs include the recipient handle. Choose a protected log location,
-limit access, and set a retention policy that fits your application.
+Delivery logs include the recipient handle. Choose protected log destinations,
+limit access, and set a retention policy that fits your application. If your
+application configures root logging, account for propagated macpymessenger
+records there too.

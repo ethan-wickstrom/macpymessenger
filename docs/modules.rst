@@ -1,29 +1,33 @@
+.. meta::
+   :description lang=en:
+      Public API map for macpymessenger clients, bulk send results, Python
+      t-string templates, diagnostics, configuration, and typed errors.
+
 API reference
 =============
 
-Most programs need only ``Configuration`` and ``IMessageClient``. Import both
-from ``macpymessenger``. Import typed errors from
-``macpymessenger.exceptions``.
+Most programs need only ``IMessageClient`` and one or more specific exceptions.
+The supported public API is available from ``macpymessenger``:
 
 .. code-block:: python
 
-   from macpymessenger import Configuration, IMessageClient
-   from macpymessenger.exceptions import MessageSendError
+   from macpymessenger import IMessageClient, MessageSendError
+
+   client = IMessageClient()
 
 Choose a reference page
 -----------------------
 
-- :doc:`api/client` — sending, bulk sends, logging, and dependency injection.
-- :doc:`api/configuration` — bundled and custom AppleScript paths.
-- :doc:`api/templates` — t-string registration and rendering.
-- :doc:`api/exceptions` — the error hierarchy and when each error occurs.
+- :doc:`api/client` — sending, named bulk results, logging, and test injection.
+- :doc:`api/configuration` — custom AppleScript paths for advanced callers.
+- :doc:`api/templates` — t-string registration and string rendering.
+- :doc:`api/exceptions` — reachable failures and structured delivery errors.
+- :doc:`api/diagnostics` — read-only environment checks and report data.
 
-Package exports
+Supported scope
 ---------------
 
-The package root exports ``CommandRunner``, ``Configuration``,
-``FileLoggingConfiguration``, ``IMessageClient``, ``RenderedTemplate``,
-``SubprocessCommandRunner``, and ``TemplateManager``.
-
-Attachments and chat history are not supported. Their placeholder methods raise
-``NotImplementedError``.
+macpymessenger sends text through the local Messages app. Attachments, chat
+history, message reading, contact lookup, a remote gateway, and an MCP server are
+not part of the package. Unsupported capabilities do not occupy placeholder
+methods on the stable client.

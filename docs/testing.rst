@@ -1,5 +1,8 @@
+:orphan:
+
 Testing
 =======
 
-For repository setup, checks, and a safe command-runner example, see
-:doc:`development/testing`.
+This compatibility page preserves the former URL. Use
+:doc:`development/testing` for repository setup, verification commands, and
+safe command-runner examples.

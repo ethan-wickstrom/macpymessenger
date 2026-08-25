@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import pytest
-
 from macpymessenger import CommandRunner, SubprocessCommandRunner
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+    import pytest
 
 
 def test_subprocess_runner_invokes_subprocess_without_a_shell(

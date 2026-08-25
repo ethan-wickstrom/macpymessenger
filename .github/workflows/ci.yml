@@ -20,21 +20,26 @@ jobs:
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
 
-      - name: Sync environment
-        run: uv sync
+      - name: Sync locked environment
+        run: uv sync --locked
 
       - name: Lint
-        run: uv run ruff check
+        run: uv run --locked ruff check
+
+      - name: Check formatting
+        run: uv run --locked ruff format --check
 
       - name: Type check
-        run: uv run ty check
+        run: uv run --locked ty check
 
       - name: Test
-        run: uv run pytest
+        run: uv run --locked pytest
 
       - name: Build documentation
-        run: uv run sphinx-build -W docs docs/_build/html
+        run: uv run --locked sphinx-build -W docs docs/_build/html
 
       - name: Build package
         run: uv build

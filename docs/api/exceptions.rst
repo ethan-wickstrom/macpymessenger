@@ -1,34 +1,43 @@
+.. meta::
+   :description lang=en:
+      Exception reference for macpymessenger delivery, delay, configuration,
+      and Python t-string template failures.
+
 Exceptions
 ==========
 
-All library-defined errors inherit from ``MacPyMessengerError``. Catch a
-specific error when your program can recover from it. Catch
-``MacPyMessengerError`` only at an application boundary where one response is
-right for every library error.
+All public exceptions are importable from ``macpymessenger``. Catch the narrowest
+error your program can act on. Catch ``MacPyMessengerError`` only at an
+application boundary where one response is correct for every library failure.
 
 Delivery errors
 ---------------
 
-.. autoclass:: macpymessenger.exceptions.MessageSendError
-.. autoclass:: macpymessenger.exceptions.InvalidDelayTypeError
-.. autoclass:: macpymessenger.exceptions.NegativeDelayError
-.. autoclass:: macpymessenger.exceptions.InvalidCommandError
+.. autoclass:: macpymessenger.MessageSendError
+   :members:
+
+``MessageSendError.recipient`` identifies the failed Messages handle.
+``MessageSendError.reason`` is ``"delivery"`` when ``osascript`` ran but failed,
+or ``"command"`` when the operating system could not start the command.
+
+.. autoclass:: macpymessenger.InvalidDelayTypeError
+.. autoclass:: macpymessenger.NegativeDelayError
 
 Configuration errors
 --------------------
 
-.. autoclass:: macpymessenger.exceptions.ConfigurationError
-.. autoclass:: macpymessenger.exceptions.ScriptNotFoundError
+.. autoclass:: macpymessenger.ConfigurationError
+.. autoclass:: macpymessenger.ScriptNotFoundError
 
 Template errors
 ---------------
 
-.. autoclass:: macpymessenger.exceptions.TemplateError
-.. autoclass:: macpymessenger.exceptions.TemplateTypeError
-.. autoclass:: macpymessenger.exceptions.TemplateNotFoundError
-.. autoclass:: macpymessenger.exceptions.TemplateAlreadyExistsError
+.. autoclass:: macpymessenger.TemplateError
+.. autoclass:: macpymessenger.TemplateTypeError
+.. autoclass:: macpymessenger.TemplateNotFoundError
+.. autoclass:: macpymessenger.TemplateAlreadyExistsError
 
 Base error
 ----------
 
-.. autoclass:: macpymessenger.exceptions.MacPyMessengerError
+.. autoclass:: macpymessenger.MacPyMessengerError

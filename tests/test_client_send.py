@@ -52,6 +52,10 @@ def test_send_message_requires_integer_delay(
 ) -> None:
     instance, _ = client
     with pytest.raises(InvalidDelayTypeError, match="Delay must be provided as an integer"):
-        instance.send("1234567890", "Hello", delay_seconds=1.5)
+        instance.send(
+            "1234567890",
+            "Hello",
+            delay_seconds=1.5,  # ty: ignore[invalid-argument-type]
+        )
     with pytest.raises(InvalidDelayTypeError, match="Delay must be provided as an integer"):
         instance.send("1234567890", "Hello", delay_seconds=True)

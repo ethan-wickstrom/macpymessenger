@@ -5,13 +5,22 @@ build-backend = "uv_build"
 [project]
 name = "macpymessenger"
 version = "0.3.0"
-description = "macpymessenger is a Python 3.14+ library for sending macOS iMessages through AppleScript."
+description = "Send iMessages from Python on macOS through the built-in Messages app and AppleScript."
 readme = "README.md"
 requires-python = ">=3.14"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 authors = [{ name = "Ethan Wickstrom" }]
-keywords = ["applescript", "imessage", "macos", "messages", "t-strings"]
+keywords = [
+  "apple-messages",
+  "applescript",
+  "automation",
+  "imessage",
+  "macos",
+  "messages",
+  "python",
+  "t-strings",
+]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
@@ -20,14 +29,16 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.14",
+  "Topic :: Communications :: Chat",
+  "Topic :: Software Development :: Libraries :: Python Modules",
   "Typing :: Typed",
 ]
 dependencies = []
 
 [project.urls]
 Changelog = "https://github.com/ethan-wickstrom/macpymessenger/blob/main/CHANGELOG.md"
-Documentation = "https://github.com/ethan-wickstrom/macpymessenger/tree/main/docs"
-Homepage = "https://github.com/ethan-wickstrom/macpymessenger"
+Documentation = "https://macpymessenger.readthedocs.io/en/latest/"
+Homepage = "https://macpymessenger.readthedocs.io/en/latest/"
 Issues = "https://github.com/ethan-wickstrom/macpymessenger/issues"
 Repository = "https://github.com/ethan-wickstrom/macpymessenger"
 

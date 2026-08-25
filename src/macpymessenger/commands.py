@@ -7,8 +7,10 @@ replace it with a stub, so automated checks never invoke AppleScript.
 from __future__ import annotations
 
 import subprocess
-from collections.abc import Sequence
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 __all__ = ["CommandRunner", "SubprocessCommandRunner"]
 

@@ -25,9 +25,14 @@ copyright = f"2024-2026, {author}"  # noqa: A001
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
+    "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
 ]
+
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3.14/", None),
+}
 
 autosummary_generate = True
 autodoc_default_options = {

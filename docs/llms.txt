@@ -1,0 +1,31 @@
+# macpymessenger
+
+> A small, typed Python 3.14+ library that sends text through the built-in macOS Messages app with AppleScript.
+
+macpymessenger is local and send-only. It has no runtime dependencies. It does not read chat history, send attachments, resolve contacts, expose a remote gateway, or provide an MCP server. The first send may require Automation permission for the application that launches Python.
+
+## Start here
+
+- [Documentation](https://macpymessenger.readthedocs.io/en/latest/): Product scope, quick start, and documentation map.
+- [Installation](https://macpymessenger.readthedocs.io/en/latest/installation.html): macOS, Python, Messages, and Automation requirements.
+- [Environment diagnostics](https://macpymessenger.readthedocs.io/en/latest/guides/environment-diagnostics.html): Side-effect-free doctor command, JSON schema, and exit codes.
+- [Send messages](https://macpymessenger.readthedocs.io/en/latest/guides/sending-messages.html): Single sends, delays, bulk results, and error handling.
+
+## Guides
+
+- [Templates](https://macpymessenger.readthedocs.io/en/latest/guides/templates.html): Callable Python 3.14 t-string templates that render to plain strings.
+- [Logging](https://macpymessenger.readthedocs.io/en/latest/guides/logging.html): Application-owned Python logging and recipient privacy.
+- [Troubleshooting](https://macpymessenger.readthedocs.io/en/latest/guides/troubleshooting.html): Automation, account, script, command, and template failures.
+
+## API reference
+
+- [API map](https://macpymessenger.readthedocs.io/en/latest/modules.html): Supported public surface and scope boundaries.
+- [Client API](https://macpymessenger.readthedocs.io/en/latest/api/client.html): IMessageClient, BulkSendResult, and command-runner injection.
+- [Exceptions](https://macpymessenger.readthedocs.io/en/latest/api/exceptions.html): Typed failures and structured MessageSendError fields.
+- [Diagnostics](https://macpymessenger.readthedocs.io/en/latest/api/diagnostics.html): EnvironmentCheck and EnvironmentReport data models.
+
+## Project
+
+- [PyPI](https://pypi.org/project/macpymessenger/): Published package and distribution metadata.
+- [Source](https://github.com/ethan-wickstrom/macpymessenger): Code, issues, pull requests, and releases.
+- [Changelog](https://github.com/ethan-wickstrom/macpymessenger/blob/main/CHANGELOG.md): Public changes and upgrade notes.

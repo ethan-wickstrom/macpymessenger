@@ -7,17 +7,108 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+**Side-effect-free environment diagnostics.** `macpymessenger doctor` checks
+macOS, `osascript`, Messages.app, and the bundled send script without opening
+Messages or sending text. `macpymessenger doctor --json` returns stable check
+identifiers, statuses, summaries, repair steps, package version, aggregate
+readiness, and meaningful exit codes for scripts and agents. The same immutable
+`EnvironmentCheck` and `EnvironmentReport` data model is available from
+`macpymessenger.diagnostics`.
+
+**Named bulk-send results.** `send_bulk()` now returns
+`BulkSendResult(sent, failed)`. Named fields replace positional guesswork while
+existing `sent, failed = result` unpacking remains valid.
+
+**One package-root API.** Common clients, result types, command runners,
+configuration, exceptions, and `__version__` are importable from
+`macpymessenger`.
+
+**Agent and search discovery.** The hosted docs now publish canonical URLs,
+page descriptions, OpenSearch metadata, and `llms.txt`. Package metadata uses
+specific Python, macOS, Messages, AppleScript, automation, typing, and chat
+search terms. `AGENTS.md` routes coding agents through current data shapes,
+ownership boundaries, invariants, and exact verification commands.
+
 ### Changed
 
-**Documentation reorganized around developer tasks.** The quick start now states
-the macOS, Messages, Python, and Automation permission requirements before the
-first send. Focused guides cover sending, templates, logging, troubleshooting,
-API reference, and contribution workflows with consistent examples and direct
-navigation.
+**The common send path needs no configuration object.** `IMessageClient()` now
+uses the bundled AppleScript. Pass `Configuration` only for a custom script or
+explicit inspection.
 
-**Message delivery extracted to a dedicated module.** All delivery behavior — delay validation, send command construction, command execution, delivery failure mapping, and send logging — now lives in `macpymessenger.delivery.MessageDelivery`. `IMessageClient.send` delegates to `MessageDelivery.deliver` so the client facade stays thin. The delivery class depends on the `CommandRunner` seam (from `macpymessenger.commands`) rather than embedding subprocess concerns in the client. The public `IMessageClient` API is unchanged. Implements [#36](https://github.com/ethan-wickstrom/macpymessenger/issues/36).
+**The public domain term is `recipient`.** `send()`, `send_template()`, and
+`send_bulk()` now name phone numbers and Messages email addresses accurately as
+`recipient` or `recipients`. Callers that used the old `phone_number=` or
+`phone_numbers=` keyword must rename that keyword. Positional calls are
+unchanged.
 
-**Command execution moved to a named module.** The `CommandRunner` protocol and `SubprocessCommandRunner` adapter now live in `macpymessenger.commands`. Existing imports from `macpymessenger.client` and the package root keep working as compatibility exports, and `CommandRunner` is now also exported from the package root. Fixes [#35](https://github.com/ethan-wickstrom/macpymessenger/issues/35).
+**Bulk results contain immutable tuples.** `BulkSendResult.sent` and `.failed`
+are tuples, not shared mutable lists. Callers that mutate the old lists should
+copy the desired field first, such as `list(result.failed)`.
+
+**Logging follows the standard library contract.** The package installs a
+`NullHandler` and emits through named loggers. macpymessenger no longer creates
+files, attaches application handlers, sets levels, or chooses formats. Configure
+logging in the host application:
+
+```python
+import logging
+
+logging.basicConfig(filename="messages.log", level=logging.INFO)
+```
+
+**Delivery errors expose data.** `MessageSendError.recipient` identifies the
+failed handle. `MessageSendError.reason` is `"delivery"` when AppleScript or
+Messages fails and `"command"` when the operating system cannot start the
+command.
+
+**Templates render directly to strings.** `TemplateManager.render_template()` is
+the complete rendering contract. `IMessageClient.send_template()` sends that
+string without an intermediate wrapper.
+
+**Message delivery has one owner.** Delay validation, argv construction, command
+execution, failure mapping, and delivery logging live in
+`macpymessenger.delivery.MessageDelivery`. `IMessageClient` remains the thin
+public facade. Implements [#36](https://github.com/ethan-wickstrom/macpymessenger/issues/36).
+
+**Command execution has one adapter.** `CommandRunner` and
+`SubprocessCommandRunner` live in `macpymessenger.commands` and remain available
+from the package root. The production adapter delegates prepared argv directly
+to `subprocess.run(..., check=True, shell=False)`. Fixes
+[#35](https://github.com/ethan-wickstrom/macpymessenger/issues/35).
+
+**Documentation is task-first and requirement-first.** The README and Sphinx
+site now lead from requirements to diagnostics to the first send. Focused guides
+cover sending, templates, application logging, diagnostics, troubleshooting,
+API reference, contribution, testing, and release work. Examples are
+self-contained and use the supported package-root imports.
+
+**Development and release checks are artifact-first.** CI uses the locked uv
+environment, lint and format checks, type checks, hermetic tests, strict Sphinx
+builds, package builds, and clean-wheel smoke tests on Linux and macOS. The
+installed wheel must expose bundled data, the public API, the console entry
+point, and valid doctor JSON before release.
+
+### Removed
+
+**Library-owned file logging.** `FileLoggingConfiguration` and the
+`file_logging=` client parameter are removed. Applications own logging output.
+
+**Unimplemented stable-client methods.** `get_chat_history()` and
+`send_with_attachment()` are removed. Unsupported capabilities no longer occupy
+public names that always raise `NotImplementedError`.
+
+**Template wrapper machinery.** `RenderedTemplate` and
+`TemplateManager.compose_template()` are removed. Rendering returns `str`.
+
+**Redundant command validation.** `InvalidCommandError` is removed. Commands are
+built inside the package and the subprocess boundary already rejects invalid
+argument types.
+
+**Finished compatibility exports.** `macpymessenger.client` no longer advertises
+command-runner names. Import them from `macpymessenger` or
+`macpymessenger.commands`.
 
 ## [0.3.0] - 2026-06-09
 

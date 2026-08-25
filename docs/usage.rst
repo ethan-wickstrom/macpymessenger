@@ -24,7 +24,9 @@ Configure logging
 -----------------
 
 Read :doc:`guides/logging` to keep file logs or connect macpymessenger to your
-application's logger. Logging is off by default.
+application's logger. Creating a dedicated log file is opt-in. Delivery records
+can still propagate through Python logging when your application configures a
+root handler.
 
 Fix a problem
 -------------

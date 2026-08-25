@@ -1,20 +1,20 @@
-# Read the Docs configuration for macpymessenger
-# See https://docs.readthedocs.io/en/stable/config-file/v2.html
-
 version: 2
 
-# Build environment configuration
 build:
-  os: ubuntu-22.04
+  os: ubuntu-24.04
   tools:
-    python: "3.14"  # Match project requirements (Python 3.14+)
-    rust: "1.75"    # Required for building dependencies
+    python: "3.14"
 
-# Sphinx documentation builder
+python:
+  install:
+    - method: uv
+      command: sync
+      groups:
+        - dev
+
 sphinx:
-  configuration: docs/conf.py  # Path to Sphinx config
+  configuration: docs/conf.py
+  fail_on_warning: true
 
-# Output formats
 formats:
-  - pdf  # Generate PDF documentation
-  # - epub  # Uncomment to generate ePub format
+  - pdf

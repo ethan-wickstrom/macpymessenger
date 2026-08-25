@@ -18,14 +18,14 @@ __all__ = ["BulkSendResult", "IMessageClient"]
 
 
 class BulkSendResult(NamedTuple):
-    """Recipients classified by a bulk send.
+    """Immutable recipients classified by a bulk send.
 
-    The named fields make call sites self-explanatory. The tuple shape keeps
-    existing ``sent, failed = client.send_bulk(...)`` code working.
+    The named fields make call sites self-explanatory. The outer named tuple and
+    inner tuples contain no shared mutable state. Tuple unpacking remains valid.
     """
 
-    sent: list[str]
-    failed: list[str]
+    sent: tuple[str, ...]
+    failed: tuple[str, ...]
 
 
 class IMessageClient:
@@ -74,20 +74,20 @@ class IMessageClient:
         """The logger that receives delivery events."""
         return self._logger
 
-    def send(self, phone_number: str, message: str, delay_seconds: int = 0) -> None:
+    def send(self, recipient: str, message: str, delay_seconds: int = 0) -> None:
         """Send one text message to a Messages phone number or email address."""
-        self._delivery.deliver(phone_number, message, delay_seconds)
+        self._delivery.deliver(recipient, message, delay_seconds)
 
     def send_template(
         self,
-        phone_number: str,
+        recipient: str,
         template_id: str,
         context: Mapping[str, object] | None = None,
         delay_seconds: int = 0,
     ) -> None:
         """Render a registered template and send its text."""
         message = self.template_manager.render_template(template_id, context)
-        self.send(phone_number, message, delay_seconds)
+        self.send(recipient, message, delay_seconds)
 
     def create_template(self, template_id: str, factory: TemplateCallable) -> None:
         """Register a callable t-string template."""
@@ -101,14 +101,14 @@ class IMessageClient:
         """Delete a registered template factory."""
         self.template_manager.delete_template(template_id)
 
-    def send_bulk(self, phone_numbers: Sequence[str], message: str) -> BulkSendResult:
+    def send_bulk(self, recipients: Sequence[str], message: str) -> BulkSendResult:
         """Send the same text in order and classify each recipient."""
         sent: list[str] = []
         failed: list[str] = []
-        for phone_number in phone_numbers:
+        for recipient in recipients:
             try:
-                self.send(phone_number, message)
-                sent.append(phone_number)
+                self.send(recipient, message)
+                sent.append(recipient)
             except MessageSendError:
-                failed.append(phone_number)
-        return BulkSendResult(sent=sent, failed=failed)
+                failed.append(recipient)
+        return BulkSendResult(sent=tuple(sent), failed=tuple(failed))

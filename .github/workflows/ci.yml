@@ -11,15 +11,16 @@ permissions:
 jobs:
   checks:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
           enable-cache: true
 
@@ -39,7 +40,25 @@ jobs:
         run: uv run --locked pytest
 
       - name: Build documentation
-        run: uv run --locked sphinx-build -W docs docs/_build/html
+        run: uv run --locked sphinx-build -n -T -W --keep-going docs docs/_build/html
 
       - name: Build package
         run: uv build
+
+      - name: Smoke test the built wheel
+        shell: bash
+        run: |
+          wheel="$(find dist -name '*.whl' -print -quit)"
+          uv run --isolated --no-project --python 3.14 --with "$wheel" \
+            python -c "from macpymessenger import BulkSendResult, IMessageClient, MessageSendError, __version__; assert __version__ != '0+unknown'; assert IMessageClient().configuration.send_script_path.is_file(); assert BulkSendResult([], []).sent == []"
+          uv run --isolated --no-project --python 3.14 --with "$wheel" \
+            macpymessenger --version
+
+      - name: Smoke test doctor JSON
+        shell: bash
+        run: |
+          wheel="$(find dist -name '*.whl' -print -quit)"
+          status=0
+          output="$(uv run --isolated --no-project --python 3.14 --with "$wheel" macpymessenger doctor --json)" || status=$?
+          test "$status" -eq 0 -o "$status" -eq 1
+          DOCTOR_OUTPUT="$output" python -c "import json, os; payload = json.loads(os.environ['DOCTOR_OUTPUT']); assert payload['tool'] == 'macpymessenger-doctor'; assert isinstance(payload['ready'], bool); assert payload['checks']"

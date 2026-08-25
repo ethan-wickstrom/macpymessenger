@@ -1,41 +1,51 @@
+.. meta::
+   :description lang=en:
+      Task guide index for installing, checking, sending, templating, logging,
+      and troubleshooting macpymessenger on macOS.
+
 Choose a task
 =============
 
-Use these guides to complete a task. Each guide includes a working example and
-explains the errors you need to handle.
+Use the smallest guide that answers the current question.
+
+Check your Mac
+--------------
+
+Read :doc:`guides/environment-diagnostics` to inspect macOS, ``osascript``, the
+Messages app, and the bundled send script without sending a message. Use its
+JSON output from scripts and agents.
 
 Send messages
 -------------
 
 Read :doc:`guides/sending-messages` to:
 
-- send one message;
+- send one text message;
 - delay a send;
-- send to several recipients; and
-- understand successful and failed results.
+- classify several recipients with ``BulkSendResult``; and
+- handle delivery and input failures.
 
 Use templates
 -------------
 
-Read :doc:`guides/templates` to create, send, update, list, and delete reusable
-t-string templates.
+Read :doc:`guides/templates` to create, render, update, list, and delete reusable
+Python 3.14 t-string templates.
 
 Configure logging
 -----------------
 
-Read :doc:`guides/logging` to keep file logs or connect macpymessenger to your
-application's logger. Creating a dedicated log file is opt-in. Delivery records
-can still propagate through Python logging when your application configures a
-root handler.
+Read :doc:`guides/logging` to route delivery events through the host
+application's Python logging setup. macpymessenger does not create handlers,
+choose formats, or write log files itself.
 
 Fix a problem
 -------------
 
-Read :doc:`guides/troubleshooting` for Automation permissions, Messages account
-problems, script path errors, and common template errors.
+Read :doc:`guides/troubleshooting` for Automation permission, Messages account,
+script path, command, and template failures.
 
 Look up the API
 ---------------
 
-Read :doc:`modules` when you already know what you want to build and need class,
-method, or exception details.
+Read :doc:`modules` when you know what you want to build and need a class,
+method, result shape, diagnostic model, or exception reference.

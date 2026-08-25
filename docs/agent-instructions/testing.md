@@ -2,21 +2,47 @@
 
 Use this file when adding or changing tests.
 
-## Tests must stay hermetic
+## Keep tests hermetic
 
-- Do not execute real AppleScript in tests.
-- Use stubbed command runners from shared test support.
-- Use `tmp_path` for script files and filesystem fixtures.
+- Never execute `osascript`, open Messages, request Automation permission, or
+  send a real message.
+- Inject `StubRunner` or a focused callable through `command_runner`.
+- Use `tmp_path` for custom scripts and filesystem fixtures.
+- Monkeypatch platform discovery in diagnostic tests. Do not make the suite
+  depend on the runner's operating system.
+- Restore logger handlers, levels, and propagation changed by a test.
 
-## Assertions should cover domain behavior
+## Test contracts, not implementation trivia
 
-- Assert on raised and logged behavior when error handling changes.
-- Verify command composition through a stub runner rather than through `osascript`.
-- Keep tests focused on changed behavior and public contracts.
+- Assert public return shapes, exception types and fields, emitted records, argv,
+  and exit codes.
+- Test one named behavior per test.
+- Add edge cases at input boundaries: empty recipient lists, all failures,
+  negative or non-integer delays, missing scripts, and non-string interpolation.
+- Preserve compatibility only when a test states the supported contract, such as
+  tuple unpacking for `BulkSendResult`.
 
-## Verification scope
+## Run the matching checks
 
-- Run `uv run pytest` when behavior or tests change.
-- Run `uv run ruff check` and `uv run ty check` when Python code changes.
+Python behavior or tests:
 
-See the root `AGENTS.md` for the complete command list.
+```bash
+uv run --locked ruff check
+uv run --locked ruff format --check
+uv run --locked ty check
+uv run --locked pytest
+```
+
+Public docs or docstrings:
+
+```bash
+uv run --locked sphinx-build -n -T -W --keep-going docs docs/_build/html
+```
+
+Packaging or exports:
+
+```bash
+uv build
+```
+
+The root `AGENTS.md` contains the full completion gate.

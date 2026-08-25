@@ -5,10 +5,13 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from . import __version__
 from .diagnostics import EnvironmentReport, diagnose_environment
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 def _build_parser() -> argparse.ArgumentParser:

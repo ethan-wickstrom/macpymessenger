@@ -98,6 +98,4 @@ class ScriptNotFoundError(ConfigurationError):
 
     @classmethod
     def unreadable_script_permissions(cls, script_path: Path) -> Self:
-        return cls(
-            f"Send script at path '{script_path}' is not readable due to permission error."
-        )
+        return cls(f"Send script at path '{script_path}' is not readable due to permission error.")

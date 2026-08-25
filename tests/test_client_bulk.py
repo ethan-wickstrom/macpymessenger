@@ -4,7 +4,7 @@ from macpymessenger import BulkSendResult, Configuration, IMessageClient, Templa
 from tests.support import StubRunner
 
 
-def test_send_bulk_returns_named_outcomes(
+def test_send_bulk_returns_named_immutable_outcomes(
     configuration: Configuration, template_manager: TemplateManager
 ) -> None:
     runner = StubRunner(["2", "3"])
@@ -16,9 +16,9 @@ def test_send_bulk_returns_named_outcomes(
 
     result = client.send_bulk(["1", "2", "3", "4"], "Ping")
 
-    assert result == BulkSendResult(sent=["1", "4"], failed=["2", "3"])
-    assert result.sent == ["1", "4"]
-    assert result.failed == ["2", "3"]
+    assert result == BulkSendResult(sent=("1", "4"), failed=("2", "3"))
+    assert result.sent == ("1", "4")
+    assert result.failed == ("2", "3")
 
 
 def test_send_bulk_result_keeps_tuple_unpacking_compatibility(
@@ -33,8 +33,8 @@ def test_send_bulk_result_keeps_tuple_unpacking_compatibility(
 
     sent, failed = client.send_bulk(["1", "2"], "Ping")
 
-    assert sent == ["1"]
-    assert failed == ["2"]
+    assert sent == ("1",)
+    assert failed == ("2",)
 
 
 def test_send_bulk_handles_an_empty_recipient_list(
@@ -46,7 +46,7 @@ def test_send_bulk_handles_an_empty_recipient_list(
         command_runner=StubRunner(),
     )
 
-    assert client.send_bulk([], "Ping") == BulkSendResult(sent=[], failed=[])
+    assert client.send_bulk([], "Ping") == BulkSendResult(sent=(), failed=())
 
 
 def test_send_bulk_can_classify_every_recipient_as_failed(
@@ -59,6 +59,6 @@ def test_send_bulk_can_classify_every_recipient_as_failed(
     )
 
     assert client.send_bulk(["1", "2"], "Ping") == BulkSendResult(
-        sent=[],
-        failed=["1", "2"],
+        sent=(),
+        failed=("1", "2"),
     )

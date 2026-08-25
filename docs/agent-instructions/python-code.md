@@ -1,26 +1,44 @@
 # Python code guidelines
 
-Use this file when changing library code under `src/macpymessenger/`.
+Use this file when changing `src/macpymessenger/`.
 
-## Keep the public model explicit
+## Keep the public path small
 
 - Target Python 3.14 or newer.
-- Use full type hints where behavior crosses a public or module boundary.
-- Prefer simple data objects and functions over layered class hierarchies.
-- Prefer `dataclass(frozen=True, slots=True)` for immutable value objects.
-- Keep effects near the outer layer; keep rendering, validation, and transformation logic deterministic when practical.
+- Preserve `IMessageClient()` as the zero-configuration common path.
+- Export supported user-facing names from `macpymessenger.__init__`.
+- Prefer plain strings, tuples, frozen data classes, and standard library types
+  over wrappers or framework-shaped abstractions.
+- Add no runtime dependency unless the standard library cannot meet a proven
+  requirement.
+- Add no placeholder API for work that does not exist.
 
-## Preserve domain boundaries
+## Preserve ownership
 
-- Keep AppleScript path discovery in `Configuration`.
-- Keep message orchestration in `IMessageClient`.
-- Keep template registration and rendering in `TemplateManager`.
-- Raise exception types from `src/macpymessenger/exceptions.py` instead of adding ad hoc errors.
-- Name concepts by their domain role, not by temporary implementation details.
+- Keep script-path resolution in `Configuration`.
+- Keep one-message delivery in `MessageDelivery`.
+- Keep client composition, template convenience, and bulk classification in
+  `IMessageClient`.
+- Keep t-string storage and rendering in `TemplateManager`.
+- Keep subprocess execution in `SubprocessCommandRunner`.
+- Keep local readiness checks and their result model in `diagnostics`.
+- Raise named exceptions from `exceptions.py`; do not add ad hoc error strings as
+  caller contracts.
 
-## Keep template behavior strict
+## Keep effects at the edge
 
-- Define templates as callables that return Python 3.14 t-strings.
-- Use examples like `t"Hello, {name}!"`.
-- Preserve `TemplateTypeError` for non-string interpolation values.
-- Reject duplicate template identifiers.
+- Build subprocess argv as a sequence. Never use a shell or interpolate command
+  strings.
+- Inject command execution in tests. Never run real AppleScript in automated
+  checks.
+- Emit logs through a named logger. Never attach application handlers, set
+  levels, select formats, or create files.
+- Keep diagnostics read-only. A check must not open Messages, trigger permission
+  prompts, or send text.
+
+## Keep templates strict
+
+- Define template factories as callables that return Python 3.14 t-strings.
+- Render to plain `str` values.
+- Require each interpolated result to be a string.
+- Reject duplicate identifiers and unknown identifiers with typed errors.

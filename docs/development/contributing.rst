@@ -1,11 +1,17 @@
+.. meta::
+   :description lang=en:
+      Set up macpymessenger development with uv, hermetic tests, strict docs,
+      and focused contribution rules.
+
 Contribute
 ==========
 
 Requirements
 ------------
 
-Install ``uv`` and use Python 3.14 or newer. A Mac is needed for manual delivery
-tests, but the automated tests replace AppleScript execution with test doubles.
+Install ``uv`` and use Python 3.14 or newer. Automated work does not require a
+Messages account or permission to control Messages. The suite injects command
+runners and must remain hermetic on Linux and macOS.
 
 Set up the repository
 ---------------------
@@ -14,21 +20,27 @@ Set up the repository
 
    git clone https://github.com/ethan-wickstrom/macpymessenger.git
    cd macpymessenger
-   uv sync
+   uv sync --locked
+
+Read ``AGENTS.md`` before agent-assisted work. It routes each task to the
+smallest relevant instruction set and project map.
 
 Make a focused change
 ---------------------
 
-#. Add or update tests when behavior changes.
-#. Keep examples free of real phone numbers, account details, and secrets.
-#. Update user documentation and ``CHANGELOG.md`` for public behavior changes.
+#. Start from the public behavior or data shape that should change.
+#. Add a failing behavior test before production code when behavior changes.
+#. Keep command execution injectable and tests free of real AppleScript sends.
+#. Keep examples free of real phone numbers, account data, logs, and secrets.
+#. Update the owning guide, API page, ``README.md``, ``docs/llms.txt``, and
+   ``CHANGELOG.md`` when their public contract changes.
 #. Run the checks in :doc:`testing`.
-#. Use a Conventional Commit such as ``docs: improve the getting-started guide``.
+#. Use a small Conventional Commit such as ``feat: add environment diagnostics``.
 
 Report a problem
 ----------------
 
 Open an issue at https://github.com/ethan-wickstrom/macpymessenger/issues. Include
-what you expected, what happened, your macOS and Python versions, and the
-smallest example that reproduces the problem. Remove phone numbers and other
-private information from logs and tracebacks.
+what you expected, what happened, ``macpymessenger doctor --json`` output, and
+the smallest reproducer. Remove phone numbers, email addresses, account details,
+and private paths before posting logs or tracebacks.

@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Mapping, Sequence
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 from .commands import CommandRunner, SubprocessCommandRunner
 from .configuration import Configuration
 from .delivery import MessageDelivery
 from .exceptions import MessageSendError
 from .templates import TemplateCallable, TemplateManager
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
 
 __all__ = ["BulkSendResult", "IMessageClient"]
 

@@ -1,19 +1,21 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from typing import TYPE_CHECKING
 
-import pytest
-
-from macpymessenger import __version__
 from macpymessenger import __main__ as cli
-from macpymessenger import diagnostics
+from macpymessenger import __version__, diagnostics
 from macpymessenger.diagnostics import (
     CheckStatus,
     EnvironmentCheck,
     EnvironmentReport,
     diagnose_environment,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    import pytest
 
 
 def test_diagnostics_report_a_ready_mac_without_running_applescript(
@@ -35,7 +37,7 @@ def test_diagnostics_report_a_ready_mac_without_running_applescript(
         "messages-app",
         "send-script",
     ]
-    assert all(check.status is CheckStatus.PASS for check in report.checks[:4])
+    assert all(check.status is CheckStatus.OK for check in report.checks[:4])
     assert all(check.status is CheckStatus.INFO for check in report.checks[4:])
 
 

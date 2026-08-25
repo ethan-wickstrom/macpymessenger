@@ -1,3 +1,8 @@
+.. meta::
+   :description lang=en:
+      Install macpymessenger on macOS, check Messages and AppleScript readiness,
+      and prepare Automation permission for Python iMessage sending.
+
 Install and prepare your Mac
 ============================
 
@@ -7,11 +12,12 @@ Check the requirements
 You need:
 
 - macOS;
-- Python 3.14 or newer; and
-- an Apple account signed in to the Messages app.
+- Python 3.14 or newer;
+- the built-in Messages app; and
+- an Apple account signed in to Messages.
 
-The package may install on another operating system, but it cannot send there.
-It controls the local Messages app through AppleScript.
+The wheel can be imported on another operating system so tests and type checks
+can run there, but message delivery requires macOS, Messages, and ``osascript``.
 
 Install the package
 -------------------
@@ -28,29 +34,33 @@ Or use pip in an active virtual environment:
 
    python -m pip install macpymessenger
 
-Check the installation
-----------------------
+Check the installed wheel
+-------------------------
+
+Run the package diagnostic:
 
 .. code-block:: bash
 
-   python -c "import macpymessenger; print(macpymessenger.__name__)"
+   macpymessenger doctor
 
-This confirms that Python can import the package. It does not send a message.
+This checks local requirements without opening Messages or sending a message.
+Use ``macpymessenger doctor --json`` when a script or agent needs structured
+output. See :doc:`guides/environment-diagnostics` for the result contract.
 
 Prepare Messages
 ----------------
 
 #. Open Messages.
 #. Sign in and send a message by hand.
-#. Run the quick-start example in :doc:`guides/sending-messages`.
-#. If macOS asks whether your terminal or Python can control Messages, allow it.
+#. Run the first-send example in :doc:`guides/sending-messages`.
+#. If macOS asks whether the launching application can control Messages, allow it.
 
-You can review this access in **System Settings > Privacy & Security >
-Automation**. Permission belongs to the application that launches Python. For
-example, Terminal and an editor may need separate permission.
+You can review access in **System Settings > Privacy & Security > Automation**.
+Permission belongs to the application that launches Python, so Terminal, an
+editor, a launcher, and an agent host may each need separate approval.
 
 Next step
 ---------
 
-Follow :doc:`guides/sending-messages` to send a message and handle failures. If
-setup does not work, use :doc:`guides/troubleshooting`.
+Follow :doc:`guides/sending-messages`. If the diagnostic passes but delivery
+fails, use :doc:`guides/troubleshooting`.

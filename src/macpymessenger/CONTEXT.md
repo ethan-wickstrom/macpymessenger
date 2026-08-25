@@ -1,35 +1,58 @@
 # macpymessenger context
 
-macpymessenger sends macOS iMessages from Python by composing a validated send script, template rendering, and explicit command execution.
+macpymessenger sends text through the local macOS Messages app. The package
+combines a resolved AppleScript, optional t-string rendering, one delivery
+boundary, typed failures, and read-only environment diagnostics.
 
 ## Domain terms
 
 | Term | Meaning |
 | ---- | ------- |
-| Recipient handle | The destination accepted by Messages.app, usually a phone number or iMessage email address. |
-| Message body | The text content passed to Messages.app for delivery. |
-| Send script | The AppleScript entry point invoked through `osascript` to send a message. |
-| Bundled send script | The packaged send script used when callers do not configure a custom script path. |
-| Script path | The filesystem path to the send script after configuration resolves it. |
-| Template factory | A callable that returns a Python 3.14 t-string template for a message body. |
-| Template identifier | The caller-supplied name used to register, update, render, or delete a template factory. |
-| Rendered template | A template identifier paired with the rendered message body produced from a template factory. |
-| Command runner | The adapter that executes an argument list for a command. Tests replace it to avoid real AppleScript execution. |
-| Delivery failure | A failed message send caused by Messages.app or `osascript` execution. |
-| Configuration failure | A setup failure that prevents reliable delivery, such as an unreadable send script or unavailable file logging. |
+| Recipient | A destination accepted by Messages, either a phone number or iMessage email address. |
+| Message | The text passed to Messages for delivery. |
+| Send script | The AppleScript entry point invoked through `osascript`. |
+| Bundled send script | The packaged script selected by `IMessageClient()` and `Configuration()`. |
+| Script path | The resolved filesystem path to a bundled or custom send script. |
+| Template factory | A callable that returns a Python 3.14 t-string. |
+| Template identifier | The caller-supplied key for one template factory. |
+| Command runner | The injectable adapter that executes prepared argv. |
+| Bulk send result | The immutable `BulkSendResult(sent, failed)` classification. |
+| Environment check | One immutable diagnostic with an identifier, status, summary, and optional fix. |
+| Environment report | The ordered tuple of checks and derived aggregate readiness. |
+| Delivery failure | A send where AppleScript or Messages returned failure. |
+| Command failure | A send where the operating system could not start `osascript`. |
+| Configuration failure | A missing or unreadable send script. |
+| Template failure | An invalid factory, interpolation, identifier, or registration. |
+
+Use these exact terms in code, docs, tests, and changelog entries. Do not use
+`phone_number` for a value that may be an email address. Do not use `rendered
+template` for a plain message string.
 
 ## Stable capabilities
 
-- The public client facade exposes message sending, template-backed sending, template management, bulk send classification, and logging configuration.
-- Configuration resolves the send script before delivery starts.
-- Template management enforces t-string template factories and string-only interpolation values.
-- Command execution stays replaceable so tests can verify behavior without invoking real AppleScript.
-- Public failures should use the project exception hierarchy rather than ad hoc exception types.
+- `IMessageClient()` sends one message with the bundled script.
+- The client can delay one send, render and send a registered template, and send
+  the same message to recipients in order.
+- `BulkSendResult` exposes immutable `sent` and `failed` recipient tuples.
+- `Configuration` resolves and validates bundled or custom script paths.
+- `TemplateManager` stores callable t-string factories and renders plain strings.
+- `CommandRunner` keeps subprocess execution replaceable and tests hermetic.
+- Python logging stays application-owned; the library emits records only.
+- The doctor reports local readiness without opening Messages or sending text.
+- Public failures use the package exception hierarchy and structured fields.
 
-## Naming guidance
+## Stable exclusions
 
-- Prefer `recipient handle` when behavior accepts either phone numbers or iMessage email addresses.
-- Prefer `message body` for user-authored send text.
-- Prefer `send script` for the AppleScript entry point and `script path` for the resolved filesystem path.
-- Prefer `command runner` for the execution adapter seam.
-- Use `delivery failure`, `configuration failure`, and `template failure` for error categories.
+The package does not read messages, expose chat history, resolve contacts, send
+attachments, host a remote gateway, or provide an MCP server. Do not reserve
+public names for excluded work.
+
+## State and concurrency
+
+- Clients own their template manager, command runner, configuration, and logger.
+- Template storage is mutable but not shared unless a caller explicitly shares a
+  `TemplateManager`.
+- Configuration, diagnostic checks, diagnostic reports, and bulk results are
+  immutable values.
+- Delivery uses local variables and performs sends sequentially. Do not introduce
+  shared mutable coordination for bulk delivery.

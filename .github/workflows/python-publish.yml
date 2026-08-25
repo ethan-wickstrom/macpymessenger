@@ -25,7 +25,7 @@ jobs:
         run: |
           wheel="$(find dist -name '*.whl' -print -quit)"
           uv run --isolated --no-project --python 3.14 --with "$wheel" \
-            python -c "from macpymessenger import BulkSendResult, IMessageClient, MessageSendError, TemplateManager, __version__; assert __version__ != '0+unknown'; assert IMessageClient().configuration.send_script_path.is_file(); assert BulkSendResult([], []).failed == []; assert TemplateManager().list_templates() == {}"
+            python -c "from macpymessenger import BulkSendResult, IMessageClient, MessageSendError, TemplateManager, __version__; assert __version__ != '0+unknown'; assert IMessageClient().configuration.send_script_path.is_file(); assert BulkSendResult((), ()).failed == (); assert TemplateManager().list_templates() == {}"
           uv run --isolated --no-project --python 3.14 --with "$wheel" \
             macpymessenger --version
 

@@ -20,7 +20,7 @@ _MESSAGES_APP_PATHS = (
 class CheckStatus(StrEnum):
     """Outcome of one environment check."""
 
-    PASS = "pass"
+    OK = "pass"
     FAIL = "fail"
     INFO = "info"
 
@@ -72,7 +72,7 @@ def diagnose_environment() -> EnvironmentReport:
         checks.append(
             EnvironmentCheck(
                 identifier="platform",
-                status=CheckStatus.PASS,
+                status=CheckStatus.OK,
                 summary="macOS detected.",
             )
         )
@@ -91,7 +91,7 @@ def diagnose_environment() -> EnvironmentReport:
         checks.append(
             EnvironmentCheck(
                 identifier="osascript",
-                status=CheckStatus.PASS,
+                status=CheckStatus.OK,
                 summary=f"osascript found at {osascript_path}.",
             )
         )
@@ -110,7 +110,7 @@ def diagnose_environment() -> EnvironmentReport:
         checks.append(
             EnvironmentCheck(
                 identifier="messages-app",
-                status=CheckStatus.PASS,
+                status=CheckStatus.OK,
                 summary=f"Messages found at {messages_app}.",
             )
         )
@@ -139,7 +139,7 @@ def diagnose_environment() -> EnvironmentReport:
         checks.append(
             EnvironmentCheck(
                 identifier="send-script",
-                status=CheckStatus.PASS,
+                status=CheckStatus.OK,
                 summary=f"Bundled send script is readable at {configuration.send_script_path}.",
             )
         )

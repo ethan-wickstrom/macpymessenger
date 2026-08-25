@@ -1,38 +1,62 @@
+.. meta::
+   :description lang=en:
+      Fix macpymessenger setup, Automation permission, Messages delivery,
+      AppleScript, delay, template, and logging problems on macOS.
+
 Troubleshooting
 ===============
 
-Start with the error message, then use the matching section below.
+Start with a side-effect-free report:
+
+.. code-block:: bash
+
+   macpymessenger doctor
+
+Fix every ``FAIL`` result, follow each ``INFO`` next step, then use the matching
+section below.
 
 The first send fails or macOS asks for permission
 -------------------------------------------------
 
-The first send may prompt you to allow your terminal, editor, or Python launcher
-to control Messages. Approve the prompt. You can review access in **System
-Settings > Privacy & Security > Automation**.
+The first send may prompt you to allow Terminal, an editor, an agent host, or
+another launcher to control Messages. Approve the prompt. Review access in
+**System Settings > Privacy & Security > Automation**.
 
-If no prompt appears, run a send again from the same application that will run
-your program. Automation access belongs to that application, so permission for
-Terminal may not apply to an editor or service.
+Automation access belongs to the launching application. Permission granted to
+Terminal does not grant permission to an editor, background service, or agent
+host. Reproduce the send from the same launcher that will run the program.
 
 ``MessageSendError``
 --------------------
 
-Check these items in order:
+Inspect the structured fields first:
 
-#. Open Messages and confirm that your account is signed in.
-#. Send a message to the same recipient by hand in Messages.
-#. Confirm that the application running Python can control Messages.
-#. Run the smallest example from :doc:`sending-messages`.
+``error.recipient``
+   The phone number or email address that failed.
 
-The exception wraps command execution and Messages delivery failures. Its cause
-may contain more detail when you inspect a traceback.
+``error.reason == "delivery"``
+   ``osascript`` started, but AppleScript or Messages returned failure. Open
+   Messages, confirm sign-in, send to the same recipient by hand, then check
+   Automation permission.
+
+``error.reason == "command"``
+   The operating system could not start ``osascript``. Run the doctor, inspect
+   ``PATH``, and confirm the configured send script is readable.
+
+The original exception remains available as ``error.__cause__`` in a traceback.
 
 ``ScriptNotFoundError``
 -----------------------
 
-``Configuration`` could not find or read the AppleScript. Use
-``Configuration()`` to select the bundled script. If you supply
-``send_script_path``, confirm that it points to a readable file.
+The bundled or custom AppleScript is missing or unreadable. Reinstall the wheel
+when the bundled script check fails. When using a custom path, confirm it names a
+readable file:
+
+.. code-block:: python
+
+   from macpymessenger import Configuration, IMessageClient
+
+   client = IMessageClient(Configuration("scripts/sendMessage.scpt"))
 
 ``InvalidDelayTypeError`` or ``NegativeDelayError``
 ---------------------------------------------------
@@ -43,25 +67,25 @@ strings are not accepted.
 ``TemplateTypeError``
 ---------------------
 
-Confirm that the factory returns a t-string, not a normal string. Then confirm
-that every value inside ``{...}`` is already a string.
+Confirm the factory returns a Python 3.14 t-string, not a normal string. Then
+confirm that every interpolated result is already a string. Convert inside the
+expression when conversion is intentional, such as ``t"{str(count)}"``.
 
 ``TemplateNotFoundError`` or ``TemplateAlreadyExistsError``
 -----------------------------------------------------------
 
-Template identifiers are case-sensitive and live only in the current
+Template identifiers are case-sensitive and live in the current
 ``TemplateManager``. Create an identifier once. Use ``update_template()`` to
-replace it.
+replace its factory.
 
-No log file appears
--------------------
+No delivery logs appear
+-----------------------
 
-File logging is opt-in. Pass ``FileLoggingConfiguration()`` when you create the
-client. For a custom path, create the parent directory first.
+macpymessenger does not configure output handlers or log levels. Configure
+Python logging in the host application before sending. See :doc:`logging`.
 
-Unsupported features
---------------------
+Unsupported capability
+----------------------
 
-``send_with_attachment()`` and ``get_chat_history()`` are placeholders. They
-always raise ``NotImplementedError``. Text delivery is the supported sending
-path.
+Attachments, chat history, message reading, contact lookup, remote gateways, and
+MCP are outside the stable package. There are no placeholder methods to call.

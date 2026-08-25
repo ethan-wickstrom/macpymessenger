@@ -1,33 +1,56 @@
 # Project map
 
-Use this file when a task requires repository navigation, architecture context, or package ownership boundaries.
+Use this file for repository navigation, ownership, and data flow.
 
 ## Repository areas
 
-- Library code lives under `src/macpymessenger/`.
-- Tests live under `tests/`.
-- Public Sphinx documentation lives under `docs/`.
-- Example template text assets live under `templates/`; runtime templates are callable t-strings.
+- `src/macpymessenger/` contains the installed library and diagnostic CLI.
+- `tests/` contains hermetic behavior tests and shared command-runner doubles.
+- `docs/` contains the public Sphinx site and `llms.txt`.
+- `.github/workflows/` contains package, documentation, test, and release gates.
+- `pyproject.toml` is the package, tool, and public metadata source of truth.
 
-Use `fd` or `rg` to confirm current file names before editing.
+Use `fd` or `rg --files` to confirm current paths before editing.
 
-## Capability map
+## Core data shapes
 
-- The public client facade sends messages, sends rendered templates, classifies bulk sends, and owns operational logging.
-- Configuration resolves and validates the AppleScript send script before delivery.
-- Template management registers callable t-string factories, renders templates, and rejects invalid interpolation values.
-- Command execution is adapter-backed so tests can verify command composition without running `osascript`.
-- The error model separates delivery, configuration, command, and template failures through typed exceptions.
+- `BulkSendResult(sent, failed)` is a named tuple. Named fields are the primary
+  interface; tuple unpacking preserves compatibility.
+- `EnvironmentReport(checks)` owns aggregate readiness. `checks` is an ordered
+  tuple of immutable `EnvironmentCheck` values.
+- `EnvironmentCheck(identifier, status, summary, fix)` is the stable diagnostic
+  record used by human and JSON output.
+- `Configuration(send_script_path)` is an immutable resolved script path. Most
+  callers never construct it because `IMessageClient()` owns the default.
 
-## Composition model
+Do not introduce a second representation for any of these concepts.
+
+## Capability ownership
+
+- `IMessageClient` composes collaborators, exposes the stable send surface,
+  renders registered templates, and classifies bulk outcomes.
+- `MessageDelivery` validates delay, builds one `osascript` argv sequence, runs
+  it through `CommandRunner`, maps failures, and emits delivery events.
+- `Configuration` resolves and checks bundled or custom script paths.
+- `TemplateManager` stores callable t-string factories and renders plain strings.
+- `diagnostics` performs read-only local checks and owns the doctor report model.
+- `SubprocessCommandRunner` is the single production subprocess adapter.
+- `exceptions` contains only failures that reachable public behavior can raise.
+
+## Data flow
 
 ```text
 Caller
-`-- public client facade
-    |-- configuration
-    |-- template rendering
-    `-- command execution adapter
+`-- IMessageClient
+    |-- TemplateManager (only for templated sends)
+    `-- MessageDelivery
+        |-- Configuration
+        `-- CommandRunner
+
+Doctor CLI
+`-- diagnose_environment
+    `-- EnvironmentReport[EnvironmentCheck, ...]
 ```
 
-Keep behavior near the capability that owns it. Cross capability boundaries through the
-public client facade, configuration object, template manager, or command runner seam.
+Keep behavior with its owner. Do not spread a capability across callers through
+special-case coordination.

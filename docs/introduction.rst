@@ -1,49 +1,45 @@
-Introduction
-============
+About macpymessenger
+====================
 
-macpymessenger sends iMessages from Python on macOS. It uses AppleScript to talk
-to the built-in Messages app.
+macpymessenger is a small Python library for sending iMessages from a Mac you
+control. Your Python program calls AppleScript, and AppleScript asks the local
+Messages app to send the text.
 
-Use it when you want a small Python library, not a hosted messaging service. Your
-script runs on a Mac, and Messages.app sends the iMessage.
-
-What you get
-------------
-
-The sending path is short: create a ``Configuration``, create an
-``IMessageClient``, call ``send()``. Delivery failures raise ``MessageSendError``,
-and bad delays raise ``InvalidDelayTypeError`` or ``NegativeDelayError``.
-
-Templates are callables that return Python 3.14 t-strings, such as
-``lambda name: t"Hello, {name}!"``. Jinja2 is not used. Every interpolation must
-resolve to ``str``. Anything else raises ``TemplateTypeError``.
-
-``Configuration`` checks that the AppleScript file exists and is readable when
-you create it, so path problems surface before the first send. The client also
-accepts a custom command runner, which lets tests skip AppleScript.
-
-When to use it
+Choose it when
 --------------
 
-Sending yourself reminders from a script. Sending notices from approval flows,
-monitoring jobs, or local tools. Reusing message text where only names, dates,
-or status text change. Sending one message to many recipients and collecting
-successes and failures.
+- your automation already runs on a Mac;
+- the Messages account on that Mac can reach each recipient;
+- you want typed Python errors instead of command status strings; or
+- you want reusable messages built with Python 3.14 t-strings.
 
-Limits
-------
+Choose another tool when
+------------------------
 
-macOS is required. The library depends on AppleScript and Messages.app, so the
-package can install elsewhere but cannot send from there.
+- your code runs on Linux, Windows, or a hosted server without a Mac;
+- you need a supported business messaging gateway or delivery receipts;
+- you need attachments or chat history; or
+- you cannot grant the Python launcher permission to control Messages.
 
-Python 3.14 or newer is required, because templates use t-strings.
+What is supported
+-----------------
 
-``send_with_attachment`` and ``get_chat_history`` are stubs that always raise
-``NotImplementedError``.
+The library sends text to one or several phone numbers or iMessage email
+addresses. It can delay a send, render in-memory t-string templates, and emit
+operational logs. It uses the bundled AppleScript unless you select another
+file.
 
-Next steps
-----------
+Delivery failures raise ``MessageSendError``. Invalid delays, configuration
+problems, and template problems have their own exception types.
 
-Install the package, then follow the usage guide to send a first message. Read
-the configuration guide if you need a custom AppleScript path, file logging, or
-your own logger.
+What is not supported
+---------------------
+
+The library is not a hosted service and does not work around Messages or macOS
+permissions. ``send_with_attachment()`` and ``get_chat_history()`` are
+placeholders that always raise ``NotImplementedError``.
+
+Next step
+---------
+
+Read :doc:`installation`, then :doc:`guides/sending-messages`.

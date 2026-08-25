@@ -1,45 +1,52 @@
+.. meta::
+   :description lang=en:
+      Understand when to use macpymessenger for local Python iMessage sending on
+      macOS and when to choose another messaging tool.
+
 About macpymessenger
 ====================
 
-macpymessenger is a small Python library for sending iMessages from a Mac you
-control. Your Python program calls AppleScript, and AppleScript asks the local
-Messages app to send the text.
+macpymessenger is a small Python library for sending text through the Messages
+app on a Mac you control. Python passes a prepared argument list to
+``osascript``; the bundled AppleScript asks Messages to send the text.
 
 Choose it when
 --------------
 
-- your automation already runs on a Mac;
-- the Messages account on that Mac can reach each recipient;
-- you want typed Python errors instead of command status strings; or
+- your automation, developer tool, or agent already runs on a Mac;
+- the signed-in Messages account can reach each recipient;
+- you want a typed Python API with no runtime dependencies;
+- you want explicit delivery, delay, configuration, and template failures; or
 - you want reusable messages built with Python 3.14 t-strings.
 
 Choose another tool when
 ------------------------
 
 - your code runs on Linux, Windows, or a hosted server without a Mac;
-- you need a supported business messaging gateway or delivery receipts;
-- you need attachments or chat history; or
+- you need a supported business messaging gateway, delivery receipts, or scale;
+- you need attachments, chat history, message reading, or contact lookup; or
 - you cannot grant the Python launcher permission to control Messages.
 
 What is supported
 -----------------
 
-The library sends text to one or several phone numbers or iMessage email
-addresses. It can delay a send, render in-memory t-string templates, and emit
-operational logs. It uses the bundled AppleScript unless you select another
-file.
+The stable client sends text to one or several phone numbers or iMessage email
+addresses. It can delay one send, render in-memory t-string templates, classify
+bulk outcomes, emit standard Python logging records, and report local readiness
+without side effects.
 
-Delivery failures raise ``MessageSendError``. Invalid delays, configuration
-problems, and template problems have their own exception types.
+``IMessageClient()`` uses the bundled AppleScript. Delivery failures raise
+``MessageSendError`` with structured ``recipient`` and ``reason`` fields.
 
 What is not supported
 ---------------------
 
-The library is not a hosted service and does not work around Messages or macOS
-permissions. ``send_with_attachment()`` and ``get_chat_history()`` are
-placeholders that always raise ``NotImplementedError``.
+macpymessenger does not expose methods for attachments, chat history, contact
+lookup, message reading, a remote gateway, or MCP. The stable API contains only
+capabilities the package implements.
 
 Next step
 ---------
 
-Read :doc:`installation`, then :doc:`guides/sending-messages`.
+Read :doc:`installation`, run :doc:`guides/environment-diagnostics`, then follow
+:doc:`guides/sending-messages`.

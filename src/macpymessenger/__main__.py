@@ -47,9 +47,7 @@ def _json_payload(report: EnvironmentReport) -> dict[str, object]:
 def _write_text(report: EnvironmentReport) -> None:
     sys.stdout.write(f"macpymessenger {__version__}\n\n")
     for check in report.checks:
-        sys.stdout.write(
-            f"{check.status.value.upper()} {check.identifier}: {check.summary}\n"
-        )
+        sys.stdout.write(f"{check.status.value.upper()} {check.identifier}: {check.summary}\n")
         if check.fix is not None:
             sys.stdout.write(f"  Next: {check.fix}\n")
     summary = "Ready for a first send." if report.ready else "Local requirements are missing."

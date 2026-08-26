@@ -9,10 +9,11 @@ macpymessenger
 
 Send iMessages from Python on macOS.
 
-macpymessenger is a small, typed library for scripts, local automations,
-developer tools, and agents running on a Mac. It controls the built-in Messages
-app through AppleScript. It has no runtime dependencies and does not read chat
-history, send attachments, expose a remote API, or act as a messaging server.
+macpymessenger is a typed, dependency-free library for scripts, local
+automations, developer tools, and agents running on a Mac. It controls the
+built-in Messages app through a private-data-safe AppleScript transport. It does
+not read chat history, send attachments, expose a remote API, or run a messaging
+server.
 
 Quick start
 -----------
@@ -23,7 +24,10 @@ and Automation permission for the application that launches Python.
 .. code-block:: bash
 
    uv add macpymessenger
-   macpymessenger doctor
+   uv run macpymessenger doctor
+
+The doctor reports detectable blockers and manual checks without opening
+Messages, running AppleScript, or sending text.
 
 Then create one client and reuse it:
 
@@ -36,7 +40,7 @@ Then create one client and reuse it:
    try:
        client.send("+15555550123", "Hello from Python!")
    except MessageSendError as error:
-       print(f"Could not send {error.recipient}: {error}")
+       print(f"Could not send to {error.recipient}: {error}")
 
 The first real send may ask whether Terminal, your editor, or another launcher
 can control Messages. Allow access, or review it in **System Settings > Privacy
@@ -51,6 +55,9 @@ Find what you need
 
 **Reusable messages**
    Read :doc:`guides/templates`.
+
+**Custom or test delivery**
+   Implement :doc:`api/transport` instead of replacing client coordination.
 
 **A send failed**
    Use :doc:`guides/troubleshooting` and the :doc:`api/exceptions` reference.
@@ -71,7 +78,6 @@ Find what you need
    introduction
    installation
    usage
-   configuration
 
 .. toctree::
    :maxdepth: 2
@@ -89,7 +95,7 @@ Find what you need
 
    modules
    api/client
-   api/configuration
+   api/transport
    api/templates
    api/exceptions
    api/diagnostics

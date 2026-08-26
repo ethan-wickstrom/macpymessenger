@@ -45,10 +45,10 @@ class MessageDelivery:
             self._transport.send(request)
         except subprocess.CalledProcessError:
             # The transport exception can contain private payload or child output.
-            self._logger.error("Failed to send message to %s", recipient)  # noqa: TRY400
+            self._logger.error("Message delivery failed")  # noqa: TRY400
             raise MessageSendError.delivery_failed(recipient) from None
         except OSError:
             # Do not copy transport internals into application logs or tracebacks.
-            self._logger.error("Message transport failed for %s", recipient)  # noqa: TRY400
+            self._logger.error("Message transport failed")  # noqa: TRY400
             raise MessageSendError.transport_failed(recipient) from None
-        self._logger.info("Message sent to %s", recipient)
+        self._logger.info("Message sent")

@@ -1,7 +1,7 @@
 .. meta::
    :description lang=en:
       Run macpymessenger lint, format, type, test, documentation, package, and
-      safe command-runner checks locally.
+      private-data-safe transport checks locally.
 
 Test and check changes
 ======================
@@ -12,7 +12,7 @@ Run all commands from the repository root:
 
    uv sync --locked
    uv run --locked ruff check
-   uv run --locked ruff format --check
+   uv run --locked ruff format --diff
    uv run --locked ty check
    uv run --locked pytest
    uv run --locked sphinx-build -n -T -W --keep-going docs docs/_build/html
@@ -24,15 +24,17 @@ What each check covers
 ``uv sync --locked``
    Recreates the declared environment and fails when ``uv.lock`` is stale.
 
-``ruff check`` and ``ruff format --check``
-   Find bugs, enforce imports and style, and reject unformatted files.
+``ruff check`` and ``ruff format --diff``
+   Find bugs, enforce imports and style, reject unformatted files, and print the
+   exact formatter patch when a file differs.
 
 ``ty check``
    Checks public and internal types in ``src/`` and ``tests/``.
 
 ``pytest``
-   Runs hermetic behavior tests. Tests replace command execution and do not send
-   real messages.
+   Runs hermetic behavior tests. Tests inject ``MessageTransport`` doubles and
+   never send real messages. On macOS, one integration test compiles a rendered
+   script with ``/usr/bin/osacompile`` without executing it.
 
 ``sphinx-build -n -T -W --keep-going``
    Resolves references, prints full tracebacks, treats warnings as errors, and
@@ -40,33 +42,36 @@ What each check covers
 
 ``uv build``
    Creates the wheel and source distribution in ``dist/``. CI then installs the
-   wheel in a clean environment and checks package imports, bundled data, the
-   console entry point, and doctor JSON.
+   wheel in a clean environment and checks public imports, ``py.typed``, bundled
+   AppleScript source, the console entry point, and doctor JSON.
 
 Test delivery code safely
 -------------------------
 
-Inject a command runner instead of invoking AppleScript:
+Inject a transport that records immutable requests:
 
 .. code-block:: python
 
-   from collections.abc import Sequence
+   from macpymessenger import IMessageClient, SendRequest
 
-   from macpymessenger import IMessageClient
 
-   commands: list[tuple[str, ...]] = []
+   class RecordingTransport:
+       def __init__(self) -> None:
+           self.requests: list[SendRequest] = []
 
-   def record_command(command: Sequence[str]) -> None:
-       commands.append(tuple(command))
+       def send(self, request: SendRequest) -> None:
+           self.requests.append(request)
 
-   client = IMessageClient(command_runner=record_command)
+
+   transport = RecordingTransport()
+   client = IMessageClient(transport=transport)
    client.send("+15555550123", "Hello")
 
-   assert commands[0][-3:] == ("+15555550123", "Hello", "0")
+   assert transport.requests == [SendRequest("+15555550123", "Hello")]
 
 Test diagnostics safely
 -----------------------
 
-Monkeypatch platform discovery, executable lookup, and Messages paths. Do not
-make diagnostic tests depend on the current runner, open Messages, or trigger a
-permission prompt.
+Monkeypatch platform discovery, fixed executable paths, Messages paths, and the
+bundled-source loader. Do not make diagnostic tests depend on the current
+runner, open Messages, invoke AppleScript, or trigger a permission prompt.

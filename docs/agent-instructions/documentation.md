@@ -6,15 +6,19 @@ other user-facing text.
 ## Use the current public contract
 
 - Start ordinary examples with `IMessageClient()`.
-- Import public clients, result types, and exceptions from `macpymessenger`.
+- Import public clients, request and result types, transports, and exceptions from
+  `macpymessenger`.
 - Show `send()` returning `None` or raising `MessageSendError`.
-- Use `MessageSendError.recipient` and `.reason` instead of parsing text.
+- Use `MessageSendError.recipient` and the closed `.reason` values `delivery` and
+  `transport` instead of parsing text.
 - Show `BulkSendResult.sent` and `.failed`; mention tuple unpacking only as
   compatibility.
-- Show template factories as callables that return t-strings and rendering as a
-  plain string.
+- Show `SendRequest` and `MessageTransport` when replacing the delivery effect.
+  Never document script-path configuration or command-runner injection.
+- Show template factories as callables that return t-strings, normal Python
+  conversion and formatting, and rendering as a plain string.
 - Show application-owned standard library logging. Never document
-  `FileLoggingConfiguration` or library-created handlers.
+  `FileLoggingConfiguration` or library-created output handlers.
 - Do not document unsupported chat history, attachments, contact lookup, remote
   gateway, or MCP capabilities as methods that exist.
 
@@ -25,8 +29,13 @@ other user-facing text.
 - Use reserved example phone numbers and invented account data.
 - State macOS, Python, Messages sign-in, and Automation permission before a real
   send example.
-- Use `macpymessenger doctor` for side-effect-free setup checks and
-  `macpymessenger doctor --json` for scripts and agents.
+- After `uv add macpymessenger`, invoke the console script with
+  `uv run macpymessenger ...`. Use a bare `macpymessenger` command only when the
+  surrounding instructions activate the environment.
+- Explain that doctor status `blocked: false` means no automated blocker was
+  found. Preserve and show every `manual` next step.
+- Never put message bodies or private paths in logs, tracebacks, JSON examples,
+  process arguments, issue templates, or screenshots.
 
 ## Keep discovery surfaces in sync
 

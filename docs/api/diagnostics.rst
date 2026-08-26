@@ -1,18 +1,18 @@
 .. meta::
    :description lang=en:
-      API reference for macpymessenger environment checks, structured doctor
-      reports, statuses, and JSON output.
+      API reference for macpymessenger environment checks, blocker reports,
+      manual statuses, and JSON output.
 
 Diagnostics API
 ===============
 
-The command-line doctor and programmatic API share one data model. Collection is
-read-only and does not run AppleScript.
+The command-line doctor and programmatic API share one immutable data model.
+Collection does not invoke AppleScript or control Messages.
 
 .. autofunction:: macpymessenger.diagnostics.diagnose_environment
 
 .. autoclass:: macpymessenger.diagnostics.EnvironmentReport
-   :members: ready, to_dict
+   :members: blocked, to_dict
    :no-private-members:
    :no-special-members:
 
@@ -25,3 +25,7 @@ read-only and does not run AppleScript.
    :members:
    :no-private-members:
    :no-special-members:
+
+``EnvironmentReport.blocked`` is true only when an automated check returns
+``FAIL``. ``MANUAL`` checks remain unresolved and must not be treated as
+successful delivery evidence.

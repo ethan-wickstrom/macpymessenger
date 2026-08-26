@@ -7,8 +7,8 @@ Configure logging
 =================
 
 macpymessenger emits successful and failed delivery events through Python's
-``logging`` package. The library does not set log levels, choose formats, or
-write files. The application owns those choices.
+``logging`` package. The library does not set log levels, choose formats, write
+files, or attach output handlers. The application owns those choices.
 
 Use standard application logging
 --------------------------------
@@ -51,11 +51,11 @@ Pass a logger when delivery events belong in a specific application namespace:
 The client uses the logger unchanged. It does not add handlers, set its level,
 or change propagation.
 
-Select only macpymessenger records
-----------------------------------
+Route only macpymessenger records
+---------------------------------
 
-An application can configure the package namespace without changing unrelated
-logs:
+Add a handler to the package namespace and disable propagation when the same
+record must not also reach a root handler:
 
 .. code-block:: python
 
@@ -64,10 +64,12 @@ logs:
    logger = logging.getLogger("macpymessenger")
    logger.setLevel(logging.INFO)
    logger.addHandler(logging.StreamHandler())
+   logger.propagate = False
 
 Protect recipient information
 -----------------------------
 
-Delivery records include the recipient phone number or email address. Treat
-those handles as private data. Choose protected destinations, limit access, and
-set a retention period that fits the host application.
+Delivery records may include the recipient phone number or email address. They
+never include the message body or raw transport exception. Treat recipient
+handles as private data. Choose protected destinations, limit access, and set a
+retention period that fits the host application.

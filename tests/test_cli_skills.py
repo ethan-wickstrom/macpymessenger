@@ -3,13 +3,11 @@ from __future__ import annotations
 import json
 from importlib.resources import files
 from pathlib import Path
-from typing import TYPE_CHECKING
+
+import pytest
 
 import macpymessenger.__main__ as cli
 from macpymessenger import __version__
-
-if TYPE_CHECKING:
-    import pytest
 
 
 def test_skills_list_json_exposes_a_small_versioned_catalog(
@@ -31,6 +29,30 @@ def test_skills_list_json_exposes_a_small_versioned_catalog(
             ),
         }
     ]
+
+
+def test_bare_skills_lists_the_catalog(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = cli.main(["skills"])
+    output = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert output.startswith("core\t")
+    assert "Send text through the local macOS Messages app" in output
+
+
+def test_top_level_help_routes_agents_to_the_installed_core_skill(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main(["--help"])
+
+    output = capsys.readouterr().out
+    assert exc_info.value.code == 0
+    assert "Start here for AI agents:" in output
+    assert "macpymessenger skills get core" in output
+    assert "version-matched" in output
 
 
 def test_skills_get_core_returns_installed_version_matched_instructions(

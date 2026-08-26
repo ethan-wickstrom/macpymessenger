@@ -4,13 +4,39 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from importlib.resources import files
-from typing import Final
+from typing import Final, Self
 
 _SKILL_NAMES: Final = ("core",)
 
 
 class AgentSkillResourceError(RuntimeError):
     """Raised when an installed Agent Skill is missing or malformed."""
+
+    @classmethod
+    def unknown_skill(cls, name: str) -> Self:
+        return cls(f"Unknown bundled Agent Skill: {name}")
+
+    @classmethod
+    def unavailable(cls, name: str) -> Self:
+        return cls(f"Bundled Agent Skill is unavailable: {name}")
+
+    @classmethod
+    def name_mismatch(cls, path_name: str, declared_name: str) -> Self:
+        return cls(
+            f"Bundled Agent Skill path '{path_name}' declares name '{declared_name}'"
+        )
+
+    @classmethod
+    def missing_frontmatter(cls) -> Self:
+        return cls("Bundled Agent Skill has no YAML frontmatter")
+
+    @classmethod
+    def unclosed_frontmatter(cls) -> Self:
+        return cls("Bundled Agent Skill frontmatter is not closed")
+
+    @classmethod
+    def invalid_field(cls, key: str) -> Self:
+        return cls(f"Bundled Agent Skill must declare one non-empty '{key}' field")
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,20 +63,18 @@ def skill_names() -> tuple[str, ...]:
 def load_skill(name: str) -> AgentSkill:
     """Load one bundled skill and verify its required frontmatter."""
     if name not in _SKILL_NAMES:
-        raise AgentSkillResourceError(f"Unknown bundled Agent Skill: {name}")
+        raise AgentSkillResourceError.unknown_skill(name)
 
     resource = files("macpymessenger").joinpath("skills", name, "SKILL.md")
     try:
         content = resource.read_text(encoding="utf-8")
     except (OSError, UnicodeError) as error:
-        raise AgentSkillResourceError(f"Bundled Agent Skill is unavailable: {name}") from error
+        raise AgentSkillResourceError.unavailable(name) from error
 
     declared_name = _frontmatter_value(content, "name")
     description = _frontmatter_value(content, "description")
     if declared_name != name:
-        raise AgentSkillResourceError(
-            f"Bundled Agent Skill path '{name}' declares name '{declared_name}'"
-        )
+        raise AgentSkillResourceError.name_mismatch(name, declared_name)
     return AgentSkill(name=name, description=description, content=content)
 
 
@@ -63,17 +87,15 @@ def _frontmatter_value(content: str, key: str) -> str:
     """Read one required single-line scalar from controlled skill frontmatter."""
     lines = content.splitlines()
     if not lines or lines[0] != "---":
-        raise AgentSkillResourceError("Bundled Agent Skill has no YAML frontmatter")
+        raise AgentSkillResourceError.missing_frontmatter()
 
     try:
         end = lines.index("---", 1)
     except ValueError as error:
-        raise AgentSkillResourceError("Bundled Agent Skill frontmatter is not closed") from error
+        raise AgentSkillResourceError.unclosed_frontmatter() from error
 
     prefix = f"{key}: "
     values = [line.removeprefix(prefix).strip() for line in lines[1:end] if line.startswith(prefix)]
     if len(values) != 1 or not values[0]:
-        raise AgentSkillResourceError(
-            f"Bundled Agent Skill must declare one non-empty '{key}' field"
-        )
+        raise AgentSkillResourceError.invalid_field(key)
     return values[0]

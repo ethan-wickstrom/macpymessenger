@@ -35,7 +35,7 @@ _SEND_FIELDS: Final[frozenset[str]] = frozenset(
 _REQUIRED_SEND_FIELDS: Final[frozenset[str]] = frozenset({"message", "recipient"})
 
 
-class _InvalidSendInput(ValueError):
+class _InvalidSendInputError(ValueError):
     """Raised when standard input does not contain one valid send request."""
 
 
@@ -119,26 +119,26 @@ def _read_send_request() -> SendRequest:
     try:
         payload: object = json.load(sys.stdin)
     except (json.JSONDecodeError, OSError, RecursionError, UnicodeError):
-        raise _InvalidSendInput from None
+        raise _InvalidSendInputError from None
 
     if not isinstance(payload, dict):
-        raise _InvalidSendInput
+        raise _InvalidSendInputError
 
     fields: dict[str, object] = {}
     for key, value in payload.items():
         if not isinstance(key, str):
-            raise _InvalidSendInput
+            raise _InvalidSendInputError
         fields[key] = value
 
     field_names = fields.keys()
     if not _REQUIRED_SEND_FIELDS.issubset(field_names) or not field_names <= _SEND_FIELDS:
-        raise _InvalidSendInput
+        raise _InvalidSendInputError
 
     recipient = fields["recipient"]
     message = fields["message"]
     delay_seconds = fields.get("delay_seconds", 0)
     if not isinstance(recipient, str) or not isinstance(message, str):
-        raise _InvalidSendInput
+        raise _InvalidSendInputError
 
     try:
         return SendRequest(
@@ -147,7 +147,7 @@ def _read_send_request() -> SendRequest:
             delay_seconds=delay_seconds,
         )
     except (InvalidDelayTypeError, NegativeDelayError):
-        raise _InvalidSendInput from None
+        raise _InvalidSendInputError from None
 
 
 def _send_result_payload(
@@ -171,7 +171,7 @@ def _send_result_payload(
 def _run_send(*, json_output: bool) -> int:
     try:
         request = _read_send_request()
-    except _InvalidSendInput:
+    except _InvalidSendInputError:
         if json_output:
             _write_json(
                 {
@@ -258,27 +258,24 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = _build_parser()
     arguments = parser.parse_args(argv)
 
-    match arguments.command:
-        case "doctor":
-            report = diagnose_environment()
-            if arguments.json_output:
-                _write_json(_doctor_json_payload(report))
-            else:
-                _write_doctor_text(report)
-            return _SEND_FAILED if report.blocked else _SUCCESS
-        case "send":
-            return _run_send(json_output=arguments.json_output)
-        case "skills":
-            match arguments.skill_command:
-                case "list":
-                    return _run_skills_list(json_output=arguments.json_output)
-                case "get":
-                    return _run_skills_get(arguments.name)
-        case _:
-            parser.print_help()
-            return _SUCCESS
+    if arguments.command == "doctor":
+        report = diagnose_environment()
+        if arguments.json_output:
+            _write_json(_doctor_json_payload(report))
+        else:
+            _write_doctor_text(report)
+        return _SEND_FAILED if report.blocked else _SUCCESS
 
-    raise AssertionError("argparse accepted an unsupported command")
+    if arguments.command == "send":
+        return _run_send(json_output=arguments.json_output)
+
+    if arguments.command == "skills":
+        if arguments.skill_command == "list":
+            return _run_skills_list(json_output=arguments.json_output)
+        return _run_skills_get(arguments.name)
+
+    parser.print_help()
+    return _SUCCESS
 
 
 if __name__ == "__main__":  # pragma: no cover

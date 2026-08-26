@@ -5,42 +5,45 @@ from typing import TYPE_CHECKING
 import pytest
 
 from macpymessenger import (
+    AppleScriptTransport,
     IMessageClient,
     InvalidDelayTypeError,
     MessageSendError,
     NegativeDelayError,
+    SendRequest,
 )
-from tests.support import StubRunner
+from tests.support import StubTransport
 
 if TYPE_CHECKING:
-    from tests.support import StubRunner as ClientStubRunner
+    from tests.support import StubTransport as ClientStubTransport
 
 
-def test_client_uses_the_bundled_configuration_by_default() -> None:
-    runner = StubRunner()
-    client = IMessageClient(command_runner=runner)
+def test_client_uses_the_applescript_transport_by_default() -> None:
+    client = IMessageClient()
 
-    client.send("1234567890", "Hello")
-
-    assert client.configuration.send_script_path.name == "sendMessage.scpt"
-    assert runner.commands[0][1] == str(client.configuration.send_script_path)
+    assert isinstance(client.transport, AppleScriptTransport)
 
 
-def test_send_message_success(client: tuple[IMessageClient, ClientStubRunner]) -> None:
-    instance, runner = client
+def test_send_message_builds_one_request(
+    client: tuple[IMessageClient, ClientStubTransport],
+) -> None:
+    instance, transport = client
+
     instance.send("1234567890", "Hello")
-    assert runner.commands[0][2] == "1234567890"
+
+    assert transport.requests == [SendRequest("1234567890", "Hello")]
 
 
-def test_send_message_failure(client: tuple[IMessageClient, ClientStubRunner]) -> None:
-    instance, runner = client
-    runner.failing_recipient_handles.add("9876543210")
+def test_send_message_failure(client: tuple[IMessageClient, ClientStubTransport]) -> None:
+    instance, transport = client
+    transport.failing_recipients.add("9876543210")
+
     with pytest.raises(MessageSendError):
         instance.send("9876543210", "Hello")
 
 
 def test_send_message_rejects_negative_delay(
-    client: tuple[IMessageClient, ClientStubRunner],
+    client: tuple[IMessageClient, ClientStubTransport],
 ) -> None:
     instance, _ = client
     with pytest.raises(NegativeDelayError, match="Delay must be non-negative"):
@@ -48,7 +51,7 @@ def test_send_message_rejects_negative_delay(
 
 
 def test_send_message_requires_integer_delay(
-    client: tuple[IMessageClient, ClientStubRunner],
+    client: tuple[IMessageClient, ClientStubTransport],
 ) -> None:
     instance, _ = client
     with pytest.raises(InvalidDelayTypeError, match="Delay must be provided as an integer"):
@@ -59,3 +62,11 @@ def test_send_message_requires_integer_delay(
         )
     with pytest.raises(InvalidDelayTypeError, match="Delay must be provided as an integer"):
         instance.send("1234567890", "Hello", delay_seconds=True)
+
+
+def test_client_accepts_a_custom_transport() -> None:
+    transport = StubTransport()
+
+    client = IMessageClient(transport=transport)
+
+    assert client.transport is transport

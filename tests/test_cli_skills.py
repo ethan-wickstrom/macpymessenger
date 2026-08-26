@@ -8,9 +8,11 @@ from pathlib import Path
 import pytest
 
 import macpymessenger.__main__ as cli
-import macpymessenger.agent_skills as agent_skills
-from macpymessenger import __version__
+from macpymessenger import __version__, agent_skills
 from macpymessenger.agent_skills import AgentSkillResourceError, load_skill
+
+MAX_SKILL_NAME_LENGTH = 64
+MAX_SKILL_DESCRIPTION_LENGTH = 1024
 
 
 def _skill_content(name: str, description: str) -> str:
@@ -87,9 +89,9 @@ def test_core_skill_is_bundled_in_the_installed_package() -> None:
 def test_core_skill_metadata_meets_agent_skills_constraints() -> None:
     skill = load_skill("core")
 
-    assert len(skill.name) <= 64
+    assert len(skill.name) <= MAX_SKILL_NAME_LENGTH
     assert re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", skill.name)
-    assert len(skill.description) <= 1024
+    assert len(skill.description) <= MAX_SKILL_DESCRIPTION_LENGTH
 
 
 @pytest.mark.parametrize(

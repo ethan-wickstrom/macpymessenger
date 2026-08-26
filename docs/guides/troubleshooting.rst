@@ -1,19 +1,19 @@
 .. meta::
    :description lang=en:
       Fix macpymessenger setup, Automation permission, Messages delivery,
-      AppleScript, delay, template, and logging problems on macOS.
+      AppleScript transport, delay, template, and logging problems on macOS.
 
 Troubleshooting
 ===============
 
-Start with a side-effect-free report:
+Start with a side-effect-free report. In a uv project:
 
 .. code-block:: bash
 
-   macpymessenger doctor
+   uv run macpymessenger doctor
 
-Fix every ``FAIL`` result, follow each ``INFO`` next step, then use the matching
-section below.
+Fix every ``FAIL`` result and complete every ``MANUAL`` next step, then use the
+matching section below.
 
 The first send fails or macOS asks for permission
 -------------------------------------------------
@@ -35,28 +35,24 @@ Inspect the structured fields first:
    The phone number or email address that failed.
 
 ``error.reason == "delivery"``
-   ``osascript`` started, but AppleScript or Messages returned failure. Open
+   The transport ran, but AppleScript or Messages reported failure. Open
    Messages, confirm sign-in, send to the same recipient by hand, then check
    Automation permission.
 
-``error.reason == "command"``
-   The operating system could not start ``osascript``. Run the doctor, inspect
-   ``PATH``, and confirm the configured send script is readable.
+``error.reason == "transport"``
+   The operating system could not run the transport. Run the doctor and confirm
+   that ``/usr/bin/osascript`` is available.
 
-The original exception remains available as ``error.__cause__`` in a traceback.
+The raw child-process exception is intentionally not chained. It can contain
+private transport data and is not part of the public recovery contract.
 
 ``ScriptNotFoundError``
 -----------------------
 
-The bundled or custom AppleScript is missing or unreadable. Reinstall the wheel
-when the bundled script check fails. When using a custom path, confirm it names a
-readable file:
-
-.. code-block:: python
-
-   from macpymessenger import Configuration, IMessageClient
-
-   client = IMessageClient(Configuration("scripts/sendMessage.scpt"))
+The AppleScript source bundled in the installed wheel is missing or unreadable.
+Reinstall macpymessenger from a complete wheel. Custom delivery behavior belongs
+behind ``MessageTransport`` rather than a script-path override; see
+:doc:`../api/transport`.
 
 ``InvalidDelayTypeError`` or ``NegativeDelayError``
 ---------------------------------------------------
@@ -67,9 +63,10 @@ strings are not accepted.
 ``TemplateTypeError``
 ---------------------
 
-Confirm the factory returns a Python 3.14 t-string, not a normal string. Then
-confirm that every interpolated result is already a string. Convert inside the
-expression when conversion is intentional, such as ``t"{str(count)}"``.
+Confirm the factory returns a Python 3.14 t-string, not a normal string.
+Interpolated values otherwise use Python's normal conversion and format
+protocols. A ``TypeError`` or ``ValueError`` from formatting belongs to the
+value or format specification itself.
 
 ``TemplateNotFoundError`` or ``TemplateAlreadyExistsError``
 -----------------------------------------------------------

@@ -21,19 +21,13 @@ class FalseyContext(dict[str, object]):
 def test_template_formats_non_string_values(template_manager: TemplateManager) -> None:
     template_manager.create_template("count", lambda count: t"Count: {count}")
 
-    assert (
-        template_manager.render_template("count", context={"count": 123})
-        == "Count: 123"
-    )
+    assert template_manager.render_template("count", context={"count": 123}) == "Count: 123"
 
 
 def test_template_applies_conversion(template_manager: TemplateManager) -> None:
     template_manager.create_template("greeting", lambda name: t"Hello, {name!r}!")
 
-    assert (
-        template_manager.render_template("greeting", context={"name": "Ada"})
-        == "Hello, 'Ada'!"
-    )
+    assert template_manager.render_template("greeting", context={"name": "Ada"}) == "Hello, 'Ada'!"
 
 
 def test_template_applies_conversion_to_non_string_values(
@@ -41,28 +35,19 @@ def test_template_applies_conversion_to_non_string_values(
 ) -> None:
     template_manager.create_template("count", lambda count: t"Count: {count!s}")
 
-    assert (
-        template_manager.render_template("count", context={"count": 123})
-        == "Count: 123"
-    )
+    assert template_manager.render_template("count", context={"count": 123}) == "Count: 123"
 
 
 def test_template_applies_string_format_spec(template_manager: TemplateManager) -> None:
     template_manager.create_template("greeting", lambda name: t"[{name:>5}]")
 
-    assert (
-        template_manager.render_template("greeting", context={"name": "Ada"})
-        == "[  Ada]"
-    )
+    assert template_manager.render_template("greeting", context={"name": "Ada"}) == "[  Ada]"
 
 
 def test_template_applies_numeric_format_spec(template_manager: TemplateManager) -> None:
     template_manager.create_template("total", lambda total: t"Total: {total:.2f}")
 
-    assert (
-        template_manager.render_template("total", context={"total": 3.5})
-        == "Total: 3.50"
-    )
+    assert template_manager.render_template("total", context={"total": 3.5}) == "Total: 3.50"
 
 
 def test_template_preserves_a_falsey_mapping_context(template_manager: TemplateManager) -> None:

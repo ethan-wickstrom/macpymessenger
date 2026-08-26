@@ -11,12 +11,7 @@ from . import __version__
 from .agent_skills import AgentSkillResourceError, list_skills, load_skill, skill_names
 from .client import IMessageClient
 from .diagnostics import EnvironmentReport, diagnose_environment
-from .exceptions import (
-    InvalidDelayTypeError,
-    MacPyMessengerError,
-    MessageSendError,
-    NegativeDelayError,
-)
+from .exceptions import MacPyMessengerError, MessageSendError, NegativeDelayError
 from .transport import SendRequest
 
 if TYPE_CHECKING:
@@ -139,6 +134,8 @@ def _read_send_request() -> SendRequest:
     delay_seconds = fields.get("delay_seconds", 0)
     if not isinstance(recipient, str) or not isinstance(message, str):
         raise _InvalidSendInputError
+    if isinstance(delay_seconds, bool) or not isinstance(delay_seconds, int):
+        raise _InvalidSendInputError
 
     try:
         return SendRequest(
@@ -146,7 +143,7 @@ def _read_send_request() -> SendRequest:
             message=message,
             delay_seconds=delay_seconds,
         )
-    except InvalidDelayTypeError, NegativeDelayError:
+    except NegativeDelayError:
         raise _InvalidSendInputError from None
 
 

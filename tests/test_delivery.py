@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-def raise_oserror(_command: object) -> None:
+def raise_oserror(command: object) -> None:  # noqa: ARG001
     message = "exec failed"
     raise OSError(message)
 

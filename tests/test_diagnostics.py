@@ -3,9 +3,8 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
-from macpymessenger import Configuration
-from macpymessenger import __main__ as cli
-from macpymessenger import __version__, diagnostics
+import macpymessenger.__main__ as cli
+from macpymessenger import Configuration, __version__, diagnostics
 from macpymessenger.diagnostics import (
     CheckStatus,
     EnvironmentCheck,

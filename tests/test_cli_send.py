@@ -11,6 +11,8 @@ from tests.support import StubTransport
 if TYPE_CHECKING:
     import pytest
 
+INVALID_INPUT_EXIT_CODE = 2
+
 
 def _set_stdin(monkeypatch: pytest.MonkeyPatch, payload: str) -> None:
     monkeypatch.setattr(cli.sys, "stdin", io.StringIO(payload))
@@ -112,7 +114,7 @@ def test_send_json_rejects_unknown_fields_without_echoing_private_data(
     captured = capsys.readouterr()
     payload = json.loads(captured.out)
 
-    assert exit_code == 2
+    assert exit_code == INVALID_INPUT_EXIT_CODE
     assert payload["ok"] is False
     assert payload["error"]["code"] == "invalid_input"
     assert captured.err == ""
@@ -131,7 +133,7 @@ def test_send_json_rejects_malformed_json_without_echoing_input(
     captured = capsys.readouterr()
     payload = json.loads(captured.out)
 
-    assert exit_code == 2
+    assert exit_code == INVALID_INPUT_EXIT_CODE
     assert payload["ok"] is False
     assert payload["error"]["code"] == "invalid_input"
     assert captured.err == ""

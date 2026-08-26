@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build>=0.11.32,<0.13"]
+requires = ["uv_build>=0.12.5,<0.13"]
 build-backend = "uv_build"
 
 [project]
@@ -47,10 +47,10 @@ Repository = "https://github.com/ethan-wickstrom/macpymessenger"
 
 [dependency-groups]
 dev = [
-  "pytest>=9.0.3",
-  "ruff>=0.15.16",
+  "pytest>=9.1.1",
+  "ruff>=0.16.4",
   "sphinx>=9.1.0",
-  "ty>=0.0.44",
+  "ty>=0.0.74",
 ]
 
 [tool.uv.build-backend]
@@ -69,7 +69,7 @@ xfail_strict = true
 
 [tool.ruff]
 line-length = 100
-required-version = ">=0.15.16"
+required-version = ">=0.16.4"
 src = ["src"]
 target-version = "py314"
 

@@ -15,30 +15,34 @@ Use this file when changing `src/macpymessenger/`.
 
 ## Preserve ownership
 
-- Keep script-path resolution in `Configuration`.
-- Keep one-message delivery in `MessageDelivery`.
+- Keep the immutable delivery shape in `SendRequest`.
+- Keep one-message failure mapping and logging in `MessageDelivery`.
 - Keep client composition, template convenience, and bulk classification in
   `IMessageClient`.
 - Keep t-string storage and rendering in `TemplateManager`.
-- Keep subprocess execution in `SubprocessCommandRunner`.
-- Keep local readiness checks and their result model in `diagnostics`.
-- Raise named exceptions from `exceptions.py`; do not add ad hoc error strings as
-  caller contracts.
+- Keep the replaceable effect in `MessageTransport` and the production effect in
+  `AppleScriptTransport`.
+- Keep side-effect-free blocker checks and their result model in `diagnostics`.
+- Raise named exceptions from `exceptions.py`; do not make message text or child
+  exceptions part of caller contracts.
 
 ## Keep effects at the edge
 
-- Build subprocess argv as a sequence. Never use a shell or interpolate command
-  strings.
-- Inject command execution in tests. Never run real AppleScript in automated
-  checks.
+- The built-in transport must invoke fixed argv `('/usr/bin/osascript', '-')`.
+- Carry encoded private payload through stdin. Do not put recipients or message
+  bodies in argv, environment variables, temporary files, output, logs, or
+  exception causes.
+- Inject `MessageTransport` in ordinary tests. A macOS integration test may
+  compile rendered AppleScript but must not execute it.
 - Emit logs through a named logger. Never attach application handlers, set
   levels, select formats, or create files.
-- Keep diagnostics read-only. A check must not open Messages, trigger permission
-  prompts, or send text.
+- Keep diagnostics side-effect-free. A check must not open Messages, invoke
+  AppleScript, trigger permission prompts, read message data, or send text.
 
-## Keep templates strict
+## Use Python's template semantics
 
 - Define template factories as callables that return Python 3.14 t-strings.
 - Render to plain `str` values.
-- Require each interpolated result to be a string.
-- Reject duplicate identifiers and unknown identifiers with typed errors.
+- Apply the interpolation value's normal conversion and format protocol.
+- Treat only `None` as missing context; do not branch on a mapping's truth value.
+- Reject duplicate and unknown identifiers with typed errors.

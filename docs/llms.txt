@@ -1,22 +1,33 @@
 # macpymessenger
 
-> A typed Python 3.14+ library that sends text through the built-in macOS Messages app with a private-data-safe AppleScript transport.
+> A typed Python 3.14+ library and command-line tool that sends text through the built-in macOS Messages app with a private-data-safe AppleScript transport.
 
-macpymessenger is local and send-only. It has no runtime dependencies. It does not read chat history, send attachments, resolve contacts, expose a remote gateway, or provide an MCP server. The first send may require Automation permission for the application that launches Python.
+macpymessenger is local and send-only. It has no runtime dependencies. It does not read chat history, send attachments, resolve contacts, expose a remote gateway, or manage a Messages account. The first send may require Automation permission for the application that launches Python.
 
-The core data flow is `IMessageClient` → immutable `SendRequest` → `MessageTransport`. The default `AppleScriptTransport` invokes fixed argv `('/usr/bin/osascript', '-')` and sends encoded AppleScript through stdin, keeping recipient and message text out of process arguments and temporary files.
+The core data flow is `IMessageClient` → immutable `SendRequest` → `MessageTransport`. The default `AppleScriptTransport` invokes fixed argv `('/usr/bin/osascript', '-')` and sends encoded AppleScript through standard input, keeping recipient and message text out of process arguments and temporary files.
 
 ## Start here
 
 - [Documentation](https://macpymessenger.readthedocs.io/en/latest/): Product scope, quick start, and documentation map.
 - [Installation](https://macpymessenger.readthedocs.io/en/latest/installation.html): macOS, Python, Messages, Automation, and correct uv command usage.
+- [Command line](https://macpymessenger.readthedocs.io/en/latest/guides/command-line.html): JSON over standard input, stable output, exit codes, and version-matched Agent Skills.
 - [Environment diagnostics](https://macpymessenger.readthedocs.io/en/latest/guides/environment-diagnostics.html): Side-effect-free doctor command, blocker semantics, manual checks, JSON schema, and exit codes.
-- [Send messages](https://macpymessenger.readthedocs.io/en/latest/guides/sending-messages.html): Single sends, delays, sequential bulk results, privacy boundary, and error handling.
+- [Send from Python](https://macpymessenger.readthedocs.io/en/latest/guides/sending-messages.html): Single sends, delays, sequential bulk results, privacy boundary, and error handling.
+
+## Agent entry point
+
+Load the instructions bundled with the installed package before sending:
+
+```bash
+macpymessenger skills get core
+```
+
+Inside a uv project, use `uv run macpymessenger skills get core`. The installed skill defines the current request shape, result shape, exit codes, permission checks, privacy boundary, and retry rule.
 
 ## Guides
 
 - [Templates](https://macpymessenger.readthedocs.io/en/latest/guides/templates.html): Callable Python 3.14 t-string templates with normal conversion and formatting.
-- [Logging](https://macpymessenger.readthedocs.io/en/latest/guides/logging.html): Application-owned Python logging; recipient handles may be logged, message bodies are not.
+- [Logging](https://macpymessenger.readthedocs.io/en/latest/guides/logging.html): Application-owned Python logging with generic built-in delivery outcomes.
 - [Troubleshooting](https://macpymessenger.readthedocs.io/en/latest/guides/troubleshooting.html): Automation, account, installation, transport, delay, and template failures.
 
 ## API reference
@@ -25,15 +36,18 @@ The core data flow is `IMessageClient` → immutable `SendRequest` → `MessageT
 - [Client API](https://macpymessenger.readthedocs.io/en/latest/api/client.html): `IMessageClient` and immutable `BulkSendResult`.
 - [Transport API](https://macpymessenger.readthedocs.io/en/latest/api/transport.html): `SendRequest`, `MessageTransport`, and `AppleScriptTransport`.
 - [Template API](https://macpymessenger.readthedocs.io/en/latest/api/templates.html): In-memory template registration and rendering.
-- [Exceptions](https://macpymessenger.readthedocs.io/en/latest/api/exceptions.html): Reachable failures and closed `MessageSendError.reason` values.
+- [Exceptions](https://macpymessenger.readthedocs.io/en/latest/api/exceptions.html): Reachable failures and `MessageFailureReason`.
 - [Diagnostics](https://macpymessenger.readthedocs.io/en/latest/api/diagnostics.html): `EnvironmentCheck`, `EnvironmentReport.blocked`, and `CheckStatus`.
 
 ## Agent rules
 
-- Run `uv run macpymessenger doctor --json`; do not parse human output.
+- Run `macpymessenger skills get core` before using the command.
+- Run `macpymessenger doctor --json`; do not parse human output.
 - Treat `blocked: false` as “no automated blocker found,” not “delivery proven.” Complete every check whose status is `manual`.
+- Feed one closed JSON object to `macpymessenger send --json` through standard input. Never infer a recipient, message, or permission to send.
+- Do not retry a failed or uncertain send automatically; a retry can duplicate a message.
 - Inject a `MessageTransport` in tests. Never invoke Messages or AppleScript during ordinary automated tests.
-- Do not put real recipients, message bodies, account data, or private paths in argv, files, logs, tracebacks, fixtures, examples, issues, or commits.
+- Keep real recipients, message bodies, account data, and private paths out of process arguments, environment variables, temporary files, logs, tracebacks, fixtures, examples, issues, and commits.
 - Run the exact verification commands in `AGENTS.md` before claiming completion.
 
 ## Project

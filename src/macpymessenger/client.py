@@ -11,7 +11,7 @@ from .templates import TemplateCallable, TemplateManager
 from .transport import AppleScriptTransport
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Iterable, Mapping
 
     from .transport import MessageTransport
 
@@ -85,11 +85,12 @@ class IMessageClient:
         """Delete a registered template factory."""
         self.template_manager.delete_template(template_id)
 
-    def send_bulk(self, recipients: Sequence[str], message: str) -> BulkSendResult:
-        """Send the same text in order and classify each recipient."""
+    def send_bulk(self, recipients: Iterable[str], message: str) -> BulkSendResult:
+        """Snapshot, send in input order, and classify each recipient."""
+        recipient_snapshot = tuple(recipients)
         sent: list[str] = []
         failed: list[str] = []
-        for recipient in recipients:
+        for recipient in recipient_snapshot:
             try:
                 self.send(recipient, message)
                 sent.append(recipient)

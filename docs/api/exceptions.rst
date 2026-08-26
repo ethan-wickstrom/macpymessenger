@@ -1,14 +1,15 @@
 .. meta::
    :description lang=en:
-      Exception reference for macpymessenger delivery, delay, configuration,
-      and Python t-string template failures.
+      Exception reference for macpymessenger delivery, transport, delay,
+      installation, and Python t-string template failures.
 
 Exceptions
 ==========
 
-All public exceptions are importable from ``macpymessenger``. Catch the narrowest
-error your program can act on. Catch ``MacPyMessengerError`` only at an
-application boundary where one response is correct for every library failure.
+All public exceptions are importable from ``macpymessenger``. Catch the
+narrowest error your program can act on. Catch ``MacPyMessengerError`` only at
+an application boundary where one response is correct for every library
+failure.
 
 Delivery errors
 ---------------
@@ -17,16 +18,17 @@ Delivery errors
    :members:
 
 ``MessageSendError.recipient`` identifies the failed Messages handle.
-``MessageSendError.reason`` is ``"delivery"`` when ``osascript`` ran but failed,
-or ``"command"`` when the operating system could not start the command.
+``MessageSendError.reason`` is the closed value ``"delivery"`` when AppleScript
+or Messages rejected the send, or ``"transport"`` when the transport could not
+run. The raw transport exception is intentionally not chained because it can
+contain private child-process data.
 
 .. autoclass:: macpymessenger.InvalidDelayTypeError
 .. autoclass:: macpymessenger.NegativeDelayError
 
-Configuration errors
---------------------
+Installation errors
+-------------------
 
-.. autoclass:: macpymessenger.ConfigurationError
 .. autoclass:: macpymessenger.ScriptNotFoundError
 
 Template errors

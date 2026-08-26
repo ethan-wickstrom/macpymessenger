@@ -1,13 +1,20 @@
 from __future__ import annotations
 
 import json
+import re
 from importlib.resources import files
 from pathlib import Path
 
 import pytest
 
 import macpymessenger.__main__ as cli
+import macpymessenger.agent_skills as agent_skills
 from macpymessenger import __version__
+from macpymessenger.agent_skills import AgentSkillResourceError, load_skill
+
+
+def _skill_content(name: str, description: str) -> str:
+    return f"---\nname: {name}\ndescription: {description}\n---\n\n# Test skill\n"
 
 
 def test_skills_list_json_exposes_a_small_versioned_catalog(
@@ -75,6 +82,42 @@ def test_core_skill_is_bundled_in_the_installed_package() -> None:
     resource = files("macpymessenger").joinpath("skills", "core", "SKILL.md")
 
     assert resource.is_file()
+
+
+def test_core_skill_metadata_meets_agent_skills_constraints() -> None:
+    skill = load_skill("core")
+
+    assert len(skill.name) <= 64
+    assert re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", skill.name)
+    assert len(skill.description) <= 1024
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Core",
+        "-core",
+        "core-",
+        "core--send",
+        "a" * 65,
+    ],
+)
+def test_skill_parser_rejects_invalid_names(name: str) -> None:
+    with pytest.raises(AgentSkillResourceError, match="invalid name"):
+        agent_skills._parse_skill("core", _skill_content(name, "Use this skill for tests."))
+
+
+def test_skill_parser_rejects_a_description_over_the_spec_limit() -> None:
+    with pytest.raises(AgentSkillResourceError, match="description exceeds"):
+        agent_skills._parse_skill("core", _skill_content("core", "a" * 1025))
+
+
+def test_skill_parser_rejects_a_directory_name_mismatch() -> None:
+    with pytest.raises(AgentSkillResourceError, match="declares name"):
+        agent_skills._parse_skill(
+            "core",
+            _skill_content("other-skill", "Use this skill for tests."),
+        )
 
 
 def test_repository_skill_stub_defers_to_installed_cli_content() -> None:

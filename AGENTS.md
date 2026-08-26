@@ -1,8 +1,9 @@
 # AGENTS.md
 
-macpymessenger is a Python 3.14+ library that sends text through the local macOS
-Messages app. The package is send-only, has no runtime dependencies, and must
-remain testable without a Messages account or permission to control Messages.
+macpymessenger is a Python 3.14+ library and command-line tool that sends text
+through the local macOS Messages app. The package is send-only, has no runtime
+dependencies, and must remain testable without a Messages account or permission
+to control Messages.
 
 ## Start here
 
@@ -10,26 +11,43 @@ Read [the task index](docs/agent-instructions/index.md), then load only the file
 that match the work. Use [the project map](docs/agent-instructions/project-map.md)
 for data shapes, ownership, and effect flow.
 
+For product use rather than repository work, load the version-matched installed
+workflow:
+
+```bash
+macpymessenger skills get core
+```
+
 ## Invariants
 
-- Keep the common path at `IMessageClient()` with `AppleScriptTransport`.
+- Keep the common Python path at `IMessageClient()` with
+  `AppleScriptTransport`.
 - Keep public imports at the `macpymessenger` package root.
 - Keep one immutable value at the effect boundary:
   `SendRequest(recipient, message, delay_seconds)`.
 - Keep delivery replaceable through `MessageTransport`. Automated tests inject a
   transport and never send a real message.
-- Keep private recipient and message values out of process arguments, temporary
-  files, child output, exception causes, logs, examples, issues, and commits.
-  Delivery logs may contain a placeholder recipient; they never contain message
-  bodies.
+- Keep the agent send path non-interactive: one closed JSON object on standard
+  input, structured output on standard output, diagnostics on standard error,
+  and stable exit codes.
+- Reject malformed JSON, unknown fields, duplicate keys, empty required values,
+  invalid delays, and non-UTF-8 text before creating the client.
+- Keep private recipient and message values out of process arguments, environment
+  variables, temporary files, child output, exception causes, logs, examples,
+  issues, and commits. Built-in delivery logs contain generic outcomes only.
 - Keep library logging passive. Add no handler except the package `NullHandler`;
   the host application owns levels, formats, destinations, and retention.
+- Keep the repository Agent Skill as a discovery stub. Serve the full workflow
+  from the installed package so the skill and command contract share a version.
 - Keep unsupported capabilities out of the stable client. Do not add placeholder
-  methods for chat history, attachments, contact lookup, remote gateways, or MCP.
+  methods for chat history, attachments, contact lookup, remote gateways, or
+  account management.
 - Treat `doctor.blocked == false` as “no automated blocker found,” not “delivery
   proven.” Preserve every manual check.
-- Update the owning guide, API page, `README.md`, `docs/llms.txt`, and
-  `CHANGELOG.md` when a public contract changes.
+- Never retry a failed or uncertain send automatically; the package has no
+  delivery receipt or idempotency key.
+- Update the owning guide, API page, `README.md`, `docs/llms.txt`, bundled skill,
+  and `CHANGELOG.md` when a public contract changes.
 
 ## Commands
 

@@ -2,16 +2,12 @@ from __future__ import annotations
 
 import io
 import json
-from typing import TYPE_CHECKING
 
 import pytest
 
 import macpymessenger.__main__ as cli
 from macpymessenger import IMessageClient, SendRequest, __version__
 from tests.support import StubTransport
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
 
 INVALID_INPUT_EXIT_CODE = 2
 
@@ -119,7 +115,8 @@ def test_send_json_rejects_ambiguous_or_invalid_input_before_creating_a_client(
     payload: str,
 ) -> None:
     def unexpected_client() -> IMessageClient:
-        raise AssertionError("invalid input reached the Messages effect boundary")
+        message = "invalid input reached the Messages effect boundary"
+        raise AssertionError(message)
 
     monkeypatch.setattr(cli, "IMessageClient", unexpected_client)
     _set_stdin(monkeypatch, payload)

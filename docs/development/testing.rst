@@ -1,7 +1,7 @@
 .. meta::
    :description lang=en:
-      Run macpymessenger lint, format, type, test, documentation, package, and
-      private-data-safe transport checks locally.
+      Run macpymessenger lint, format, type, test, documentation, package, CLI,
+      Agent Skill, and private-data-safe transport checks locally.
 
 Test and check changes
 ======================
@@ -29,21 +29,45 @@ What each check covers
    exact formatter patch when a file differs.
 
 ``ty check``
-   Checks public and internal types in ``src/`` and ``tests/``.
+   Checks public and internal types in ``src/``, ``tests/``, and ``scripts/``.
 
 ``pytest``
-   Runs hermetic behavior tests. Tests inject ``MessageTransport`` doubles and
-   never send real messages. On macOS, one integration test compiles a rendered
-   script with ``/usr/bin/osacompile`` without executing it.
+   Runs hermetic behavior tests with warnings treated as errors. Tests inject
+   ``MessageTransport`` doubles and never send real messages. On macOS, one
+   integration test compiles a rendered script with ``/usr/bin/osacompile``
+   without executing it.
 
 ``sphinx-build -n -T -W --keep-going``
    Resolves references, prints full tracebacks, treats warnings as errors, and
    reports all documentation failures in one run.
 
 ``uv build``
-   Creates the wheel and source distribution in ``dist/``. CI then installs the
-   wheel in a clean environment and checks public imports, ``py.typed``, bundled
-   AppleScript source, the console entry point, and doctor JSON.
+   Creates the wheel and source distribution in ``dist/``. CI installs each
+   artifact in an isolated environment and runs
+   ``scripts/verify_installed_package.py``.
+
+What the installed-package verifier covers
+-------------------------------------------
+
+The verifier checks:
+
+- public imports and distribution version metadata;
+- ``py.typed``, bundled AppleScript source, and the bundled core Agent Skill;
+- the console entry point, top-level help, and ``send --help``;
+- doctor JSON and blocker semantics;
+- human and JSON skill discovery;
+- invalid send rejection, exit status ``2``, and private-data-safe output; and
+- the default client, request, bulk-result, and template-manager shapes.
+
+Run the verifier against a local wheel after ``uv build``:
+
+.. code-block:: bash
+
+   wheel="$(find dist -name '*.whl' -print -quit)"
+   uv run --isolated --no-project --python 3.14 --with "$wheel" \
+     python -P scripts/verify_installed_package.py
+
+Use ``-P`` so the repository cannot shadow the installed distribution.
 
 Test delivery code safely
 -------------------------
@@ -68,6 +92,14 @@ Inject a transport that records immutable requests:
    client.send("+15555550123", "Hello")
 
    assert transport.requests == [SendRequest("+15555550123", "Hello")]
+
+Test command input safely
+-------------------------
+
+Replace ``sys.stdin`` with ``io.StringIO`` and inject a client backed by a
+``MessageTransport`` double. Invalid input tests should replace
+``IMessageClient`` with a function that raises if called; this proves rejection
+happens before the effect boundary.
 
 Test diagnostics safely
 -----------------------

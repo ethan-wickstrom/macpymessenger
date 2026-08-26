@@ -9,6 +9,7 @@ from .client import BulkSendResult, IMessageClient
 from .exceptions import (
     InvalidDelayTypeError,
     MacPyMessengerError,
+    MessageFailureReason,
     MessageSendError,
     NegativeDelayError,
     ScriptNotFoundError,
@@ -31,6 +32,7 @@ __all__ = [
     "IMessageClient",
     "InvalidDelayTypeError",
     "MacPyMessengerError",
+    "MessageFailureReason",
     "MessageSendError",
     "MessageTransport",
     "NegativeDelayError",

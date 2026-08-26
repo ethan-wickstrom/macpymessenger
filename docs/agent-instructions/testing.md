@@ -7,6 +7,8 @@ Use this file when adding or changing tests.
 - Never execute a rendered script, open Messages, request Automation permission,
   or send a real message.
 - Inject `StubTransport` or another focused `MessageTransport`.
+- For CLI tests, replace `sys.stdin` with an in-memory stream and inject a client
+  or transport before testing a successful send.
 - The macOS-only compiler test may run `/usr/bin/osacompile`; compilation must
   not execute the script or control Messages.
 - Monkeypatch platform, fixed paths, and package-source loading in diagnostic
@@ -16,14 +18,18 @@ Use this file when adding or changing tests.
 ## Test contracts, not implementation trivia
 
 - Assert public request and result shapes, exception types and fields, emitted
-  records, fixed transport argv, stdin source properties, JSON fields, and exit
-  codes.
-- Assert that raw recipient and message values do not appear in transport argv,
-  logs, child output, or exception causes.
+  records, fixed transport argv, standard-input source properties, JSON fields,
+  help text, and exit codes.
+- Assert that raw recipient and message values do not appear in process argv,
+  output, logs, child output, or exception causes.
+- Assert that invalid CLI input cannot construct `IMessageClient`.
 - Test one named behavior per test.
-- Add edge cases at input boundaries: empty recipient lists, all failures,
-  negative or non-integer delays, false-valued mappings, conversion, formatting,
-  and missing bundled package data.
+- Add edge cases at input boundaries: non-object JSON, missing and empty required
+  fields, duplicate and unknown keys, negative or non-integer delays,
+  non-UTF-8 text, empty recipient lists, all failures, false-valued mappings,
+  conversion, formatting, and missing bundled package data.
+- Verify both the repository discovery stub and the skill bundled in the built
+  wheel. The stub must defer to `macpymessenger skills get core`.
 - Preserve compatibility only when a test states the supported contract, such as
   tuple unpacking for `BulkSendResult`.
 

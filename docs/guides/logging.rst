@@ -66,10 +66,10 @@ record must not also reach a root handler:
    logger.addHandler(logging.StreamHandler())
    logger.propagate = False
 
-Protect recipient information
------------------------------
+Private data
+------------
 
-Delivery records may include the recipient phone number or email address. They
-never include the message body or raw transport exception. Treat recipient
-handles as private data. Choose protected destinations, limit access, and set a
-retention period that fits the host application.
+Built-in delivery records contain generic outcomes. They do not include the
+recipient, message body, child-process output, or raw transport exception. A
+caller-owned transport or logger can still add private data, so the host
+application remains responsible for destinations, access, and retention.

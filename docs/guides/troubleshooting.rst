@@ -1,7 +1,7 @@
 .. meta::
    :description lang=en:
-      Fix macpymessenger setup, Automation permission, Messages delivery,
-      AppleScript transport, delay, template, and logging problems on macOS.
+      Fix macpymessenger command input, setup, Automation permission, Messages
+      delivery, AppleScript transport, delay, template, and logging problems.
 
 Troubleshooting
 ===============
@@ -26,10 +26,42 @@ Automation access belongs to the launching application. Permission granted to
 Terminal does not grant permission to an editor, background service, or agent
 host. Reproduce the send from the same launcher that will run the program.
 
+``macpymessenger send`` exits with status 2
+-------------------------------------------
+
+The JSON input is malformed or does not match the closed request shape. Run:
+
+.. code-block:: bash
+
+   macpymessenger send --help
+
+Confirm that standard input contains exactly one object with non-empty string
+``recipient`` and ``message`` fields. ``delay_seconds`` is optional and must be
+a non-negative integer. Remove unknown fields and duplicate keys. Booleans,
+floats, and text that cannot be encoded as UTF-8 are invalid.
+
+With ``--json``, the command returns ``error.code == "invalid_input"`` without
+echoing the rejected values. Input errors happen before the client or Messages
+effect is created.
+
+``macpymessenger send`` exits with status 1
+-------------------------------------------
+
+Read ``error.reason`` from JSON output:
+
+``"delivery"``
+   The transport ran, but AppleScript or Messages reported failure.
+
+``"transport"``
+   The local AppleScript transport could not run or load its bundled source.
+
+Do not retry automatically. The command has no delivery receipt or idempotency
+key, so an uncertain retry can create a duplicate message.
+
 ``MessageSendError``
 --------------------
 
-Inspect the structured fields first:
+Python callers should inspect the structured fields first:
 
 ``error.recipient``
    The phone number or email address that failed.
@@ -79,10 +111,12 @@ No delivery logs appear
 -----------------------
 
 macpymessenger does not configure output handlers or log levels. Configure
-Python logging in the host application before sending. See :doc:`logging`.
+Python logging in the host application before sending. Built-in records contain
+generic outcomes only. See :doc:`logging`.
 
 Unsupported capability
 ----------------------
 
-Attachments, chat history, message reading, contact lookup, remote gateways, and
-MCP are outside the stable package. There are no placeholder methods to call.
+Attachments, chat history, message reading, contact lookup, remote gateways,
+delivery receipts, and account management are outside the stable package. There
+are no placeholder methods to call.

@@ -1,7 +1,7 @@
 .. meta::
    :description lang=en:
       Install macpymessenger on macOS, check Messages and AppleScript blockers,
-      and prepare Automation permission for Python iMessage sending.
+      and prepare Automation permission for Python or agent sending.
 
 Install and prepare your Mac
 ============================
@@ -32,7 +32,11 @@ environment:
    uv run macpymessenger doctor
 
 Use ``uv run macpymessenger doctor --json`` when a script or agent needs
-structured output.
+structured output. Load the installed agent workflow with:
+
+.. code-block:: bash
+
+   uv run macpymessenger skills get core
 
 Install with pip
 ----------------
@@ -71,5 +75,6 @@ editor, a launcher, and an agent host may each need separate approval.
 Next step
 ---------
 
-Follow :doc:`guides/sending-messages`. If no automated blocker is found but
-delivery fails, use :doc:`guides/troubleshooting`.
+Python callers should follow :doc:`guides/sending-messages`. Shell scripts and
+agents should follow :doc:`guides/command-line`. If no automated blocker is
+found but delivery fails, use :doc:`guides/troubleshooting`.

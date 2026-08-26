@@ -29,7 +29,8 @@ class MessageSendError(MacPyMessengerError):
     """Raised when Messages rejects a send or its transport cannot run.
 
     ``recipient`` and ``reason`` let callers respond without parsing error text.
-    ``reason`` is either ``"delivery"`` or ``"transport"``.
+    ``reason`` is either ``"delivery"`` or ``"transport"``. The human-readable
+    message stays generic so tracebacks do not repeat the private recipient.
     """
 
     def __init__(
@@ -44,11 +45,11 @@ class MessageSendError(MacPyMessengerError):
 
     @classmethod
     def delivery_failed(cls, recipient: str) -> Self:
-        return cls(recipient, "delivery", f"Failed to send message to {recipient}")
+        return cls(recipient, "delivery", "Message delivery failed.")
 
     @classmethod
     def transport_failed(cls, recipient: str) -> Self:
-        return cls(recipient, "transport", f"Message transport failed for {recipient}")
+        return cls(recipient, "transport", "Message transport failed.")
 
 
 class TemplateError(MacPyMessengerError):

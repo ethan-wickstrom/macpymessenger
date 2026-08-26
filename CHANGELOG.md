@@ -21,9 +21,19 @@ bulk classification, logging, or error mapping.
 
 **Private-data-safe AppleScript transport.** The built-in transport invokes fixed
 argv `('/usr/bin/osascript', '-')`, base64-encodes recipient and message text into
-the rendered script, and streams that script through stdin. Private values no
-longer enter process arguments or temporary files. Child output remains inside
-the transport.
+the rendered script, and streams that script through standard input. Private
+values no longer enter process arguments or temporary files. Child output
+remains inside the transport.
+
+**Agent-safe send command.** `macpymessenger send` reads one closed JSON object
+from standard input. `--json` returns stable machine fields without echoing the
+recipient or message. Exit status `0` means transport completion, `1` means a
+send or transport failure, and `2` means invalid input.
+
+**Version-matched Agent Skills.** `macpymessenger skills`, `skills list --json`,
+and `skills get core` expose instructions bundled with the installed package. A
+thin repository discovery skill points agents to the installed workflow so the
+instructions and command contract share a version.
 
 **Side-effect-free environment diagnostics.** `macpymessenger doctor` checks
 macOS, `/usr/bin/osascript`, Messages.app, and bundled AppleScript source without
@@ -37,9 +47,10 @@ and permission state is `manual`, not success.
 `sent, failed = result` unpacking remains valid.
 
 **Agent and search discovery.** The hosted docs publish canonical URLs, page
-metadata, OpenSearch metadata, Python 3.14 intersphinx links, and a curated
-`llms.txt`. `AGENTS.md` routes agents through current data shapes, ownership,
-private-data rules, and exact verification commands.
+metadata, OpenSearch metadata, Python 3.14 intersphinx links, a curated
+`llms.txt`, and one command-line guide. `AGENTS.md` routes repository agents
+through current data shapes, ownership, private-data rules, and exact
+verification commands.
 
 ### Changed
 
@@ -54,9 +65,14 @@ numbers and email addresses. Positional send calls are unchanged; callers using
 
 **Delivery errors expose a closed reason.** `MessageSendError.recipient`
 identifies the failed handle. `reason` is `"delivery"` when AppleScript or
-Messages rejects a send and `"transport"` when the transport cannot run. Raw
-transport exceptions are not chained because they can contain private child
-process data.
+Messages rejects a send and `"transport"` when the transport cannot run. The
+closed `MessageFailureReason` alias is public. Raw transport exceptions are not
+chained because they can contain private child-process data.
+
+**Command input is closed before effects.** The send command rejects non-object
+JSON, missing or empty required strings, unknown fields, duplicate keys,
+non-integer or negative delays, and non-UTF-8 text before constructing
+`IMessageClient`.
 
 **T-string interpolation uses Python semantics.** Template values use normal
 conversion and `format()` behavior. Integers, floats, and domain values with
@@ -65,9 +81,9 @@ a false-valued mapping is preserved.
 
 **Logging follows the standard library contract.** The package installs a
 `NullHandler` and emits through named loggers. It never creates files, attaches
-application handlers, sets levels, chooses formats, logs message bodies, or logs
-raw transport exceptions. Host applications own destinations, access, and
-retention.
+application handlers, sets levels, chooses formats, logs recipients or message
+bodies, or logs raw transport exceptions. Host applications own destinations,
+access, and retention.
 
 **Diagnostics report blockers, not readiness.** `EnvironmentReport.ready` is
 replaced by `blocked`. `PASS`/`INFO` output becomes `OK`/`MANUAL`. A zero doctor
@@ -76,16 +92,21 @@ is signed in or that Automation permission has been granted.
 
 **Development and release checks are artifact-first.** CI uses a locked uv
 environment, lint and formatter diffs, type checks, hermetic tests, strict Sphinx
-builds, package builds, clean-wheel smoke tests, and macOS AppleScript compilation.
-The release path uses a separately built artifact and PyPI Trusted Publishing.
+builds, package builds, clean-wheel smoke tests, and macOS AppleScript
+compilation. The release path uses a separately built artifact and PyPI Trusted
+Publishing.
 
 ### Fixed
+
+**Pull-request CI no longer fails on formatter drift.** The merged source and
+tests are in Ruff's canonical Python 3.14 form, and the stale invariant test for
+the removed configuration and command-runner design is gone.
 
 **Private send data no longer leaks through process inspection or failures.** The
 old argv shape included recipient, full message text, and delay for the lifetime
 of the `osascript` process. Failed sends also copied the raw command into logs and
-traceback causes. Fixed argv, stdin transport, captured child output, plain error
-logging, and `raise ... from None` close those paths.
+traceback causes. Fixed argv, standard-input transport, captured child output,
+plain error logging, and `raise ... from None` close those paths.
 
 **Doctor output no longer exposes an installed home path.** The bundled-source
 check reports a generic result rather than the full package filesystem path.

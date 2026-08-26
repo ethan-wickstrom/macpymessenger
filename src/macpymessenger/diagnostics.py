@@ -148,12 +148,9 @@ def diagnose_environment() -> EnvironmentReport:
             EnvironmentCheck(
                 identifier="automation",
                 status=CheckStatus.MANUAL,
-                summary=(
-                    "Automation permission cannot be checked without sending an Apple event."
-                ),
+                summary=("Automation permission cannot be checked without sending an Apple event."),
                 next_step=(
-                    "Run one send, then check System Settings > Privacy & Security > "
-                    "Automation."
+                    "Run one send, then check System Settings > Privacy & Security > Automation."
                 ),
             ),
             EnvironmentCheck(

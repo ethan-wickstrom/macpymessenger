@@ -4,7 +4,7 @@ import json
 from typing import TYPE_CHECKING
 
 import macpymessenger.__main__ as cli
-from macpymessenger import Configuration, __version__, diagnostics
+from macpymessenger import __version__, diagnostics
 from macpymessenger.diagnostics import (
     CheckStatus,
     EnvironmentCheck,
@@ -25,12 +25,13 @@ def test_diagnostics_report_passes_automated_checks_without_claiming_readiness(
     messages_app = tmp_path / "Messages.app"
     messages_app.mkdir()
     monkeypatch.setattr(diagnostics.platform, "system", lambda: "Darwin")
-    monkeypatch.setattr(diagnostics.shutil, "which", lambda command: f"/usr/bin/{command}")
+    monkeypatch.setattr(diagnostics, "_OSASCRIPT_PATH", tmp_path / "osascript")
+    diagnostics._OSASCRIPT_PATH.write_text("", encoding="utf-8")
     monkeypatch.setattr(diagnostics, "_MESSAGES_APP_PATHS", (messages_app,))
+    monkeypatch.setattr(diagnostics, "_load_script_source", lambda: "on sendMessage()\nend")
 
     report = diagnose_environment()
 
-    assert hasattr(report, "blocked")
     assert report.blocked is False
     assert not hasattr(report, "ready")
     assert [check.identifier for check in report.checks[:4]] == [
@@ -40,31 +41,34 @@ def test_diagnostics_report_passes_automated_checks_without_claiming_readiness(
         "send-script",
     ]
     assert all(check.status is CheckStatus.OK for check in report.checks[:4])
-    assert all(check.status is CheckStatus.INFO for check in report.checks[4:])
+    assert all(check.status is CheckStatus.MANUAL for check in report.checks[4:])
 
 
 def test_diagnostics_report_missing_local_requirements(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     monkeypatch.setattr(diagnostics.platform, "system", lambda: "Linux")
-    monkeypatch.setattr(diagnostics.shutil, "which", lambda _command: None)
+    monkeypatch.setattr(diagnostics, "_OSASCRIPT_PATH", tmp_path / "missing-osascript")
     monkeypatch.setattr(diagnostics, "_MESSAGES_APP_PATHS", ())
 
     report = diagnose_environment()
 
-    assert hasattr(report, "blocked")
     assert report.blocked is True
     failed = {check.identifier for check in report.checks if check.status is CheckStatus.FAIL}
     assert failed == {"platform", "osascript", "messages-app"}
 
 
 def test_diagnostics_do_not_expose_the_installed_script_path() -> None:
-    script_path = str(Configuration().send_script_path)
     report = diagnose_environment()
     send_script = next(check for check in report.checks if check.identifier == "send-script")
 
-    assert script_path not in send_script.summary
-    assert send_script.fix is None or script_path not in send_script.fix
+    assert send_script.summary in {
+        "Bundled AppleScript is readable.",
+        "Bundled AppleScript could not be read.",
+    }
+    assert "/" not in send_script.summary
+    assert send_script.next_step is None or "/" not in send_script.next_step
 
 
 def test_doctor_json_is_stable_for_agents(
@@ -77,7 +81,7 @@ def test_doctor_json_is_stable_for_agents(
                 identifier="platform",
                 status=CheckStatus.FAIL,
                 summary="macOS is required; found Linux.",
-                fix="Run macpymessenger on a Mac.",
+                next_step="Run macpymessenger on a Mac.",
             ),
         )
     )
@@ -93,10 +97,10 @@ def test_doctor_json_is_stable_for_agents(
         "blocked": True,
         "checks": [
             {
-                "id": "platform",
+                "identifier": "platform",
                 "status": "fail",
                 "summary": "macOS is required; found Linux.",
-                "fix": "Run macpymessenger on a Mac.",
+                "next_step": "Run macpymessenger on a Mac.",
             }
         ],
     }
@@ -110,9 +114,9 @@ def test_doctor_text_gives_the_next_action_without_claiming_readiness(
         checks=(
             EnvironmentCheck(
                 identifier="automation",
-                status=CheckStatus.INFO,
-                summary="Automation permission is granted per Python launcher.",
-                fix="Check System Settings > Privacy & Security > Automation.",
+                status=CheckStatus.MANUAL,
+                summary="Automation permission cannot be checked without sending an Apple event.",
+                next_step="Check System Settings > Privacy & Security > Automation.",
             ),
         )
     )
@@ -122,7 +126,7 @@ def test_doctor_text_gives_the_next_action_without_claiming_readiness(
     output = capsys.readouterr().out
 
     assert exit_code == 0
-    assert "INFO automation: Automation permission is granted per Python launcher." in output
+    assert "MANUAL automation: Automation permission cannot be checked" in output
     assert "Next: Check System Settings > Privacy & Security > Automation." in output
-    assert "No detectable local blockers. Complete the INFO checks before sending." in output
+    assert "No detectable local blockers. Complete the MANUAL checks before sending." in output
     assert "Ready for a first send." not in output

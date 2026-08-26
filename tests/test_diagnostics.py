@@ -24,9 +24,11 @@ def test_diagnostics_report_passes_automated_checks_without_claiming_readiness(
 ) -> None:
     messages_app = tmp_path / "Messages.app"
     messages_app.mkdir()
+    osascript = tmp_path / "osascript"
+    osascript.write_text("", encoding="utf-8")
     monkeypatch.setattr(diagnostics.platform, "system", lambda: "Darwin")
-    monkeypatch.setattr(diagnostics, "_OSASCRIPT_PATH", tmp_path / "osascript")
-    diagnostics._OSASCRIPT_PATH.write_text("", encoding="utf-8")
+    monkeypatch.setattr(diagnostics, "_OSASCRIPT_PATH", osascript)
+    monkeypatch.setattr(diagnostics.os, "access", lambda _path, _mode: True)
     monkeypatch.setattr(diagnostics, "_MESSAGES_APP_PATHS", (messages_app,))
     monkeypatch.setattr(diagnostics, "_load_script_source", lambda: "on sendMessage()\nend")
 

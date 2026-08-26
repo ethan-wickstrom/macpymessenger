@@ -23,9 +23,9 @@ def test_skills_list_json_exposes_a_small_versioned_catalog(
         {
             "name": "core",
             "description": (
-                "Send text through the local macOS Messages app with the "
-                "macpymessenger CLI. Use only when the user explicitly asks an "
-                "agent to send an iMessage or check macpymessenger readiness."
+                "Use this skill when the user explicitly asks an agent to send an "
+                "iMessage through the local macOS Messages app or inspect "
+                "macpymessenger readiness."
             ),
         }
     ]
@@ -39,7 +39,7 @@ def test_bare_skills_lists_the_catalog(
 
     assert exit_code == 0
     assert output.startswith("core\t")
-    assert "Send text through the local macOS Messages app" in output
+    assert "Use this skill when the user explicitly asks" in output
 
 
 def test_top_level_help_routes_agents_to_the_installed_core_skill(
@@ -66,6 +66,8 @@ def test_skills_get_core_returns_installed_version_matched_instructions(
     assert "macpymessenger doctor --json" in content
     assert "macpymessenger send --json" in content
     assert "explicitly asks" in content
+    assert "process arguments, environment variables, and temporary files" in content
+    assert "shell history" not in content
     assert "MCP" not in content
 
 

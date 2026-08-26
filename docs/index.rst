@@ -49,9 +49,13 @@ can control Messages. Allow access, or review it in **System Settings > Privacy
 Find what you need
 ------------------
 
-**First send**
+**First send from Python**
    Follow :doc:`installation`, run :doc:`guides/environment-diagnostics`, then
    use :doc:`guides/sending-messages`.
+
+**Shell script or AI agent**
+   Use :doc:`guides/command-line` for JSON over standard input, stable output,
+   exit codes, and version-matched Agent Skills.
 
 **Reusable messages**
    Read :doc:`guides/templates`.
@@ -84,6 +88,7 @@ Find what you need
    :caption: Guides
 
    guides/environment-diagnostics
+   guides/command-line
    guides/sending-messages
    guides/templates
    guides/logging

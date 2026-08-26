@@ -158,8 +158,7 @@ def _verify_skills() -> None:
     )
     _require(
         "skill catalog changed",
-        condition=catalog["skills"]
-        == [{"name": "core", "description": _CORE_SKILL_DESCRIPTION}],
+        condition=catalog["skills"] == [{"name": "core", "description": _CORE_SKILL_DESCRIPTION}],
     )
 
     bare_catalog = _run_cli("skills")

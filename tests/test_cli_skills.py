@@ -65,7 +65,7 @@ def test_skills_get_core_returns_installed_version_matched_instructions(
     assert content.startswith("---\nname: core\n")
     assert "macpymessenger doctor --json" in content
     assert "macpymessenger send --json" in content
-    assert "explicitly asked" in content
+    assert "explicitly asks" in content
     assert "MCP" not in content
 
 

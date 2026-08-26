@@ -1,17 +1,16 @@
 from __future__ import annotations
 
-from macpymessenger import BulkSendResult, Configuration, IMessageClient, TemplateManager
-from tests.support import StubRunner
+from macpymessenger import BulkSendResult, IMessageClient, TemplateManager
+from tests.support import StubTransport
 
 
 def test_send_bulk_returns_named_immutable_outcomes(
-    configuration: Configuration, template_manager: TemplateManager
+    template_manager: TemplateManager,
 ) -> None:
-    runner = StubRunner(["2", "3"])
+    transport = StubTransport(["2", "3"])
     client = IMessageClient(
-        configuration=configuration,
         template_manager=template_manager,
-        command_runner=runner,
+        transport=transport,
     )
 
     result = client.send_bulk(["1", "2", "3", "4"], "Ping")
@@ -22,13 +21,12 @@ def test_send_bulk_returns_named_immutable_outcomes(
 
 
 def test_send_bulk_result_keeps_tuple_unpacking_compatibility(
-    configuration: Configuration, template_manager: TemplateManager
+    template_manager: TemplateManager,
 ) -> None:
-    runner = StubRunner(["2"])
+    transport = StubTransport(["2"])
     client = IMessageClient(
-        configuration=configuration,
         template_manager=template_manager,
-        command_runner=runner,
+        transport=transport,
     )
 
     sent, failed = client.send_bulk(["1", "2"], "Ping")
@@ -38,24 +36,22 @@ def test_send_bulk_result_keeps_tuple_unpacking_compatibility(
 
 
 def test_send_bulk_handles_an_empty_recipient_list(
-    configuration: Configuration, template_manager: TemplateManager
+    template_manager: TemplateManager,
 ) -> None:
     client = IMessageClient(
-        configuration=configuration,
         template_manager=template_manager,
-        command_runner=StubRunner(),
+        transport=StubTransport(),
     )
 
     assert client.send_bulk([], "Ping") == BulkSendResult(sent=(), failed=())
 
 
 def test_send_bulk_can_classify_every_recipient_as_failed(
-    configuration: Configuration, template_manager: TemplateManager
+    template_manager: TemplateManager,
 ) -> None:
     client = IMessageClient(
-        configuration=configuration,
         template_manager=template_manager,
-        command_runner=StubRunner(["1", "2"]),
+        transport=StubTransport(["1", "2"]),
     )
 
     assert client.send_bulk(["1", "2"], "Ping") == BulkSendResult(

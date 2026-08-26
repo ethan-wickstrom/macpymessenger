@@ -22,9 +22,7 @@ class AgentSkillResourceError(RuntimeError):
 
     @classmethod
     def name_mismatch(cls, path_name: str, declared_name: str) -> Self:
-        return cls(
-            f"Bundled Agent Skill path '{path_name}' declares name '{declared_name}'"
-        )
+        return cls(f"Bundled Agent Skill path '{path_name}' declares name '{declared_name}'")
 
     @classmethod
     def missing_frontmatter(cls) -> Self:

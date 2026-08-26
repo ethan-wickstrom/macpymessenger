@@ -3,11 +3,12 @@
       Send one or many iMessages from Python on macOS, delay delivery, and handle
       typed macpymessenger transport errors and bulk results.
 
-Send messages
-=============
+Send messages from Python
+=========================
 
 Create one client and reuse it for each send. The default constructor uses
-``AppleScriptTransport``.
+``AppleScriptTransport``. For a shell script or AI agent, use
+:doc:`command-line` instead.
 
 Send one message
 ----------------
@@ -79,8 +80,9 @@ Understand the private-data boundary
 ------------------------------------
 
 The built-in transport carries recipient and message text in encoded AppleScript
-sent through stdin. Private values do not enter process arguments or temporary
-files. Delivery logs may contain recipient handles but never message bodies.
+sent through standard input. Private values do not enter process arguments or
+temporary files. Built-in delivery logs contain generic outcomes, not recipient
+handles or message bodies.
 
 Handle errors at the right boundary
 -----------------------------------

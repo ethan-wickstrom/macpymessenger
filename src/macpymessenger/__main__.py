@@ -11,7 +11,12 @@ from . import __version__
 from .agent_skills import AgentSkillResourceError, list_skills, load_skill, skill_names
 from .client import IMessageClient
 from .diagnostics import EnvironmentReport, diagnose_environment
-from .exceptions import MacPyMessengerError, MessageSendError, NegativeDelayError
+from .exceptions import (
+    MessageFailureReason,
+    MessageSendError,
+    NegativeDelayError,
+    ScriptNotFoundError,
+)
 from .transport import SendRequest
 
 if TYPE_CHECKING:
@@ -62,6 +67,21 @@ def _build_parser() -> argparse.ArgumentParser:
     send = subparsers.add_parser(
         "send",
         help="Read one private send request as JSON from standard input.",
+        description="Read one JSON object from standard input and send one message.",
+        epilog=(
+            "Input JSON:\n"
+            '  {"recipient":"<recipient>","message":"<message>","delay_seconds":0}\n\n'
+            "Fields:\n"
+            '  "recipient"      required non-empty string\n'
+            '  "message"        required non-empty string\n'
+            '  "delay_seconds"  optional non-negative integer; default 0\n\n'
+            "No other fields or duplicate keys are accepted.\n\n"
+            "Exit status:\n"
+            "  0  transport completed\n"
+            "  1  send or transport failure\n"
+            "  2  invalid input"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     send.add_argument(
         "--json",
@@ -117,9 +137,19 @@ def _write_doctor_text(report: EnvironmentReport) -> None:
     sys.stdout.write(f"\n{summary}\n")
 
 
+def _unique_json_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    """Build one JSON object while rejecting duplicate keys."""
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise _InvalidSendInputError
+        result[key] = value
+    return result
+
+
 def _read_send_request() -> SendRequest:
     try:
-        payload: object = json.load(sys.stdin)
+        payload: object = json.load(sys.stdin, object_pairs_hook=_unique_json_object)
     except json.JSONDecodeError, OSError, RecursionError, UnicodeError:
         raise _InvalidSendInputError from None
 
@@ -141,23 +171,27 @@ def _read_send_request() -> SendRequest:
     delay_seconds = fields.get("delay_seconds", 0)
     if not isinstance(recipient, str) or not isinstance(message, str):
         raise _InvalidSendInputError
+    if not recipient or not message:
+        raise _InvalidSendInputError
     if isinstance(delay_seconds, bool) or not isinstance(delay_seconds, int):
         raise _InvalidSendInputError
 
     try:
+        recipient.encode("utf-8")
+        message.encode("utf-8")
         return SendRequest(
             recipient=recipient,
             message=message,
             delay_seconds=delay_seconds,
         )
-    except NegativeDelayError:
+    except NegativeDelayError, UnicodeEncodeError:
         raise _InvalidSendInputError from None
 
 
 def _send_result_payload(
     *,
     ok: bool,
-    reason: str | None = None,
+    reason: MessageFailureReason | None = None,
 ) -> dict[str, object]:
     payload: dict[str, object] = {
         "tool": "macpymessenger-send",
@@ -198,7 +232,7 @@ def _run_send(*, json_output: bool) -> int:
         )
     except MessageSendError as error:
         reason = error.reason
-    except MacPyMessengerError:
+    except ScriptNotFoundError:
         reason = "transport"
     else:
         if json_output:

@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     import pytest
 
 
-def test_subprocess_runner_invokes_subprocess_without_a_shell(
+def test_subprocess_runner_invokes_subprocess_without_a_shell_or_inherited_output(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     recorded: dict[str, Any] = {}
@@ -21,13 +21,18 @@ def test_subprocess_runner_invokes_subprocess_without_a_shell(
 
     monkeypatch.setattr("macpymessenger.commands.subprocess.run", fake_run)
     runner: CommandRunner = SubprocessCommandRunner()
-    runner(["osascript", "send.scpt", "+10000000000", "hello", "0"])
+    runner(["/usr/bin/osascript", "send.scpt", "+10000000000", "hello", "0"])
 
     assert recorded["command"] == (
-        "osascript",
+        "/usr/bin/osascript",
         "send.scpt",
         "+10000000000",
         "hello",
         "0",
     )
-    assert recorded["kwargs"] == {"check": True, "shell": False}
+    assert recorded["kwargs"] == {
+        "capture_output": True,
+        "check": True,
+        "shell": False,
+        "text": True,
+    }

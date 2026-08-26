@@ -1,7 +1,7 @@
 .. meta::
    :description lang=en:
       Create reusable iMessage text with Python 3.14 t-string template
-      functions and macpymessenger.
+      functions, conversions, and format specifications.
 
 Use message templates
 =====================
@@ -37,25 +37,47 @@ template with no arguments can omit the context:
    client.create_template("ready", lambda: t"The report is ready.")
    client.send_template("+15555550123", "ready")
 
-Keep interpolated results as strings
-------------------------------------
+Use normal Python conversion and formatting
+-------------------------------------------
 
-Every value that reaches a t-string interpolation must be a ``str``. Context
-values may use other types when the function converts them before interpolation
-or uses them only for control flow.
+Interpolated values use Python's normal conversion and format protocols. Strings,
+integers, floats, and domain objects with ``__format__`` support can be rendered
+directly:
 
 .. code-block:: python
 
-   client.create_template("count", lambda count: t"Count: {str(count)}")
+   client.create_template(
+       "timing",
+       lambda count, duration: t"Processed {count} items in {duration:.2f}s",
+   )
    client.send_template(
        "+15555550123",
-       "count",
-       {"count": 3},
+       "timing",
+       {"count": 3, "duration": 1.234},
    )
 
-Interpolating the integer directly as ``t"Count: {count}"`` raises
-``TemplateTypeError``. Conversion markers such as ``!s`` do not bypass the type
-check; convert inside the expression when conversion is intentional.
+Conversions such as ``!s`` and ``!r`` and format specifications such as
+``:.2f`` behave as they do in f-strings. Exceptions raised by a value's
+conversion or ``__format__`` implementation propagate normally.
+
+Use context for control flow
+----------------------------
+
+The template function is ordinary Python. It can branch, compute values, or
+choose which t-string to return:
+
+.. code-block:: python
+
+   def build_status(project: str, passed: bool):
+       if passed:
+           return t"{project} passed"
+       return t"{project} failed"
+
+
+   client.create_template("build-status", build_status)
+
+A false-valued mapping is still a valid context. Only ``None`` means no context
+was supplied.
 
 Manage registered templates
 ----------------------------

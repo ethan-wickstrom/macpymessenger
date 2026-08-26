@@ -62,6 +62,7 @@ addopts = [
   "--strict-config",
   "--strict-markers",
 ]
+filterwarnings = ["error"]
 minversion = "9.0"
 testpaths = ["tests"]
 xfail_strict = true
@@ -136,7 +137,7 @@ python-platform = "darwin"
 root = ["./src", "."]
 
 [tool.ty.src]
-include = ["src", "tests"]
+include = ["src", "tests", "scripts"]
 
 [tool.ty.rules]
 division-by-zero = "error"

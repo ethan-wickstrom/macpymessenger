@@ -2,58 +2,53 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Self
+from typing import Literal, Self
 
-if TYPE_CHECKING:
-    from pathlib import Path
+type MessageFailureReason = Literal["delivery", "transport"]
 
 
 class MacPyMessengerError(Exception):
     """Base exception for all macpymessenger errors."""
 
 
-class InvalidCommandError(MacPyMessengerError, TypeError):
-    """Raised when a command runner receives an invalid command."""
-
-    @classmethod
-    def non_sequence(cls) -> Self:
-        message = "Command must be a sequence of strings."
-        return cls(message)
-
-    @classmethod
-    def non_string_segment(cls) -> Self:
-        message = "Command segments must be strings."
-        return cls(message)
-
-
 class InvalidDelayTypeError(MacPyMessengerError, TypeError):
     """Raised when a send delay is not an integer number of seconds."""
 
     def __init__(self) -> None:
-        message = "Delay must be provided as an integer number of seconds."
-        super().__init__(message)
+        super().__init__("Delay must be provided as an integer number of seconds.")
 
 
 class NegativeDelayError(MacPyMessengerError, ValueError):
     """Raised when a send delay is negative."""
 
     def __init__(self) -> None:
-        message = "Delay must be non-negative."
-        super().__init__(message)
+        super().__init__("Delay must be non-negative.")
 
 
 class MessageSendError(MacPyMessengerError):
-    """Raised when sending a message fails."""
+    """Raised when Messages rejects a send or its transport cannot run.
+
+    ``recipient`` and ``reason`` let callers respond without parsing error text.
+    ``reason`` is either ``"delivery"`` or ``"transport"``.
+    """
+
+    def __init__(
+        self,
+        recipient: str,
+        reason: MessageFailureReason,
+        message: str,
+    ) -> None:
+        super().__init__(message)
+        self.recipient = recipient
+        self.reason = reason
 
     @classmethod
-    def delivery_failed(cls, phone_number: str) -> Self:
-        message = f"Failed to send message to {phone_number}"
-        return cls(message)
+    def delivery_failed(cls, recipient: str) -> Self:
+        return cls(recipient, "delivery", f"Failed to send message to {recipient}")
 
     @classmethod
-    def command_failed(cls, phone_number: str) -> Self:
-        message = f"Failed to execute osascript for {phone_number}"
-        return cls(message)
+    def transport_failed(cls, recipient: str) -> Self:
+        return cls(recipient, "transport", f"Message transport failed for {recipient}")
 
 
 class TemplateError(MacPyMessengerError):
@@ -61,17 +56,7 @@ class TemplateError(MacPyMessengerError):
 
 
 class TemplateTypeError(TemplateError):
-    """Raised when template interpolation values are not strings."""
-
-    @classmethod
-    def non_string_interpolation(cls, expression: str, value_type: str) -> Self:
-        message = f"Interpolation '{expression}' resolved to {value_type}; expected str"
-        return cls(message)
-
-    @classmethod
-    def unexpected_element(cls, element_type: str) -> Self:
-        message = f"Unexpected template element of type {element_type}"
-        return cls(message)
+    """Raised when a template factory does not return a t-string template."""
 
     @classmethod
     def invalid_factory_return(cls) -> Self:
@@ -84,8 +69,7 @@ class TemplateNotFoundError(TemplateError):
 
     @classmethod
     def missing_identifier(cls, identifier: str) -> Self:
-        message = f"Template with ID '{identifier}' does not exist."
-        return cls(message)
+        return cls(f"Template with ID '{identifier}' does not exist.")
 
 
 class TemplateAlreadyExistsError(TemplateError):
@@ -93,33 +77,12 @@ class TemplateAlreadyExistsError(TemplateError):
 
     @classmethod
     def duplicate_identifier(cls, identifier: str) -> Self:
-        message = f"Template with ID '{identifier}' already exists."
-        return cls(message)
+        return cls(f"Template with ID '{identifier}' already exists.")
 
 
-class ConfigurationError(MacPyMessengerError):
-    """Base class for configuration-related errors."""
-
-    @classmethod
-    def file_logging_unavailable(cls, log_file_path: Path, reason: str) -> Self:
-        message = f"Unable to configure file logging using '{log_file_path}': {reason}"
-        return cls(message)
-
-
-class ScriptNotFoundError(ConfigurationError):
-    """Raised when the configured AppleScript cannot be found on disk."""
+class ScriptNotFoundError(MacPyMessengerError):
+    """Raised when the bundled AppleScript source cannot be read."""
 
     @classmethod
-    def missing_script(cls, script_path: Path) -> Self:
-        message = f"Send script not found at path: {script_path}"
-        return cls(message)
-
-    @classmethod
-    def unreadable_script(cls, script_path: Path, reason: str) -> Self:
-        message = f"Send script at path '{script_path}' cannot be read: {reason}"
-        return cls(message)
-
-    @classmethod
-    def unreadable_script_permissions(cls, script_path: Path) -> Self:
-        message = f"Send script at path '{script_path}' is not readable due to permission error."
-        return cls(message)
+    def bundled_script_unavailable(cls) -> Self:
+        return cls("Bundled AppleScript could not be read; reinstall macpymessenger.")

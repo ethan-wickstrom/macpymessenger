@@ -13,40 +13,62 @@ if TYPE_CHECKING:
     from macpymessenger import TemplateManager
 
 
-def test_template_non_string_value_raises(template_manager: TemplateManager) -> None:
-    template_manager.create_template("greeting", lambda name: t"Hello, {name}!")
-    context: dict[str, object] = {"name": 123}
-    with pytest.raises(
-        TemplateTypeError, match=r"Interpolation 'name' resolved to int; expected str"
-    ):
-        template_manager.render_template("greeting", context=context)
+class FalseyContext(dict[str, object]):
+    def __bool__(self) -> bool:
+        return False
+
+
+def test_template_formats_non_string_values(template_manager: TemplateManager) -> None:
+    template_manager.create_template("count", lambda count: t"Count: {count}")
+
+    assert template_manager.render_template("count", context={"count": 123}) == "Count: 123"
 
 
 def test_template_applies_conversion(template_manager: TemplateManager) -> None:
     template_manager.create_template("greeting", lambda name: t"Hello, {name!r}!")
+
     assert template_manager.render_template("greeting", context={"name": "Ada"}) == "Hello, 'Ada'!"
 
 
-def test_template_applies_format_spec(template_manager: TemplateManager) -> None:
-    template_manager.create_template("greeting", lambda name: t"[{name:>5}]")
-    assert template_manager.render_template("greeting", context={"name": "Ada"}) == "[  Ada]"
-
-
-def test_template_conversion_does_not_bypass_type_check(
+def test_template_applies_conversion_to_non_string_values(
     template_manager: TemplateManager,
 ) -> None:
     template_manager.create_template("count", lambda count: t"Count: {count!s}")
-    context: dict[str, object] = {"count": 123}
-    with pytest.raises(
-        TemplateTypeError, match=r"Interpolation 'count' resolved to int; expected str"
-    ):
-        template_manager.render_template("count", context=context)
+
+    assert template_manager.render_template("count", context={"count": 123}) == "Count: 123"
+
+
+def test_template_applies_string_format_spec(template_manager: TemplateManager) -> None:
+    template_manager.create_template("greeting", lambda name: t"[{name:>5}]")
+
+    assert template_manager.render_template("greeting", context={"name": "Ada"}) == "[  Ada]"
+
+
+def test_template_applies_numeric_format_spec(template_manager: TemplateManager) -> None:
+    template_manager.create_template("total", lambda total: t"Total: {total:.2f}")
+
+    assert template_manager.render_template("total", context={"total": 3.5}) == "Total: 3.50"
+
+
+def test_template_preserves_a_falsey_mapping_context(template_manager: TemplateManager) -> None:
+    template_manager.create_template("greeting", lambda name: t"Hello, {name}!")
+
+    assert (
+        template_manager.render_template(
+            "greeting",
+            context=FalseyContext(name="Ada"),
+        )
+        == "Hello, Ada!"
+    )
 
 
 def test_template_factory_must_return_t_string(template_manager: TemplateManager) -> None:
     bad_factory = cast("Callable[..., Template]", lambda name: f"Hello, {name}!")
     template_manager.create_template("greeting", bad_factory)
-    with pytest.raises(TemplateTypeError, match=r"must return a string\.templatelib\.Template"):
+    with pytest.raises(
+        TemplateTypeError,
+        match=r"must return a string\.templatelib\.Template",
+    ):
         template_manager.render_template("greeting", context={"name": "Ada"})
 
 

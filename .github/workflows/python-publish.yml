@@ -1,4 +1,4 @@
-name: Upload Python Package (uv)
+name: Upload Python Package
 
 on:
   release:
@@ -12,19 +12,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
 
-      - name: Build package (sdist + wheel) with uv
+      - name: Build wheel and source distribution
         run: uv build
 
       - name: Smoke test built wheel in a clean environment
+        shell: bash
         run: |
-          uv run --isolated --no-project --python 3.14 \
-            --with "$(ls dist/*.whl)" \
-            python -c "from macpymessenger import Configuration, IMessageClient, TemplateManager; print('wheel imports OK')"
+          wheel="$(find dist -name '*.whl' -print -quit)"
+          uv run --isolated --no-project --python 3.14 --with "$wheel" \
+            python -c "from macpymessenger import BulkSendResult, IMessageClient, MessageSendError, TemplateManager, __version__; assert __version__ != '0+unknown'; assert IMessageClient().configuration.send_script_path.is_file(); assert BulkSendResult((), ()).failed == (); assert TemplateManager().list_templates() == {}"
+          uv run --isolated --no-project --python 3.14 --with "$wheel" \
+            macpymessenger --version
 
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

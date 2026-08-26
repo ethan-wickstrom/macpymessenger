@@ -1,156 +1,176 @@
 # macpymessenger
 
-macpymessenger sends iMessages from Python on macOS.
+[![PyPI](https://img.shields.io/pypi/v/macpymessenger.svg)](https://pypi.org/project/macpymessenger/)
+[![Python](https://img.shields.io/pypi/pyversions/macpymessenger.svg)](https://pypi.org/project/macpymessenger/)
+[![CI](https://github.com/ethan-wickstrom/macpymessenger/actions/workflows/ci.yml/badge.svg)](https://github.com/ethan-wickstrom/macpymessenger/actions/workflows/ci.yml)
+[![Documentation](https://readthedocs.org/projects/macpymessenger/badge/?version=latest)](https://macpymessenger.readthedocs.io/en/latest/)
 
-It talks to the built-in Messages app through AppleScript, and adds Python 3.14 t-string templates and typed errors.
+Send iMessages from Python on macOS through the built-in Messages app.
 
-## Features
+macpymessenger is a typed, dependency-free library for local scripts,
+automations, developer tools, and agents. It sends text through one immutable
+request model, supports Python 3.14 t-string templates, and exposes failures as
+data instead of command output.
 
-- Send iMessages to phone numbers or email addresses from Python.
-- Use Python 3.14 t-strings for message templates.
-- Send the same message to many recipients.
-- Delay a send with `delay_seconds`.
-- Handle delivery, delay, template, and configuration errors explicitly.
-- Opt in to file logging when you want a local log file.
+> **Before you start:** You need macOS, Python 3.14 or newer, an Apple account
+> signed in to Messages, and Automation permission for the application that
+> launches Python. The first send may ask to let Terminal, your editor, or
+> another launcher control Messages. Allow access, or review it in **System
+> Settings > Privacy & Security > Automation**. macpymessenger is not a hosted
+> service and cannot send from Linux or Windows.
 
-## Requirements
+## Install and check the Mac
 
-macpymessenger requires macOS and Python 3.14 or newer.
-
-It uses AppleScript, so it is not a cross-platform messaging gateway. It sends through the Messages app on the Mac that runs your script.
-
-## Installation
-
-Add macpymessenger to a project with `uv`:
+Add macpymessenger to a uv project, then run its side-effect-free doctor through
+the project environment:
 
 ```bash
 uv add macpymessenger
+uv run macpymessenger doctor
 ```
 
-Or with `pip`:
+With an active virtual environment, use pip and the installed command directly:
 
 ```bash
-pip install macpymessenger
+python -m pip install macpymessenger
+macpymessenger doctor
 ```
 
-## Quick start
+The doctor reports definite blockers and manual checks. It does not open
+Messages, request permission, read message data, run AppleScript, or send text.
+Use `--json` for stable script and agent output.
+
+## Send your first message
 
 ```python
-from macpymessenger import Configuration, IMessageClient
-from macpymessenger.exceptions import MessageSendError
+from macpymessenger import IMessageClient, MessageSendError
 
-client = IMessageClient(Configuration())
+client = IMessageClient()
 
 try:
-    client.send("+15555555555", "Hello from macpymessenger!")
+    client.send("+15555550123", "Hello from Python!")
 except MessageSendError as error:
-    print(f"Delivery failed: {error}")
+    print(f"Could not send to {error.recipient}: {error}")
 ```
 
-`send()` returns `None` on success and raises `MessageSendError` when delivery fails.
+The recipient may be a phone number or email address that Messages recognizes.
+`send()` returns `None` after the AppleScript transport succeeds. A failure
+raises `MessageSendError` with `recipient` and a closed `reason` value:
+`"delivery"` or `"transport"`.
 
-You can also wait before sending:
+## Common tasks
+
+### Send later
 
 ```python
-client.send("+15555555555", "I will arrive soon.", delay_seconds=60)
+client.send("+15555550123", "This sends in one minute.", delay_seconds=60)
 ```
 
-`delay_seconds` must be a non-negative `int`.
+The delay must be a non-negative integer.
 
-## Templates
+### Reuse a message template
 
-Templates are Python callables that return Python 3.14 t-strings. Jinja2 is not used, and there is no `templates/` directory.
+Templates are functions that return Python 3.14 t-strings. Interpolations use
+normal Python conversion and formatting:
 
 ```python
 client.create_template(
-    "welcome",
-    lambda name: t"Hello, {name}! Welcome aboard.",
+    "build-result",
+    lambda project, duration: t"{project} finished in {duration:.1f}s",
 )
-
-client.send_template("+15555555555", "welcome", {"name": "Ada"})
-```
-
-Every interpolation must resolve to a `str`, or rendering raises `TemplateTypeError`.
-
-## Bulk sending
-
-```python
-numbers = ["+15555555555", "+15555555556", "+15555555557"]
-successful, failed = client.send_bulk(numbers, "Reminder: meeting at 10 AM.")
-
-print(f"Sent: {successful}")
-print(f"Failed: {failed}")
-```
-
-`send_bulk()` returns two lists: successful recipients and failed recipients.
-
-## Configuration and logging
-
-macpymessenger uses the bundled AppleScript by default. To use your own:
-
-```python
-from pathlib import Path
-from macpymessenger import Configuration, IMessageClient
-
-configuration = Configuration(send_script_path=Path("/path/to/custom/sendMessage.scpt"))
-client = IMessageClient(configuration)
-```
-
-`Configuration` checks at creation that the script exists and is readable, and raises `ScriptNotFoundError` if not.
-
-File logging is opt-in:
-
-```python
-from macpymessenger import Configuration, FileLoggingConfiguration, IMessageClient
-
-client = IMessageClient(Configuration(), file_logging=FileLoggingConfiguration())
-```
-
-This writes `macpymessenger.log` in the current working directory. You can also pass your own `logging.Logger` to `IMessageClient`.
-
-## Public API
-
-These classes are importable from the package root:
-
-```python
-from macpymessenger import (
-    Configuration,
-    FileLoggingConfiguration,
-    IMessageClient,
-    RenderedTemplate,
-    SubprocessCommandRunner,
-    TemplateManager,
+client.send_template(
+    "+15555550123",
+    "build-result",
+    {"project": "Example", "duration": 3.25},
 )
 ```
 
-Custom exceptions live in `macpymessenger.exceptions`.
+macpymessenger does not use Jinja2 or template files.
 
-## Development
+### Send to several recipients
 
-Install development dependencies:
+```python
+recipients = ["+15555550123", "+15555550124"]
+result = client.send_bulk(recipients, "The build is ready.")
 
-```bash
-uv sync
+print(result.sent)
+print(result.failed)
 ```
 
-Run the checks:
+`send_bulk()` sends sequentially in input order and returns the immutable
+`BulkSendResult(sent, failed)`. Tuple unpacking also works:
+`sent, failed = result`.
 
-```bash
-uv run ruff check
-uv run ty check
-uv run pytest
-uv build
-uv run sphinx-build docs docs/_build/html
+### Replace the delivery effect
+
+Inject a `MessageTransport` for tests or another local delivery mechanism. The
+transport receives one immutable `SendRequest`:
+
+```python
+from macpymessenger import IMessageClient, SendRequest
+
+
+class RecordingTransport:
+    def __init__(self) -> None:
+        self.requests: list[SendRequest] = []
+
+    def send(self, request: SendRequest) -> None:
+        self.requests.append(request)
+
+
+transport = RecordingTransport()
+client = IMessageClient(transport=transport)
+client.send("+15555550123", "Recorded, not sent.")
 ```
 
-## License
+### Use application logging
 
-macpymessenger is available under the [Apache-2.0 license](LICENSE).
+macpymessenger emits through Python logging but never adds output handlers, sets
+levels, chooses formats, or creates files:
 
-## Credits
+```python
+import logging
 
-Created and maintained by [Ethan Wickstrom](https://github.com/ethan-wickstrom).
+logging.basicConfig(filename="messages.log", level=logging.INFO)
+client = IMessageClient()
+```
 
-macpymessenger started as a fork of [Rolstenhouse/py-iMessage](https://github.com/Rolstenhouse/py-iMessage).
+Delivery logs may include recipient handles but never message bodies. The host
+application owns destinations, access, and retention.
 
-For more detail, see the [docs](docs/) directory.
+## Private-data boundary
+
+The built-in transport invokes fixed argv `('/usr/bin/osascript', '-')` and
+streams encoded AppleScript through stdin. Recipient and message text do not
+enter process arguments or temporary files. Transport exceptions and child
+output do not cross the public error boundary.
+
+## Scope
+
+Use macpymessenger when code running on your Mac needs to send text through your
+existing Messages account. The package deliberately does not read chat history,
+send attachments, resolve contacts, expose a remote API, run a messaging server,
+or provide an MCP server.
+
+## Documentation
+
+- [Install and prepare your Mac](https://macpymessenger.readthedocs.io/en/latest/installation.html)
+- [Check your environment](https://macpymessenger.readthedocs.io/en/latest/guides/environment-diagnostics.html)
+- [Send messages](https://macpymessenger.readthedocs.io/en/latest/guides/sending-messages.html)
+- [Use t-string templates](https://macpymessenger.readthedocs.io/en/latest/guides/templates.html)
+- [Use a custom transport](https://macpymessenger.readthedocs.io/en/latest/api/transport.html)
+- [Configure logging](https://macpymessenger.readthedocs.io/en/latest/guides/logging.html)
+- [Troubleshoot a failed send](https://macpymessenger.readthedocs.io/en/latest/guides/troubleshooting.html)
+- [Browse the public API](https://macpymessenger.readthedocs.io/en/latest/modules.html)
+- [Contribute](https://macpymessenger.readthedocs.io/en/latest/development/contributing.html)
+- [Read the changelog](https://github.com/ethan-wickstrom/macpymessenger/blob/main/CHANGELOG.md)
+
+## Project status
+
+macpymessenger is alpha software. Text messages, t-string templates, delayed
+sends, sequential bulk sends, typed errors, custom transports, and read-only
+environment diagnostics are supported.
+
+macpymessenger is licensed under [Apache-2.0](https://github.com/ethan-wickstrom/macpymessenger/blob/main/LICENSE).
+It is maintained by [Ethan Wickstrom](https://github.com/ethan-wickstrom) and
+started as a fork of [Rolstenhouse/py-iMessage](https://github.com/Rolstenhouse/py-iMessage).

@@ -1,27 +1,58 @@
 # Documentation guidelines
 
-Use this file when changing `README.md`, `docs/`, examples, or user-facing behavior.
+Use this file for `README.md`, `docs/`, examples, docstrings, package metadata, or
+other user-facing text.
 
-## Keep user-facing behavior accurate
+## Use the current public contract
 
-- Show `send()` as raising `MessageSendError` on delivery failure.
-- Show template factories as callables that return t-strings.
-- Show template context as required when the callable requires arguments.
-- Avoid Jinja2 examples for current behavior.
-- Keep code examples self-contained and dependency-minimal.
+- Start ordinary examples with `IMessageClient()`.
+- Import public clients, request and result types, transports, and exceptions from
+  `macpymessenger`.
+- Show `send()` returning `None` or raising `MessageSendError`.
+- Use `MessageSendError.recipient` and the closed `.reason` values `delivery` and
+  `transport` instead of parsing text.
+- Show `BulkSendResult.sent` and `.failed`; mention tuple unpacking only as
+  compatibility.
+- Show `SendRequest` and `MessageTransport` when replacing the delivery effect.
+  Never document script-path configuration or command-runner injection.
+- Show template factories as callables that return t-strings, normal Python
+  conversion and formatting, and rendering as a plain string.
+- Show application-owned standard library logging. Never document
+  `FileLoggingConfiguration` or library-created output handlers.
+- Do not document unsupported chat history, attachments, contact lookup, remote
+  gateway, or MCP capabilities as methods that exist.
 
-## Use consistent terminology
+## Make examples copy-safe
 
-- Use the same term for the same domain concept across code and docs.
-- Allow established technical terms such as API, CI, PR, HTML, PyPI, and Sphinx.
-- Use specific terms instead of vague labels such as manager, handler, data, item, object, service, status, type, or process unless the project domain uses that term precisely.
+- Make every code block self-contained unless the surrounding text explicitly
+  establishes shared state.
+- Use reserved example phone numbers and invented account data.
+- State macOS, Python, Messages sign-in, and Automation permission before a real
+  send example.
+- After `uv add macpymessenger`, invoke the console script with
+  `uv run macpymessenger ...`. Use a bare `macpymessenger` command only when the
+  surrounding instructions activate the environment.
+- Explain that doctor status `blocked: false` means no automated blocker was
+  found. Preserve and show every `manual` next step.
+- Never put message bodies or private paths in logs, tracebacks, JSON examples,
+  process arguments, issue templates, or screenshots.
 
-## Maintain Sphinx documentation
+## Keep discovery surfaces in sync
 
-- Update the README or `.rst` page that owns changed user-facing behavior.
-- Add or update `.rst` pages in `docs/`.
-- Include new `.rst` pages in `docs/index.rst`.
-- Build documentation with `uv run sphinx-build docs docs/_build/html`.
+A public contract change may require updates to:
 
-For public documentation information architecture changes, see
-[suggested-docs-structure.md](suggested-docs-structure.md).
+- `README.md` for package and repository visitors;
+- the owning task guide and API page;
+- `docs/index.rst` navigation and metadata;
+- `docs/llms.txt` for agent retrieval;
+- `pyproject.toml` when search or package metadata changes; and
+- `CHANGELOG.md` for downstream users.
+
+Use descriptive page titles, filenames, and meta descriptions. Link every public
+page from a toctree or mark deliberate compatibility pages as orphaned.
+
+Build with:
+
+```bash
+uv run --locked sphinx-build -n -T -W --keep-going docs docs/_build/html
+```

@@ -1,188 +1,58 @@
-Usage
-=====
+.. meta::
+   :description lang=en:
+      Task guide index for checking, sending, templating, replacing transport,
+      logging, and troubleshooting macpymessenger on macOS.
 
-The main path is short: create a client, send a message, handle typed errors.
+Choose a task
+=============
 
-Send a message
+Use the smallest guide that answers the current question.
+
+Check your Mac
 --------------
 
-Create a client from the default configuration.
+Read :doc:`guides/environment-diagnostics` to inspect macOS,
+``/usr/bin/osascript``, Messages, and bundled package data without sending text.
+Use its JSON output from scripts and agents.
 
-.. code-block:: python
+Send messages
+-------------
 
-   from macpymessenger import Configuration, IMessageClient
-   from macpymessenger.exceptions import MessageSendError
+Read :doc:`guides/sending-messages` to:
 
-   client = IMessageClient(Configuration())
+- send one text message;
+- delay a send;
+- classify several recipients with ``BulkSendResult``; and
+- handle delivery, transport, and input failures.
 
-Call ``send()`` with a recipient and a message.
+Use templates
+-------------
 
-.. code-block:: python
+Read :doc:`guides/templates` to create, render, update, list, and delete reusable
+Python 3.14 t-string templates with normal Python formatting.
 
-   try:
-       client.send("+15555555555", "Hello from macpymessenger!")
-   except MessageSendError as error:
-       print(f"Delivery failed: {error}")
+Replace the delivery effect
+---------------------------
 
-``send()`` returns ``None`` when delivery succeeds.
+Read :doc:`api/transport` to inject a ``MessageTransport`` for tests or another
+local delivery mechanism. The rest of the client continues to own template
+rendering, bulk classification, logging, and public error mapping.
 
-Handle send errors
-------------------
-
-The client raises typed exceptions instead of returning status flags.
-
-- ``MessageSendError`` means delivery failed or AppleScript could not run.
-- ``InvalidDelayTypeError`` means ``delay_seconds`` was not an ``int``. ``bool`` is not accepted.
-- ``NegativeDelayError`` means ``delay_seconds`` was less than zero.
-
-Delay a message
----------------
-
-Pass ``delay_seconds`` to wait before sending.
-
-.. code-block:: python
-
-   client.send("+15555555555", "See you in a minute.", delay_seconds=60)
-
-The bundled AppleScript waits, then sends. If delivery fails, ``osascript`` exits non-zero and the client raises ``MessageSendError``.
-
-Create a template
+Configure logging
 -----------------
 
-A template is a callable that returns a Python 3.14 t-string.
+Read :doc:`guides/logging` to route delivery events through the host
+application's Python logging setup. macpymessenger does not create handlers,
+choose formats, or write log files itself.
 
-.. code-block:: python
+Fix a problem
+-------------
 
-   client.create_template(
-       "greeting",
-       lambda name: t"Hello, {name}! Welcome to macpymessenger.",
-   )
+Read :doc:`guides/troubleshooting` for Automation permission, Messages account,
+transport, installation, delay, and template failures.
 
-Jinja2 is not used. There is no ``templates/`` directory.
-
-Send a template
+Look up the API
 ---------------
 
-Pass the template identifier and a context dictionary.
-
-.. code-block:: python
-
-   client.send_template("+15555555555", "greeting", {"name": "Ada"})
-
-This renders the template and calls ``send()``.
-
-You can also delay a templated message:
-
-.. code-block:: python
-
-   client.send_template(
-       "+15555555555",
-       "greeting",
-       {"name": "Ada"},
-       delay_seconds=30,
-   )
-
-Update and delete templates
----------------------------
-
-Use the same identifier when you want to replace a template.
-
-.. code-block:: python
-
-   client.update_template("greeting", lambda name: t"Hi {name}, welcome back.")
-
-.. code-block:: python
-
-   client.delete_template("greeting")
-
-Missing identifiers raise ``TemplateNotFoundError``. Duplicate identifiers raise ``TemplateAlreadyExistsError``.
-
-Keep template values as strings
--------------------------------
-
-Every interpolation must resolve to ``str``. ``!s``, ``!r``, and ``!a``
-conversions and standard format specs are applied after the type check:
-
-.. code-block:: python
-
-   client.create_template("quoted", lambda name: t"Hello, {name!r:>10}!")
-
-.. code-block:: python
-
-   client.create_template("status", lambda name, status: t"Hi {name}. Status: {status}.")
-   client.send_template("+15555555555", "status", {"name": "Ada", "status": "ready"})
-
-If ``status`` is an ``int`` or another non-string value, rendering raises ``TemplateTypeError``.
-
-The callable receives the context as keyword arguments, so missing values are
-regular Python call errors.
-
-List all templates
-------------------
-
-Get a dictionary of registered template callables:
-
-.. code-block:: python
-
-   factories = manager.list_templates()
-
-   for identifier, factory in factories.items():
-       print(f"{identifier}: {factory.__name__}")
-
-The returned dictionary is a shallow copy, so modifying it does not affect the
-manager.
-
-Use TemplateManager directly
-----------------------------
-
-Use ``TemplateManager`` for rendering without a client.
-
-.. code-block:: python
-
-   from macpymessenger import TemplateManager
-
-   manager = TemplateManager()
-   manager.create_template("welcome", lambda name: t"Welcome, {name}.")
-
-   rendered = manager.compose_template("welcome", {"name": "Ada"})
-   print(rendered.content)
-
-``compose_template()`` returns ``RenderedTemplate``. ``render_template()`` returns only the rendered string.
-
-Send to multiple recipients
----------------------------
-
-``send_bulk()`` sends one message to many recipients.
-
-.. code-block:: python
-
-   numbers = ["+15555555555", "+15555555556", "+15555555557"]
-   successful, failed = client.send_bulk(numbers, "Reminder: meeting at 10 AM.")
-
-``send_bulk()`` returns ``(successful, failed)``.
-
-- ``successful`` contains recipients where ``send()`` completed.
-- ``failed`` contains recipients where ``MessageSendError`` was raised.
-
-Use the failed list to retry or log the result:
-
-.. code-block:: python
-
-   if failed:
-       print(f"Could not send to: {failed}")
-
-Experimental stubs
-------------------
-
-Two methods are not implemented yet:
-
-- ``get_chat_history(phone_number, limit=10)``
-- ``send_with_attachment(phone_number, message, attachment_path)``
-
-Both always raise ``NotImplementedError``.
-
-.. code-block:: python
-
-   client.get_chat_history("+15555555555")  # raises NotImplementedError
-
-Do not use them in production yet.
+Read :doc:`modules` when you know what you want to build and need a class,
+method, result shape, diagnostic model, transport, or exception reference.

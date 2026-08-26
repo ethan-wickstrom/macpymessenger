@@ -1,58 +1,114 @@
-macpymessenger documentation
-============================
+.. meta::
+   :description lang=en:
+      Send iMessages from Python on macOS through the built-in Messages app.
+      Install macpymessenger, check your Mac, and send typed messages.
+   :keywords: Python iMessage, macOS Messages automation, AppleScript, Python 3.14
 
-macpymessenger sends iMessages from Python on macOS. It uses AppleScript, the
-Messages app, and Python 3.14 t-string templates.
+macpymessenger
+==============
 
-It is built for scripts that should be easy to read and test. The public
-API is small, errors are explicit, and configuration is checked before a message
-is sent.
+Send iMessages from Python on macOS.
 
-Start here
-----------
+macpymessenger is a typed, dependency-free library for scripts, local
+automations, developer tools, and agents running on a Mac. It controls the
+built-in Messages app through a private-data-safe AppleScript transport. It does
+not read chat history, send attachments, expose a remote API, or run a messaging
+server.
 
-Install with ``uv add macpymessenger`` or ``pip install macpymessenger``, then
-create a ``Configuration`` and an ``IMessageClient`` and call ``send()``:
+Quick start
+-----------
+
+You need macOS, Python 3.14 or newer, an Apple account signed in to Messages,
+and Automation permission for the application that launches Python.
+
+.. code-block:: bash
+
+   uv add macpymessenger
+   uv run macpymessenger doctor
+
+The doctor reports detectable blockers and manual checks without opening
+Messages, running AppleScript, or sending text.
+
+Then create one client and reuse it:
 
 .. code-block:: python
 
-   from macpymessenger import Configuration, IMessageClient
+   from macpymessenger import IMessageClient, MessageSendError
 
-   client = IMessageClient(Configuration())
-   client.send("+15555555555", "Hello from macpymessenger!")
+   client = IMessageClient()
 
-``send()`` returns ``None`` when delivery succeeds. It raises
-``MessageSendError`` when delivery fails.
+   try:
+       client.send("+15555550123", "Hello from Python!")
+   except MessageSendError as error:
+       print(f"Could not send to {error.recipient}: {error}")
+
+The first real send may ask whether Terminal, your editor, or another launcher
+can control Messages. Allow access, or review it in **System Settings > Privacy
+& Security > Automation**.
+
+Find what you need
+------------------
+
+**First send**
+   Follow :doc:`installation`, run :doc:`guides/environment-diagnostics`, then
+   use :doc:`guides/sending-messages`.
+
+**Reusable messages**
+   Read :doc:`guides/templates`.
+
+**Custom or test delivery**
+   Implement :doc:`api/transport` instead of replacing client coordination.
+
+**A send failed**
+   Use :doc:`guides/troubleshooting` and the :doc:`api/exceptions` reference.
+
+**Application logging**
+   Read :doc:`guides/logging` before routing recipient handles to a log sink.
+
+**Class, method, or result shape**
+   Go to :doc:`modules`.
+
+**Contributing or changing the library**
+   Start with :doc:`development/contributing`.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Get started
 
    introduction
    installation
    usage
-   configuration
-   testing
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Guides
+
+   guides/environment-diagnostics
+   guides/sending-messages
+   guides/templates
+   guides/logging
+   guides/troubleshooting
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API reference
+
    modules
+   api/client
+   api/transport
+   api/templates
+   api/exceptions
+   api/diagnostics
 
-Get help and contribute
------------------------
+.. toctree::
+   :maxdepth: 2
+   :caption: Development
 
-Report bugs and request features at
-https://github.com/ethan-wickstrom/macpymessenger/issues. Pull requests for
-focused changes are welcome. Keep examples free of real phone numbers and
-secrets.
+   development/contributing
+   development/testing
+   development/release-process
 
 License
 -------
 
-macpymessenger is licensed under Apache-2.0. See the `LICENSE file
-<https://github.com/ethan-wickstrom/macpymessenger/blob/main/LICENSE>`_ for
-details.
-
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+macpymessenger uses the Apache-2.0 license.

@@ -31,7 +31,7 @@ jobs:
         run: uv run --locked ruff check
 
       - name: Check formatting
-        run: uv run --locked ruff format --check
+        run: uv run --locked ruff format --diff
 
       - name: Type check
         run: uv run --locked ty check

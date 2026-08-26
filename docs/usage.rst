@@ -1,12 +1,23 @@
 .. meta::
    :description lang=en:
-      Task guide index for checking, sending, templating, replacing transport,
-      logging, and troubleshooting macpymessenger on macOS.
+      Task guide index for command-line agents, Python sending, diagnostics,
+      templates, transports, logging, and troubleshooting on macOS.
 
 Choose a task
 =============
 
 Use the smallest guide that answers the current question.
+
+Use a shell script or AI agent
+------------------------------
+
+Read :doc:`guides/command-line` for:
+
+- version-matched Agent Skill discovery;
+- one closed JSON request on standard input;
+- stable machine output and exit codes;
+- private-data boundaries; and
+- the no-automatic-retry rule.
 
 Check your Mac
 --------------
@@ -15,8 +26,8 @@ Read :doc:`guides/environment-diagnostics` to inspect macOS,
 ``/usr/bin/osascript``, Messages, and bundled package data without sending text.
 Use its JSON output from scripts and agents.
 
-Send messages
--------------
+Send from Python
+----------------
 
 Read :doc:`guides/sending-messages` to:
 
@@ -41,7 +52,7 @@ rendering, bulk classification, logging, and public error mapping.
 Configure logging
 -----------------
 
-Read :doc:`guides/logging` to route delivery events through the host
+Read :doc:`guides/logging` to route generic delivery events through the host
 application's Python logging setup. macpymessenger does not create handlers,
 choose formats, or write log files itself.
 
@@ -49,7 +60,7 @@ Fix a problem
 -------------
 
 Read :doc:`guides/troubleshooting` for Automation permission, Messages account,
-transport, installation, delay, and template failures.
+transport, installation, delay, command-input, and template failures.
 
 Look up the API
 ---------------

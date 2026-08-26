@@ -118,7 +118,7 @@ def _write_doctor_text(report: EnvironmentReport) -> None:
 def _read_send_request() -> SendRequest:
     try:
         payload: object = json.load(sys.stdin)
-    except (json.JSONDecodeError, OSError, RecursionError, UnicodeError):
+    except json.JSONDecodeError, OSError, RecursionError, UnicodeError:
         raise _InvalidSendInputError from None
 
     if not isinstance(payload, dict):
@@ -146,7 +146,7 @@ def _read_send_request() -> SendRequest:
             message=message,
             delay_seconds=delay_seconds,
         )
-    except (InvalidDelayTypeError, NegativeDelayError):
+    except InvalidDelayTypeError, NegativeDelayError:
         raise _InvalidSendInputError from None
 
 

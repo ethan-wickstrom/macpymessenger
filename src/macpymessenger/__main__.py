@@ -37,7 +37,13 @@ class _InvalidSendInputError(ValueError):
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="macpymessenger",
-        description="Send iMessages from Python on macOS.",
+        description=(
+            "Send iMessages from Python on macOS.\n\n"
+            "Start here for AI agents:\n"
+            "  macpymessenger skills get core\n\n"
+            "This loads version-matched instructions from the installed package."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--version", action="version", version=__version__)
     subparsers = parser.add_subparsers(dest="command")
@@ -68,7 +74,8 @@ def _build_parser() -> argparse.ArgumentParser:
         "skills",
         help="Read Agent Skills bundled with the installed package.",
     )
-    skill_commands = skills.add_subparsers(dest="skill_command", required=True)
+    skills.set_defaults(json_output=False)
+    skill_commands = skills.add_subparsers(dest="skill_command")
     skill_list = skill_commands.add_parser("list", help="List bundled Agent Skills.")
     skill_list.add_argument(
         "--json",
@@ -267,7 +274,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _run_send(json_output=arguments.json_output)
 
     if arguments.command == "skills":
-        if arguments.skill_command == "list":
+        if arguments.skill_command in {None, "list"}:
             return _run_skills_list(json_output=arguments.json_output)
         return _run_skills_get(arguments.name)
 

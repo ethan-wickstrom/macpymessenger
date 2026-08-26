@@ -1,13 +1,13 @@
 ---
 name: core
-description: Send text through the local macOS Messages app with the macpymessenger CLI. Use only when the user explicitly asks an agent to send an iMessage or check macpymessenger readiness.
+description: Use this skill when the user explicitly asks an agent to send an iMessage through the local macOS Messages app or inspect macpymessenger readiness.
 license: Apache-2.0
 compatibility: Requires macOS, Python 3.14 or newer, Messages sign-in, Automation access, and the macpymessenger CLI.
 ---
 
 # macpymessenger core
 
-Use this skill only when the user explicitly asks the agent to send a text through Messages or inspect macpymessenger readiness. Never infer a recipient, message, or permission to send from surrounding context.
+Use this skill only when the user explicitly asks the agent to send text through Messages or inspect macpymessenger readiness. Never infer a recipient, message, or permission to send from surrounding context.
 
 ## Check the Mac
 
@@ -21,7 +21,7 @@ Read `blocked` and every check. Stop when `blocked` is `true`. A `manual` check 
 
 ## Send one message
 
-Pass one JSON object through standard input. Never put the recipient or message in command arguments, shell history, environment variables, or temporary files.
+Keep recipient and message text out of process arguments, environment variables, and temporary files. Feed exactly one JSON object through standard input:
 
 ```bash
 cat <<'JSON' | macpymessenger send --json
@@ -31,11 +31,11 @@ JSON
 
 The input fields are:
 
-- `recipient`: required string containing a phone number or Messages email address supplied by the user.
-- `message`: required string containing the exact text approved by the user.
+- `recipient`: required non-empty string containing a phone number or Messages email address supplied by the user.
+- `message`: required non-empty string containing the exact text approved by the user.
 - `delay_seconds`: optional non-negative integer; defaults to `0`.
 
-No other fields are accepted.
+No other fields or duplicate keys are accepted.
 
 ## Read the result
 

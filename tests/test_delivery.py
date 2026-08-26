@@ -45,9 +45,7 @@ def test_delivery_sends_one_immutable_request(
 
     instance.deliver("+10000000000", "Hello", delay_seconds=5)
 
-    assert transport.requests == [
-        SendRequest("+10000000000", "Hello", delay_seconds=5)
-    ]
+    assert transport.requests == [SendRequest("+10000000000", "Hello", delay_seconds=5)]
 
 
 def test_delivery_logs_success_without_message_content(

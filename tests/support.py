@@ -4,17 +4,20 @@ import subprocess
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterable
+
+    from macpymessenger import SendRequest
 
 
-class StubRunner:
-    def __init__(self, failing_recipient_handles: Sequence[str] | None = None) -> None:
-        self.commands: list[list[str]] = []
-        self.failing_recipient_handles = set(failing_recipient_handles or ())
+class StubTransport:
+    def __init__(self, failing_recipients: Iterable[str] = ()) -> None:
+        self.requests: list[SendRequest] = []
+        self.failing_recipients = set(failing_recipients)
 
-    def __call__(self, command: Sequence[str]) -> None:
-        arguments = list(command)
-        self.commands.append(arguments)
-        recipient = arguments[2]
-        if recipient in self.failing_recipient_handles:
-            raise subprocess.CalledProcessError(returncode=1, cmd=arguments)
+    def send(self, request: SendRequest) -> None:
+        self.requests.append(request)
+        if request.recipient in self.failing_recipients:
+            raise subprocess.CalledProcessError(
+                returncode=1,
+                cmd=["/usr/bin/osascript", "-"],
+            )

@@ -20,6 +20,23 @@ def test_configuration_uses_custom_script(tmp_path: Path) -> None:
     assert configuration.send_script_path == script_path
 
 
+def test_configuration_resolves_relative_script_before_the_working_directory_changes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    script_path = scripts / "custom.scpt"
+    script_path.write_text("-- mock script", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    configuration = Configuration(Path("scripts/custom.scpt"))
+    monkeypatch.chdir(tmp_path.parent)
+
+    assert configuration.send_script_path == script_path
+    assert configuration.send_script_path.is_file()
+
+
 def test_configuration_raises_for_missing_script(tmp_path: Path) -> None:
     missing_path = tmp_path / "missing.scpt"
     with pytest.raises(ScriptNotFoundError):

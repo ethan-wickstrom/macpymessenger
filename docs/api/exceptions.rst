@@ -14,14 +14,19 @@ failure.
 Delivery errors
 ---------------
 
+.. autotype:: macpymessenger.MessageFailureReason
+
+``MessageFailureReason`` is the closed set of machine-readable send-failure
+reasons: ``"delivery"`` and ``"transport"``.
+
 .. autoclass:: macpymessenger.MessageSendError
    :members:
 
 ``MessageSendError.recipient`` identifies the failed Messages handle.
-``MessageSendError.reason`` is the closed value ``"delivery"`` when AppleScript
-or Messages rejected the send, or ``"transport"`` when the transport could not
-run. The raw transport exception is intentionally not chained because it can
-contain private child-process data.
+``MessageSendError.reason`` is ``"delivery"`` when AppleScript or Messages
+rejected the send, or ``"transport"`` when the transport could not run. The raw
+transport exception is intentionally not chained because it can contain private
+child-process data.
 
 .. autoclass:: macpymessenger.InvalidDelayTypeError
 .. autoclass:: macpymessenger.NegativeDelayError

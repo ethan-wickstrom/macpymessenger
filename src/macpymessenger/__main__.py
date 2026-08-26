@@ -19,7 +19,11 @@ def _build_parser() -> argparse.ArgumentParser:
         prog="macpymessenger",
         description="Send iMessages from Python on macOS.",
     )
-    parser.add_argument("--version", action="version", version=__version__)
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+    )
     subparsers = parser.add_subparsers(dest="command")
 
     doctor = subparsers.add_parser(
@@ -48,9 +52,13 @@ def _write_text(report: EnvironmentReport) -> None:
     sys.stdout.write(f"macpymessenger {__version__}\n\n")
     for check in report.checks:
         sys.stdout.write(f"{check.status.value.upper()} {check.identifier}: {check.summary}\n")
-        if check.fix is not None:
-            sys.stdout.write(f"  Next: {check.fix}\n")
-    summary = "Ready for a first send." if report.ready else "Local requirements are missing."
+        if check.next_step is not None:
+            sys.stdout.write(f"  Next: {check.next_step}\n")
+
+    if report.blocked:
+        summary = "Local blockers must be fixed before sending."
+    else:
+        summary = "No detectable local blockers. Complete the MANUAL checks before sending."
     sys.stdout.write(f"\n{summary}\n")
 
 
@@ -69,7 +77,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         sys.stdout.write("\n")
     else:
         _write_text(report)
-    return 0 if report.ready else 1
+    return 1 if report.blocked else 0
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -14,6 +14,7 @@ def test_package_exports_the_supported_api_from_one_place() -> None:
         "IMessageClient",
         "InvalidDelayTypeError",
         "MacPyMessengerError",
+        "MessageFailureReason",
         "MessageSendError",
         "MessageTransport",
         "NegativeDelayError",

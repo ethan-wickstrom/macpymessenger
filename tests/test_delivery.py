@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import subprocess
 from typing import TYPE_CHECKING
 
 import pytest
@@ -52,11 +51,6 @@ def delivery(
     return instance, runner
 
 
-# ---------------------------------------------------------------------------
-# Delay validation
-# ---------------------------------------------------------------------------
-
-
 class TestValidateDelay:
     def test_accepts_zero(self) -> None:
         assert MessageDelivery._validate_delay(0) == 0
@@ -86,11 +80,6 @@ class TestValidateDelay:
             MessageDelivery._validate_delay(-1)
 
 
-# ---------------------------------------------------------------------------
-# Send command construction
-# ---------------------------------------------------------------------------
-
-
 class TestBuildCommand:
     def test_command_structure(
         self,
@@ -99,7 +88,7 @@ class TestBuildCommand:
     ) -> None:
         instance, _ = delivery
         command = instance._build_command("+10000000000", "Hello", 0)
-        assert command[0] == "osascript"
+        assert command[0] == "/usr/bin/osascript"
         assert command[1] == str(script_path)
         assert command[2] == "+10000000000"
         assert command[3] == "Hello"
@@ -122,18 +111,16 @@ class TestBuildCommand:
         assert all(isinstance(segment, str) for segment in command)
 
 
-# ---------------------------------------------------------------------------
-# Command execution and failure mapping
-# ---------------------------------------------------------------------------
-
-
 class TestExecute:
     def test_success_calls_runner(
         self,
         delivery: tuple[MessageDelivery, StubRunner],
     ) -> None:
         instance, runner = delivery
-        instance._execute("+10000000000", ["osascript", "send.scpt", "+10000000000", "hi", "0"])
+        instance._execute(
+            "+10000000000",
+            ["/usr/bin/osascript", "send.scpt", "+10000000000", "hi", "0"],
+        )
         assert len(runner.commands) == 1
 
     def test_called_process_error_maps_to_delivery_failed(
@@ -145,7 +132,7 @@ class TestExecute:
         with pytest.raises(MessageSendError, match="Failed to send message to \\+19999999999"):
             instance._execute(
                 "+19999999999",
-                ["osascript", "send.scpt", "+19999999999", "hi", "0"],
+                ["/usr/bin/osascript", "send.scpt", "+19999999999", "hi", "0"],
             )
 
     def test_oserror_maps_to_command_failed(
@@ -153,9 +140,8 @@ class TestExecute:
         configuration: Configuration,
         delivery_logger: logging.Logger,
     ) -> None:
-        def raising_runner(command: object) -> None:  # noqa: ARG001
-            msg = "exec failed"
-            raise OSError(msg)
+        def raising_runner(_command: object) -> None:
+            raise OSError("exec failed")
 
         instance = MessageDelivery(
             configuration=configuration,
@@ -163,7 +149,7 @@ class TestExecute:
             logger=delivery_logger,
         )
         with pytest.raises(MessageSendError, match="Failed to execute osascript"):
-            instance._execute("+10000000000", ["osascript"])
+            instance._execute("+10000000000", ["/usr/bin/osascript"])
 
     def test_success_logs_info(
         self,
@@ -174,31 +160,9 @@ class TestExecute:
         with caplog.at_level(logging.INFO, logger="test.delivery"):
             instance._execute(
                 "+10000000000",
-                ["osascript", "send.scpt", "+10000000000", "hi", "0"],
+                ["/usr/bin/osascript", "send.scpt", "+10000000000", "hi", "0"],
             )
         assert any("+10000000000" in record.message for record in caplog.records)
-
-    def test_failure_logs_exception(
-        self,
-        delivery: tuple[MessageDelivery, StubRunner],
-        caplog: pytest.LogCaptureFixture,
-    ) -> None:
-        instance, runner = delivery
-        runner.failing_recipient_handles.add("+19999999999")
-        with (
-            caplog.at_level(logging.ERROR, logger="test.delivery"),
-            pytest.raises(MessageSendError),
-        ):
-            instance._execute(
-                "+19999999999",
-                ["osascript", "send.scpt", "+19999999999", "hi", "0"],
-            )
-        assert any("+19999999999" in record.message for record in caplog.records)
-
-
-# ---------------------------------------------------------------------------
-# deliver (full integration path through the delivery object)
-# ---------------------------------------------------------------------------
 
 
 class TestDeliver:
@@ -245,37 +209,49 @@ class TestDeliver:
         with pytest.raises(MessageSendError):
             instance.deliver("+19999999999", "Hello")
 
-    def test_subprocess_called_process_error_is_chained(
+    def test_failure_does_not_log_or_chain_the_private_message_body(
         self,
         delivery: tuple[MessageDelivery, StubRunner],
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         instance, runner = delivery
-        runner.failing_recipient_handles.add("+19999999999")
-        with pytest.raises(MessageSendError) as exc_info:
-            instance.deliver("+19999999999", "Hello")
-        assert isinstance(exc_info.value.__cause__, subprocess.CalledProcessError)
+        recipient = "+19999999999"
+        private_message = "private message body"
+        runner.failing_recipient_handles.add(recipient)
 
-    def test_oserror_raises_command_failed_and_logs(
+        with (
+            caplog.at_level(logging.ERROR, logger="test.delivery"),
+            pytest.raises(MessageSendError) as exc_info,
+        ):
+            instance.deliver(recipient, private_message)
+
+        assert exc_info.value.__cause__ is None
+        assert recipient in caplog.text
+        assert private_message not in caplog.text
+        assert private_message not in str(exc_info.value)
+
+    def test_oserror_does_not_log_or_chain_the_private_message_body(
         self,
         configuration: Configuration,
         delivery_logger: logging.Logger,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        def raising_runner(command: object) -> None:  # noqa: ARG001
-            msg = "exec failed"
-            raise OSError(msg)
+        def raising_runner(_command: object) -> None:
+            raise OSError("exec failed")
 
         instance = MessageDelivery(
             configuration=configuration,
             command_runner=raising_runner,
             logger=delivery_logger,
         )
+        private_message = "private message body"
+
         with (
             caplog.at_level(logging.ERROR, logger="test.delivery"),
-            pytest.raises(MessageSendError, match="Failed to execute osascript"),
+            pytest.raises(MessageSendError, match="Failed to execute osascript") as exc_info,
         ):
-            instance.deliver("+10000000000", "Hello")
-        assert any(
-            "Execution error while sending to +10000000000" in record.message
-            for record in caplog.records
-        )
+            instance.deliver("+10000000000", private_message)
+
+        assert exc_info.value.__cause__ is None
+        assert private_message not in caplog.text
+        assert private_message not in str(exc_info.value)

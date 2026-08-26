@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
+from macpymessenger import Configuration
 from macpymessenger import __main__ as cli
 from macpymessenger import __version__, diagnostics
 from macpymessenger.diagnostics import (
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
     import pytest
 
 
-def test_diagnostics_report_a_ready_mac_without_running_applescript(
+def test_diagnostics_report_passes_automated_checks_without_claiming_readiness(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -30,7 +31,9 @@ def test_diagnostics_report_a_ready_mac_without_running_applescript(
 
     report = diagnose_environment()
 
-    assert report.ready is True
+    assert hasattr(report, "blocked")
+    assert report.blocked is False
+    assert not hasattr(report, "ready")
     assert [check.identifier for check in report.checks[:4]] == [
         "platform",
         "osascript",
@@ -50,9 +53,19 @@ def test_diagnostics_report_missing_local_requirements(
 
     report = diagnose_environment()
 
-    assert report.ready is False
+    assert hasattr(report, "blocked")
+    assert report.blocked is True
     failed = {check.identifier for check in report.checks if check.status is CheckStatus.FAIL}
     assert failed == {"platform", "osascript", "messages-app"}
+
+
+def test_diagnostics_do_not_expose_the_installed_script_path() -> None:
+    script_path = str(Configuration().send_script_path)
+    report = diagnose_environment()
+    send_script = next(check for check in report.checks if check.identifier == "send-script")
+
+    assert script_path not in send_script.summary
+    assert send_script.fix is None or script_path not in send_script.fix
 
 
 def test_doctor_json_is_stable_for_agents(
@@ -78,7 +91,7 @@ def test_doctor_json_is_stable_for_agents(
     assert payload == {
         "tool": "macpymessenger-doctor",
         "version": __version__,
-        "ready": False,
+        "blocked": True,
         "checks": [
             {
                 "id": "platform",
@@ -90,7 +103,7 @@ def test_doctor_json_is_stable_for_agents(
     }
 
 
-def test_doctor_text_gives_the_next_action(
+def test_doctor_text_gives_the_next_action_without_claiming_readiness(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -112,3 +125,5 @@ def test_doctor_text_gives_the_next_action(
     assert exit_code == 0
     assert "INFO automation: Automation permission is granted per Python launcher." in output
     assert "Next: Check System Settings > Privacy & Security > Automation." in output
+    assert "No detectable local blockers. Complete the INFO checks before sending." in output
+    assert "Ready for a first send." not in output

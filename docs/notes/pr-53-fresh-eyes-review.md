@@ -15,8 +15,9 @@ not public API documentation.
 
 ## Initial facts
 
-- The pull request changes 54 files and introduces or changes public API,
-  diagnostics, packaging, CI, Sphinx output, PyPI metadata, and agent guidance.
+- The pull request changes more than 50 files and introduces or changes public
+  API, diagnostics, packaging, CI, Sphinx output, PyPI metadata, and agent
+  guidance.
 - The final pre-review CI run passed 58 tests and all source, docs, build, and
   installed-wheel checks on Linux and macOS.
 - Passing tests prove the asserted behavior, not that every new assumption is
@@ -24,20 +25,28 @@ not public API documentation.
 
 ## Hypothesis tree
 
-| ID | Hypothesis | Initial confidence | Evidence needed | Status |
+| ID | Hypothesis | Confidence | Evidence | Status |
 | --- | --- | ---: | --- | --- |
-| H1 | The package claims inline typing without shipping the PEP 561 marker required by installed type checkers. | 0.90 | Inspect wheel inputs and official typing guidance. | Open |
-| H2 | The doctor reports “ready” even though account sign-in and Automation permission remain unknown. | 0.80 | Trace `EnvironmentReport.ready`, CLI copy, JSON contract, and Apple permission behavior. | Open |
-| H3 | A relative custom AppleScript path can pass validation and later fail after the process changes directory. | 0.85 | Trace `Configuration` storage into `MessageDelivery` and reproduce with a directory change. | Open |
-| H4 | `context or {}` can discard a valid custom mapping whose truth value is false. | 0.75 | Build a false-valued non-empty `Mapping` and render a template. | Open |
-| H5 | Some docs or agent guidance still describe removed wrappers, placeholders, or library-owned logging. | 0.70 | Search every changed documentation and context file against current exports. | Open |
-| H6 | The new public exception and result models may expose fields whose types or names are weaker than the domain permits. | 0.45 | Inspect annotations, caller access patterns, and migration guarantees. | Open |
-| H7 | CI and documentation setup may install or run work that adds cost without finding a distinct class of failure. | 0.40 | Map each gate to a failure class and compare official uv/Read the Docs behavior. | Open |
+| H1 | The package claims inline typing without shipping the PEP 561 marker required by installed type checkers. | 0.99 | The typing specification requires `py.typed`; the package tree and wheel smoke test omit it. | Test pending |
+| H2 | The doctor reports “ready” even though account sign-in and Automation permission remain unknown. | 0.99 | `ready` ignores `INFO`; the CLI prints “Ready for a first send”; Apple makes Automation a user-controlled per-app permission. | Test pending |
+| H3 | A relative custom AppleScript path can pass validation and later fail after the process changes directory. | 0.99 | `Configuration` stores the relative path and `MessageDelivery` resolves it only when spawning. | Test pending |
+| H4 | `context or {}` can discard a valid custom mapping whose truth value is false. | 0.99 | `render_template` branches on truthiness instead of presence. | Test pending |
+| H5 | Some docs or agent guidance still conflict with current behavior. | 0.90 | The client API example uses undefined names; the changelog links delivery work to issue #36 instead of #37; more surfaces remain under review. | Confirmed, audit continuing |
+| H6 | Raw command failures can expose private message text through child output, logging, and traceback chaining. | 0.99 | `osascript` inherits stdout/stderr; the script returns `Success`; `logger.exception` and `raise ... from error` retain `CalledProcessError.cmd`, which contains the message argv. | Test pending |
+| H7 | The known system executable should not be resolved through caller-controlled `PATH`. | 0.98 | Apple documents `osascript` at `/usr/bin/osascript`; both execution and diagnostics currently depend on `PATH`. | Test pending |
+| H8 | The release workflow keeps a long-lived token and runs build code in the same credential-bearing job. | 0.95 | PyPI recommends Trusted Publishing and a separate, least-privileged publish job that only retrieves and uploads artifacts. | Confirmed |
+| H9 | String-only interpolation is an unnecessary restriction that blocks normal numeric formatting and duplicates work already done by Python's format protocol. | 0.90 | Python's t-string reference processor applies conversion and `format()` to arbitrary interpolation values; macpymessenger rejects them before either step. | Design challenge pending |
+| H10 | Doctor output can reveal a private home path. | 0.99 | Success and failure summaries include the absolute installed send-script path despite the repository redaction rule. | Test pending |
+| H11 | Current CI never compiles the bundled AppleScript against the current macOS Messages dictionary. | 0.85 | The macOS job uses macOS 26 but all tests inject runners; `osacompile` can check the script without executing it. | Gate pending |
+| H12 | Some public fields are more weakly typed than their closed domain. | 0.65 | `MessageSendError.reason` is annotated as unrestricted `str` although only `delivery` and `command` are valid. | Review pending |
 
 ## Review log
 
-- Initial audit started from the merge-base diff rather than the final commit
-  alone.
+- The audit started from the merge-base diff rather than the final commit alone.
 - Repository shell access could not resolve GitHub, so code is being read from
   exact branch Git objects and behavior is being verified through GitHub Actions
   and focused reproductions.
+- Primary sources reviewed so far: the Python typing specification, Python 3.14
+  `string.templatelib` and `pathlib` documentation, Apple Automation and
+  AppleScript documentation, uv build-backend documentation, and PyPI Trusted
+  Publishing guidance.

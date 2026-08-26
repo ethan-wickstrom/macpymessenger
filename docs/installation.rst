@@ -1,6 +1,6 @@
 .. meta::
    :description lang=en:
-      Install macpymessenger on macOS, check Messages and AppleScript readiness,
+      Install macpymessenger on macOS, check Messages and AppleScript blockers,
       and prepare Automation permission for Python iMessage sending.
 
 Install and prepare your Mac
@@ -17,35 +17,44 @@ You need:
 - an Apple account signed in to Messages.
 
 The wheel can be imported on another operating system so tests and type checks
-can run there, but message delivery requires macOS, Messages, and ``osascript``.
+can run there, but message delivery requires macOS, Messages, and
+``/usr/bin/osascript``.
 
-Install the package
--------------------
+Install with uv
+---------------
 
-Use uv in a project:
+Add the package to a project, then run its command through the project
+environment:
 
 .. code-block:: bash
 
    uv add macpymessenger
+   uv run macpymessenger doctor
 
-Or use pip in an active virtual environment:
+Use ``uv run macpymessenger doctor --json`` when a script or agent needs
+structured output.
+
+Install with pip
+----------------
+
+Inside an active virtual environment:
 
 .. code-block:: bash
 
    python -m pip install macpymessenger
-
-Check the installed wheel
--------------------------
-
-Run the package diagnostic:
-
-.. code-block:: bash
-
    macpymessenger doctor
 
-This checks local requirements without opening Messages or sending a message.
-Use ``macpymessenger doctor --json`` when a script or agent needs structured
-output. See :doc:`guides/environment-diagnostics` for the result contract.
+Understand the doctor result
+----------------------------
+
+The doctor checks definite local blockers without opening Messages, invoking
+AppleScript, requesting permission, reading message data, or sending text. A
+zero exit code means no automated blocker was found. It does not prove that the
+Messages account is signed in or that the current launcher has Automation
+permission; complete every ``MANUAL`` check before the first send.
+
+See :doc:`guides/environment-diagnostics` for the text, JSON, and exit-code
+contract.
 
 Prepare Messages
 ----------------
@@ -62,5 +71,5 @@ editor, a launcher, and an agent host may each need separate approval.
 Next step
 ---------
 
-Follow :doc:`guides/sending-messages`. If the diagnostic passes but delivery
-fails, use :doc:`guides/troubleshooting`.
+Follow :doc:`guides/sending-messages`. If no automated blocker is found but
+delivery fails, use :doc:`guides/troubleshooting`.

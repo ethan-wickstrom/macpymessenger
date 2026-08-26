@@ -5,67 +5,51 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, NamedTuple
 
-from .commands import CommandRunner, SubprocessCommandRunner
-from .configuration import Configuration
 from .delivery import MessageDelivery
 from .exceptions import MessageSendError
 from .templates import TemplateCallable, TemplateManager
+from .transport import AppleScriptTransport
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
+
+    from .transport import MessageTransport
 
 __all__ = ["BulkSendResult", "IMessageClient"]
 
 
 class BulkSendResult(NamedTuple):
-    """Immutable recipients classified by a bulk send.
-
-    The named fields make call sites self-explanatory. The outer named tuple and
-    inner tuples contain no shared mutable state. Tuple unpacking remains valid.
-    """
+    """Immutable recipients classified by a sequential bulk send."""
 
     sent: tuple[str, ...]
     failed: tuple[str, ...]
 
 
 class IMessageClient:
-    """Send iMessages through the local macOS Messages app.
+    """Send text through the local macOS Messages app.
 
-    ``IMessageClient()`` uses the AppleScript bundled with macpymessenger. Pass a
-    custom :class:`Configuration` only when you maintain your own script. Tests
-    can replace command execution through ``command_runner``.
-
-    The client emits delivery events to ``macpymessenger.client`` unless a
-    caller-owned logger is provided. The library never sets levels, chooses
-    formats, or attaches output handlers.
+    ``IMessageClient()`` uses the bundled :class:`AppleScriptTransport`. Pass a
+    custom ``transport`` when another delivery mechanism or a test double owns
+    the effect. The client emits delivery events to ``macpymessenger.client``
+    unless a caller-owned logger is provided.
     """
 
-    __slots__ = (
-        "_delivery",
-        "_logger",
-        "command_runner",
-        "configuration",
-        "template_manager",
-    )
+    __slots__ = ("_delivery", "_logger", "template_manager", "transport")
 
     def __init__(
         self,
-        configuration: Configuration | None = None,
+        *,
+        transport: MessageTransport | None = None,
         template_manager: TemplateManager | None = None,
-        command_runner: CommandRunner | None = None,
         logger: logging.Logger | None = None,
     ) -> None:
-        self.configuration = configuration if configuration is not None else Configuration()
+        self.transport = transport if transport is not None else AppleScriptTransport()
         self.template_manager = (
             template_manager if template_manager is not None else TemplateManager()
         )
-        self.command_runner = (
-            command_runner if command_runner is not None else SubprocessCommandRunner()
-        )
         self._logger = logger if logger is not None else logging.getLogger(__name__)
         self._delivery = MessageDelivery(
-            configuration=self.configuration,
-            command_runner=self.command_runner,
+            transport=self.transport,
             logger=self._logger,
         )
 

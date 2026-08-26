@@ -32,14 +32,20 @@ def _require(condition: bool, message: str) -> None:
         raise RuntimeError(message)
 
 
+def _command_path() -> str:
+    command = shutil.which("macpymessenger")
+    if command is None:
+        message = "the installed console script is missing"
+        raise RuntimeError(message)
+    return command
+
+
 def _run_cli(
     *arguments: str,
     input_text: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    command = shutil.which("macpymessenger")
-    _require(command is not None, "the installed console script is missing")
     return subprocess.run(  # noqa: S603
-        (command, *arguments),
+        (_command_path(), *arguments),
         input=input_text,
         capture_output=True,
         check=False,
@@ -94,7 +100,10 @@ def _verify_version_and_help() -> None:
 
     send_help = _run_cli("send", "--help")
     _require(send_help.returncode == 0, "send --help failed")
-    _require("one JSON object from standard input" in send_help.stdout, "send input is undocumented")
+    _require(
+        "one JSON object from standard input" in send_help.stdout,
+        "send input is undocumented",
+    )
     _require("Exit status:" in send_help.stdout, "send exit codes are undocumented")
 
 

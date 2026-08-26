@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from importlib.metadata import version
 from inspect import signature
+from pathlib import Path
 
 import macpymessenger
 
@@ -30,6 +31,11 @@ def test_package_exports_the_supported_api_from_one_place() -> None:
 
 def test_package_version_comes_from_distribution_metadata() -> None:
     assert macpymessenger.__version__ == version("macpymessenger")
+
+
+def test_package_declares_inline_types() -> None:
+    assert macpymessenger.__file__ is not None
+    assert (Path(macpymessenger.__file__).parent / "py.typed").is_file()
 
 
 def test_removed_placeholder_and_wrapper_types_are_not_public() -> None:

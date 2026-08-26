@@ -1,6 +1,6 @@
 ---
 name: macpymessenger
-description: Send a user-approved text through the local macOS Messages app or inspect macpymessenger readiness. Use when the user explicitly asks an agent to send an iMessage with macpymessenger.
+description: Use this skill when the user explicitly asks an agent to send an iMessage through the local macOS Messages app or inspect macpymessenger readiness.
 license: Apache-2.0
 compatibility: Requires an installed macpymessenger CLI on macOS.
 ---

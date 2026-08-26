@@ -1,16 +1,17 @@
-"""Local readiness checks for macpymessenger."""
+"""Side-effect-free local prerequisite checks."""
 
 from __future__ import annotations
 
+import os
 import platform
-import shutil
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 
-from .configuration import Configuration
-from .exceptions import ConfigurationError
+from .exceptions import ScriptNotFoundError
+from .transport import _load_script_source
 
+_OSASCRIPT_PATH = Path("/usr/bin/osascript")
 _MESSAGES_APP_PATHS = (
     Path("/System/Applications/Messages.app"),
     Path("/Applications/Messages.app"),
@@ -20,9 +21,9 @@ _MESSAGES_APP_PATHS = (
 class CheckStatus(StrEnum):
     """Outcome of one environment check."""
 
-    OK = "pass"
+    OK = "ok"
     FAIL = "fail"
-    INFO = "info"
+    MANUAL = "manual"
 
 
 @dataclass(frozen=True, slots=True)
@@ -32,33 +33,33 @@ class EnvironmentCheck:
     identifier: str
     status: CheckStatus
     summary: str
-    fix: str | None = None
+    next_step: str | None = None
 
     def to_dict(self) -> dict[str, str | None]:
         """Return the public JSON shape for this check."""
         return {
-            "id": self.identifier,
+            "identifier": self.identifier,
             "status": self.status.value,
             "summary": self.summary,
-            "fix": self.fix,
+            "next_step": self.next_step,
         }
 
 
 @dataclass(frozen=True, slots=True)
 class EnvironmentReport:
-    """All local checks needed before the first send."""
+    """Automated blockers and manual checks for a first send."""
 
     checks: tuple[EnvironmentCheck, ...]
 
     @property
-    def ready(self) -> bool:
-        """Whether every check that can be verified locally passed."""
-        return all(check.status is not CheckStatus.FAIL for check in self.checks)
+    def blocked(self) -> bool:
+        """Whether an automated check found a definite local blocker."""
+        return any(check.status is CheckStatus.FAIL for check in self.checks)
 
     def to_dict(self) -> dict[str, object]:
         """Return the stable JSON payload shared by scripts and agents."""
         return {
-            "ready": self.ready,
+            "blocked": self.blocked,
             "checks": [check.to_dict() for check in self.checks],
         }
 
@@ -82,17 +83,16 @@ def diagnose_environment() -> EnvironmentReport:
                 identifier="platform",
                 status=CheckStatus.FAIL,
                 summary=f"macOS is required; found {system or 'an unknown platform'}.",
-                fix="Run macpymessenger on a Mac.",
+                next_step="Run macpymessenger on a Mac.",
             )
         )
 
-    osascript_path = shutil.which("osascript")
-    if osascript_path is not None:
+    if _OSASCRIPT_PATH.is_file() and os.access(_OSASCRIPT_PATH, os.X_OK):
         checks.append(
             EnvironmentCheck(
                 identifier="osascript",
                 status=CheckStatus.OK,
-                summary=f"osascript found at {osascript_path}.",
+                summary="The system osascript executable is available.",
             )
         )
     else:
@@ -100,18 +100,17 @@ def diagnose_environment() -> EnvironmentReport:
             EnvironmentCheck(
                 identifier="osascript",
                 status=CheckStatus.FAIL,
-                summary="osascript was not found on PATH.",
-                fix="Use the system Python environment on macOS and restore /usr/bin to PATH.",
+                summary="The system osascript executable is unavailable.",
+                next_step="Restore /usr/bin/osascript by repairing or updating macOS.",
             )
         )
 
-    messages_app = next((path for path in _MESSAGES_APP_PATHS if path.is_dir()), None)
-    if messages_app is not None:
+    if any(path.is_dir() for path in _MESSAGES_APP_PATHS):
         checks.append(
             EnvironmentCheck(
                 identifier="messages-app",
                 status=CheckStatus.OK,
-                summary=f"Messages found at {messages_app}.",
+                summary="The Messages app is installed.",
             )
         )
     else:
@@ -120,19 +119,19 @@ def diagnose_environment() -> EnvironmentReport:
                 identifier="messages-app",
                 status=CheckStatus.FAIL,
                 summary="The Messages app was not found in a standard macOS location.",
-                fix="Confirm that Messages is installed on this Mac.",
+                next_step="Confirm that Messages is installed on this Mac.",
             )
         )
 
     try:
-        configuration = Configuration()
-    except ConfigurationError as error:
+        _load_script_source()
+    except ScriptNotFoundError:
         checks.append(
             EnvironmentCheck(
                 identifier="send-script",
                 status=CheckStatus.FAIL,
-                summary=str(error),
-                fix="Reinstall macpymessenger from a complete wheel.",
+                summary="Bundled AppleScript could not be read.",
+                next_step="Reinstall macpymessenger from a complete wheel.",
             )
         )
     else:
@@ -140,7 +139,7 @@ def diagnose_environment() -> EnvironmentReport:
             EnvironmentCheck(
                 identifier="send-script",
                 status=CheckStatus.OK,
-                summary=f"Bundled send script is readable at {configuration.send_script_path}.",
+                summary="Bundled AppleScript is readable.",
             )
         )
 
@@ -148,15 +147,20 @@ def diagnose_environment() -> EnvironmentReport:
         (
             EnvironmentCheck(
                 identifier="automation",
-                status=CheckStatus.INFO,
-                summary="Automation permission is granted per Python launcher.",
-                fix="Run one send, then check System Settings > Privacy & Security > Automation.",
+                status=CheckStatus.MANUAL,
+                summary=(
+                    "Automation permission cannot be checked without sending an Apple event."
+                ),
+                next_step=(
+                    "Run one send, then check System Settings > Privacy & Security > "
+                    "Automation."
+                ),
             ),
             EnvironmentCheck(
                 identifier="messages-account",
-                status=CheckStatus.INFO,
-                summary="Account sign-in cannot be checked without controlling Messages.",
-                fix="Open Messages and confirm that you can send a message by hand.",
+                status=CheckStatus.MANUAL,
+                summary="Messages account sign-in cannot be checked without controlling Messages.",
+                next_step="Open Messages and confirm that you can send a message by hand.",
             ),
         )
     )

@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           enable-cache: true
           version: "0.12.6"
@@ -58,6 +58,7 @@ jobs:
               AppleScriptTransport,
               BulkSendResult,
               IMessageClient,
+              MessageFailureReason,
               SendRequest,
               TemplateManager,
               __version__,
@@ -67,10 +68,12 @@ jobs:
           assert __version__ != "0+unknown"
           assert package.joinpath("py.typed").is_file()
           assert package.joinpath("osascript", "sendMessage.applescript").is_file()
+          assert package.joinpath("skills", "core", "SKILL.md").is_file()
           assert isinstance(IMessageClient().transport, AppleScriptTransport)
           assert SendRequest("+15555550123", "Hello").delay_seconds == 0
           assert BulkSendResult((), ()).sent == ()
           assert TemplateManager().list_templates() == {}
+          assert str(MessageFailureReason).startswith("MessageFailureReason")
           PY
           uv run --isolated --no-project --python 3.14 --with "$wheel" \
             macpymessenger --version
@@ -94,4 +97,56 @@ jobs:
           for check in payload["checks"]:
               assert set(check) == {"identifier", "status", "summary", "next_step"}
               assert check["status"] in {"ok", "fail", "manual"}
+          PY
+
+      - name: Smoke test installed agent CLI
+        shell: bash
+        run: |
+          wheel="$(find dist -name '*.whl' -print -quit)"
+
+          help_output="$(uv run --isolated --no-project --python 3.14 --with "$wheel" macpymessenger --help)"
+          case "$help_output" in
+            *"macpymessenger skills get core"*"version-matched"*) ;;
+            *) exit 1 ;;
+          esac
+
+          skill_output="$(uv run --isolated --no-project --python 3.14 --with "$wheel" macpymessenger skills get core)"
+          case "$skill_output" in
+            *"name: core"*"macpymessenger send --json"*) ;;
+            *) exit 1 ;;
+          esac
+
+          catalog="$(uv run --isolated --no-project --python 3.14 --with "$wheel" macpymessenger skills list --json)"
+          SKILL_CATALOG="$catalog" python - <<'PY'
+          import json
+          import os
+
+          payload = json.loads(os.environ["SKILL_CATALOG"])
+          assert payload["tool"] == "macpymessenger-skills"
+          assert payload["skills"] == [
+              {
+                  "name": "core",
+                  "description": (
+                      "Use this skill when the user explicitly asks an agent to send an "
+                      "iMessage through the local macOS Messages app or inspect "
+                      "macpymessenger readiness."
+                  ),
+              }
+          ]
+          PY
+
+          status=0
+          send_output="$(printf '%s\n' '{}' | uv run --isolated --no-project --python 3.14 --with "$wheel" macpymessenger send --json)" || status=$?
+          test "$status" -eq 2
+          SEND_OUTPUT="$send_output" python - <<'PY'
+          import json
+          import os
+
+          payload = json.loads(os.environ["SEND_OUTPUT"])
+          assert payload == {
+              "tool": "macpymessenger-send",
+              "version": payload["version"],
+              "ok": False,
+              "error": {"code": "invalid_input"},
+          }
           PY

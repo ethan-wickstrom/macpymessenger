@@ -9,17 +9,16 @@ import macpymessenger
 
 def test_package_exports_the_supported_api_from_one_place() -> None:
     assert set(macpymessenger.__all__) == {
+        "AppleScriptTransport",
         "BulkSendResult",
-        "CommandRunner",
-        "Configuration",
-        "ConfigurationError",
         "IMessageClient",
         "InvalidDelayTypeError",
         "MacPyMessengerError",
         "MessageSendError",
+        "MessageTransport",
         "NegativeDelayError",
         "ScriptNotFoundError",
-        "SubprocessCommandRunner",
+        "SendRequest",
         "TemplateAlreadyExistsError",
         "TemplateError",
         "TemplateManager",
@@ -38,9 +37,13 @@ def test_package_declares_inline_types() -> None:
     assert (Path(macpymessenger.__file__).parent / "py.typed").is_file()
 
 
-def test_removed_placeholder_and_wrapper_types_are_not_public() -> None:
+def test_removed_placeholder_and_shallow_abstractions_are_not_public() -> None:
+    assert not hasattr(macpymessenger, "CommandRunner")
+    assert not hasattr(macpymessenger, "Configuration")
+    assert not hasattr(macpymessenger, "ConfigurationError")
     assert not hasattr(macpymessenger, "FileLoggingConfiguration")
     assert not hasattr(macpymessenger, "RenderedTemplate")
+    assert not hasattr(macpymessenger, "SubprocessCommandRunner")
     assert not hasattr(macpymessenger.TemplateManager, "compose_template")
 
 

@@ -23,6 +23,7 @@ jobs:
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
           enable-cache: true
+          version: "0.12.6"
 
       - name: Sync locked environment
         run: uv sync --locked
@@ -50,7 +51,27 @@ jobs:
         run: |
           wheel="$(find dist -name '*.whl' -print -quit)"
           uv run --isolated --no-project --python 3.14 --with "$wheel" \
-            python -c "from macpymessenger import BulkSendResult, IMessageClient, MessageSendError, __version__; assert __version__ != '0+unknown'; assert IMessageClient().configuration.send_script_path.is_file(); assert BulkSendResult((), ()).sent == ()"
+            python - <<'PY'
+          from importlib.resources import files
+
+          from macpymessenger import (
+              AppleScriptTransport,
+              BulkSendResult,
+              IMessageClient,
+              SendRequest,
+              TemplateManager,
+              __version__,
+          )
+
+          package = files("macpymessenger")
+          assert __version__ != "0+unknown"
+          assert package.joinpath("py.typed").is_file()
+          assert package.joinpath("osascript", "sendMessage.applescript").is_file()
+          assert isinstance(IMessageClient().transport, AppleScriptTransport)
+          assert SendRequest("+15555550123", "Hello").delay_seconds == 0
+          assert BulkSendResult((), ()).sent == ()
+          assert TemplateManager().list_templates() == {}
+          PY
           uv run --isolated --no-project --python 3.14 --with "$wheel" \
             macpymessenger --version
 
@@ -61,4 +82,16 @@ jobs:
           status=0
           output="$(uv run --isolated --no-project --python 3.14 --with "$wheel" macpymessenger doctor --json)" || status=$?
           test "$status" -eq 0 -o "$status" -eq 1
-          DOCTOR_OUTPUT="$output" python -c "import json, os; payload = json.loads(os.environ['DOCTOR_OUTPUT']); assert payload['tool'] == 'macpymessenger-doctor'; assert isinstance(payload['ready'], bool); assert payload['checks']"
+          DOCTOR_OUTPUT="$output" python - <<'PY'
+          import json
+          import os
+
+          payload = json.loads(os.environ["DOCTOR_OUTPUT"])
+          assert payload["tool"] == "macpymessenger-doctor"
+          assert isinstance(payload["blocked"], bool)
+          assert "ready" not in payload
+          assert payload["checks"]
+          for check in payload["checks"]:
+              assert set(check) == {"identifier", "status", "summary", "next_step"}
+              assert check["status"] in {"ok", "fail", "manual"}
+          PY

@@ -20,6 +20,11 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
+def raise_oserror(_command: object) -> None:
+    message = "exec failed"
+    raise OSError(message)
+
+
 @pytest.fixture
 def script_path(tmp_path: Path) -> Path:
     script = tmp_path / "send.scpt"
@@ -140,12 +145,9 @@ class TestExecute:
         configuration: Configuration,
         delivery_logger: logging.Logger,
     ) -> None:
-        def raising_runner(_command: object) -> None:
-            raise OSError("exec failed")
-
         instance = MessageDelivery(
             configuration=configuration,
-            command_runner=raising_runner,
+            command_runner=raise_oserror,
             logger=delivery_logger,
         )
         with pytest.raises(MessageSendError, match="Failed to execute osascript"):
@@ -236,12 +238,9 @@ class TestDeliver:
         delivery_logger: logging.Logger,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        def raising_runner(_command: object) -> None:
-            raise OSError("exec failed")
-
         instance = MessageDelivery(
             configuration=configuration,
-            command_runner=raising_runner,
+            command_runner=raise_oserror,
             logger=delivery_logger,
         )
         private_message = "private message body"

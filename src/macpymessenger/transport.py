@@ -61,7 +61,7 @@ def _load_script_source() -> str:
     try:
         resource = files("macpymessenger").joinpath(*_SCRIPT_RESOURCE)
         return resource.read_text(encoding="utf-8")
-    except (OSError, UnicodeError):
+    except OSError, UnicodeError:
         raise ScriptNotFoundError.bundled_script_unavailable() from None
 
 

@@ -180,7 +180,7 @@ def _unique_json_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
 def _read_send_request() -> SendRequest:
     try:
         payload: object = json.load(sys.stdin, object_pairs_hook=_unique_json_object)
-    except (json.JSONDecodeError, OSError, RecursionError, UnicodeError):
+    except json.JSONDecodeError, OSError, RecursionError, UnicodeError:
         raise _InvalidSendInputError from None
 
     if not isinstance(payload, dict):
@@ -202,7 +202,7 @@ def _read_send_request() -> SendRequest:
             message=cast("str", fields["message"]),
             delay_seconds=cast("int", fields.get("delay_seconds", 0)),
         )
-    except (InvalidDelayTypeError, InvalidSendTextError, NegativeDelayError):
+    except InvalidDelayTypeError, InvalidSendTextError, NegativeDelayError:
         raise _InvalidSendInputError from None
 
 

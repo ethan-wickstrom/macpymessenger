@@ -1,7 +1,7 @@
 .. meta::
    :description lang=en:
-      Task guide index for command-line agents, Python sending, diagnostics,
-      templates, transports, logging, and troubleshooting on macOS.
+      Task guide index for validation-safe command-line agents, Python sending,
+      diagnostics, templates, transports, logging, and troubleshooting on macOS.
 
 Choose a task
 =============
@@ -15,7 +15,8 @@ Read :doc:`guides/command-line` for:
 
 - version-matched Agent Skill discovery;
 - one closed JSON request on standard input;
-- stable machine output and exit codes;
+- validation-only ``send --dry-run`` execution;
+- one versioned JSON envelope and stable exit codes;
 - private-data boundaries; and
 - the no-automatic-retry rule.
 
@@ -24,7 +25,7 @@ Check your Mac
 
 Read :doc:`guides/environment-diagnostics` to inspect macOS,
 ``/usr/bin/osascript``, Messages, and bundled package data without sending text.
-Use its JSON output from scripts and agents.
+Use its versioned JSON output from scripts and agents.
 
 Send from Python
 ----------------
@@ -32,9 +33,10 @@ Send from Python
 Read :doc:`guides/sending-messages` to:
 
 - send one text message;
+- build and pass one validated immutable ``SendRequest``;
 - delay a send;
-- classify several recipients with ``BulkSendResult``; and
-- handle delivery, transport, and input failures.
+- inspect detailed ``BulkSendFailure`` records and ``BulkSendResult`` views; and
+- handle request, delivery, and transport failures.
 
 Use templates
 -------------
@@ -46,8 +48,9 @@ Replace the delivery effect
 ---------------------------
 
 Read :doc:`api/transport` to inject a ``MessageTransport`` for tests or another
-local delivery mechanism. The rest of the client continues to own template
-rendering, bulk classification, logging, and public error mapping.
+local delivery mechanism. The rest of the client continues to own request
+validation, template rendering, bulk classification, logging, and public error
+mapping.
 
 Configure logging
 -----------------
@@ -60,7 +63,7 @@ Fix a problem
 -------------
 
 Read :doc:`guides/troubleshooting` for Automation permission, Messages account,
-transport, installation, delay, command-input, and template failures.
+transport, installation, request, delay, command-input, and template failures.
 
 Look up the API
 ---------------

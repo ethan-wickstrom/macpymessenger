@@ -7,12 +7,71 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from macpymessenger import AppleScriptTransport, MessageTransport, SendRequest
+from macpymessenger import (
+    AppleScriptTransport,
+    InvalidSendTextError,
+    MessageTransport,
+    SendRequest,
+)
 from macpymessenger.transport import _render_applescript
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from pathlib import Path
+
+
+def test_send_request_rejects_non_string_recipient() -> None:
+    with pytest.raises(InvalidSendTextError) as exc_info:
+        SendRequest(123, "Hello")  # ty: ignore[invalid-argument-type]
+
+    assert exc_info.value.field == "recipient"
+    assert exc_info.value.reason == "type"
+
+
+def test_send_request_rejects_non_string_message() -> None:
+    with pytest.raises(InvalidSendTextError) as exc_info:
+        SendRequest("+15555550123", 123)  # ty: ignore[invalid-argument-type]
+
+    assert exc_info.value.field == "message"
+    assert exc_info.value.reason == "type"
+
+
+@pytest.mark.parametrize(
+    ("recipient", "message", "field"),
+    [
+        ("", "Hello", "recipient"),
+        ("+15555550123", "", "message"),
+    ],
+)
+def test_send_request_rejects_empty_text(
+    recipient: str,
+    message: str,
+    field: str,
+) -> None:
+    with pytest.raises(InvalidSendTextError) as exc_info:
+        SendRequest(recipient, message)
+
+    assert exc_info.value.field == field
+    assert exc_info.value.reason == "empty"
+
+
+@pytest.mark.parametrize(
+    ("recipient", "message", "field"),
+    [
+        ("\ud800", "Hello", "recipient"),
+        ("+15555550123", "\ud800", "message"),
+    ],
+)
+def test_send_request_rejects_text_that_cannot_be_encoded_as_utf8(
+    recipient: str,
+    message: str,
+    field: str,
+) -> None:
+    with pytest.raises(InvalidSendTextError) as exc_info:
+        SendRequest(recipient, message)
+
+    assert exc_info.value.field == field
+    assert exc_info.value.reason == "encoding"
 
 
 def test_send_request_rejects_non_integer_delay() -> None:

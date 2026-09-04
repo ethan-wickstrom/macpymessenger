@@ -21,6 +21,19 @@ class OSErrorTransport:
         raise OSError(message)
 
 
+class UnsafeTypedFailureTransport:
+    def send(self, request: SendRequest) -> None:
+        private_detail = f"{request.recipient}: {request.message}"
+        try:
+            raise OSError(private_detail)
+        except OSError as cause:
+            raise MessageSendError(
+                request.recipient,
+                "delivery",
+                private_detail,
+            ) from cause
+
+
 @pytest.fixture
 def delivery_logger() -> logging.Logger:
     return logging.getLogger("test.delivery")
@@ -67,6 +80,35 @@ def test_delivery_logs_success_without_private_content(
     assert private_message not in caplog.text
 
 
+def test_delivery_resanitizes_a_typed_transport_failure(
+    delivery_logger: logging.Logger,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    recipient = "+19999999999\nforged log entry"
+    private_message = "private message body"
+    transport: MessageTransport = UnsafeTypedFailureTransport()
+    instance = MessageDelivery(transport=transport, logger=delivery_logger)
+
+    with (
+        caplog.at_level(logging.ERROR, logger="test.delivery"),
+        pytest.raises(MessageSendError) as exc_info,
+    ):
+        instance.deliver(SendRequest(recipient, private_message))
+
+    error = exc_info.value
+    assert error.recipient == recipient
+    assert error.reason == "delivery"
+    assert str(error) == "Message delivery failed."
+    assert error.__cause__ is None
+    assert error.__context__ is None
+    assert "Message delivery failed" in caplog.text
+    assert recipient not in caplog.text
+    assert "forged log entry" not in caplog.text
+    assert private_message not in caplog.text
+    assert recipient not in str(error)
+    assert private_message not in str(error)
+
+
 def test_delivery_maps_applescript_failure_without_private_cause_log_or_text(
     delivery_logger: logging.Logger,
     caplog: pytest.LogCaptureFixture,
@@ -86,6 +128,7 @@ def test_delivery_maps_applescript_failure_without_private_cause_log_or_text(
     assert error.recipient == recipient
     assert error.reason == "delivery"
     assert error.__cause__ is None
+    assert error.__context__ is None
     assert str(error) == "Message delivery failed."
     assert "Message delivery failed" in caplog.text
     assert recipient not in caplog.text
@@ -114,6 +157,7 @@ def test_delivery_maps_transport_failure_without_private_cause_log_or_text(
     assert error.recipient == recipient
     assert error.reason == "transport"
     assert error.__cause__ is None
+    assert error.__context__ is None
     assert str(error) == "Message transport failed."
     assert "Message transport failed" in caplog.text
     assert recipient not in caplog.text

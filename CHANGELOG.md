@@ -25,7 +25,9 @@ templates, bulk classification, logging, or error mapping.
 fixed argv `('/usr/bin/osascript', '-')`, base64-encodes recipient and message
 text into the rendered script, and streams that script through standard input.
 Private values do not enter process arguments, environment variables, or
-temporary files. Child output remains inside the transport.
+temporary files. Child-process and operating-system failures map to public
+`MessageSendError` values that retain neither a raw `__cause__` nor a raw
+`__context__`.
 
 **Validation-only command execution.** `macpymessenger send --dry-run` parses
 and validates one closed request without constructing `IMessageClient`, loading
@@ -76,13 +78,16 @@ using `phone_number=` or `phone_numbers=` must rename those keywords.
 **Request validation has one owner.** The Python convenience API and CLI both
 construct `SendRequest`; clients, delivery, and transports consume the validated
 object unchanged. `InvalidSendTextError` exposes closed `field` and `reason`
-values without copying rejected private text into the exception message.
+values without copying rejected private text into the exception message or
+retaining an encoding exception as `__cause__` or `__context__`.
 
 **Delivery errors expose a closed reason.** `MessageSendError.recipient`
 identifies the failed handle. `reason` is `"delivery"` when AppleScript or
 Messages rejects a send and `"transport"` when the transport cannot run. The
-closed `MessageFailureReason` alias is public. Raw transport exceptions are not
-chained because they can contain private child-process data.
+closed `MessageFailureReason` alias is public. The built-in transport maps raw
+failures directly, and `MessageDelivery` resanitizes typed or legacy low-level
+custom-transport failures. Raw details appear in neither public `__cause__` nor
+public `__context__`.
 
 **Command input and output state the actual boundary.** The send command rejects
 non-object JSON, missing or empty required strings, unknown fields, duplicate
@@ -111,8 +116,9 @@ Messages sign-in, Automation permission, or recipient delivery.
 environment, lint and formatter diffs, type checks, hermetic tests, strict
 Sphinx builds, package builds, installed-wheel and installed-sdist verification,
 and macOS AppleScript compilation. The artifact verifier now exercises request
-validation, bulk result shape, command help, the shared JSON schema,
-validation-only sends, diagnostics, and the bundled Agent Skill.
+validation, context-free direct transport failures, bulk result shape, command
+help, the shared JSON schema, validation-only sends, diagnostics, and the
+bundled Agent Skill.
 
 ### Fixed
 
@@ -128,8 +134,11 @@ the removed configuration and command-runner design is gone.
 **Private send data no longer leaks through process inspection or failures.**
 The old argv shape included recipient, full message text, and delay for the
 lifetime of the `osascript` process. Failed sends also copied the raw command
-into logs and traceback causes. Fixed argv, standard-input transport, captured
-child output, plain error logging, and `raise ... from None` close those paths.
+into logs and traceback metadata. Fixed argv, standard-input transport, captured
+child output, generic error logging, and raising public failures only after
+low-level handlers exit close those paths. UTF-8 validation and package-data
+loading use the same context-free pattern, so rejected text and private
+filesystem details are not retained on public errors.
 
 **Doctor output no longer exposes an installed home path.** The bundled-source
 check reports a generic result rather than the full package filesystem path.
@@ -173,6 +182,9 @@ from Python's conversion or format protocol.
 - Replace `IMessageClient(Configuration())` with `IMessageClient()`.
 - Replace custom script paths or `command_runner=` with a `MessageTransport` and
   pass it as `IMessageClient(transport=...)`.
+- Update custom transports to raise `MessageSendError` with the request recipient
+  and a `"delivery"` or `"transport"` reason for known failures. The client
+  still maps `CalledProcessError` and `OSError` from older implementations.
 - Rename `phone_number=` to `recipient=` and `phone_numbers=` to `recipients=`.
 - Build queued or prevalidated work as `SendRequest(...)`, then call
   `client.send_request(request)` instead of decomposing the request.

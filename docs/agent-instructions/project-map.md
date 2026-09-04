@@ -16,12 +16,18 @@ Use `fd` or `rg --files` to confirm current paths before editing.
 
 ## Core data shapes
 
-- `SendRequest(recipient, message, delay_seconds)` is the frozen, slotted value
-  that crosses the delivery effect boundary. It owns delay validation.
+- `SendRequest(recipient, message, delay_seconds)` is the validated frozen,
+  slotted value that crosses the delivery effect boundary. It owns recipient,
+  message, and delay validation.
 - The CLI parses its closed JSON input directly into `SendRequest`; it does not
   define a second send-request model.
-- `BulkSendResult(sent, failed)` is a named tuple. Named fields are the primary
-  interface; tuple unpacking preserves compatibility.
+- `BulkSendFailure(recipient, reason)` retains the closed failure reason for one
+  bulk item.
+- `BulkSendResult(sent, failures)` is immutable. `failures` is authoritative;
+  `failed` projects recipient strings, `ok` derives aggregate success, and
+  iteration preserves two-value `sent, failed` unpacking.
+- The JSON envelope owns `schema_version`, `tool`, `command`, `version`, `ok`,
+  and one command-specific `data` or `error` object.
 - `EnvironmentReport(checks)` owns aggregate blocker state. `checks` is an
   ordered tuple of immutable `EnvironmentCheck` values.
 - `EnvironmentCheck(identifier, status, summary, next_step)` is the stable
@@ -35,8 +41,10 @@ Do not introduce a second representation for any of these concepts.
 
 - `IMessageClient` composes collaborators, exposes the stable send surface,
   renders registered templates, and classifies sequential bulk outcomes.
-- `MessageDelivery` creates one `SendRequest`, crosses `MessageTransport`, maps
-  transport-specific exceptions, and emits delivery events.
+- `IMessageClient.send()` constructs one `SendRequest`; `send_request()` passes a
+  prebuilt request unchanged.
+- `MessageDelivery` crosses `MessageTransport`, maps transport-specific
+  exceptions, and emits generic delivery events.
 - `MessageTransport` is the only replaceable delivery effect.
 - `AppleScriptTransport` loads the bundled handler source, encodes private
   values, and runs fixed `/usr/bin/osascript -` argv with script input on
@@ -45,8 +53,9 @@ Do not introduce a second representation for any of these concepts.
   through Python's normal conversion and format protocols.
 - `diagnostics` performs side-effect-free local checks and owns the doctor model.
 - `agent_skills` loads and verifies version-matched package skill resources.
-- `__main__` owns command parsing, closed JSON input, output routing, and exit
-  codes. It delegates domain work instead of reproducing it.
+- `__main__` owns command parsing, closed JSON object structure, the versioned
+  output envelope, output routing, and exit codes. It delegates request-value
+  validation to `SendRequest` and domain work to the client.
 - `exceptions` contains only failures that reachable public behavior can raise.
 
 ## Data flow
@@ -55,8 +64,9 @@ Do not introduce a second representation for any of these concepts.
 Python caller
 `-- IMessageClient
     |-- TemplateManager (only for templated sends)
-    `-- MessageDelivery
-        `-- SendRequest
+    |-- send(...) -> SendRequest
+    `-- send_request(SendRequest)
+        `-- MessageDelivery
             `-- MessageTransport
                 `-- AppleScriptTransport (default)
 
@@ -64,9 +74,10 @@ Agent or shell caller
 `-- macpymessenger skills get core
 `-- macpymessenger doctor --json
 `-- JSON stdin
-    `-- macpymessenger send --json
+    `-- macpymessenger send [--dry-run] --json
         `-- SendRequest
-            `-- IMessageClient
+            |-- validation-only result (--dry-run)
+            `-- IMessageClient.send_request (real send)
 
 Doctor CLI
 `-- diagnose_environment
@@ -76,13 +87,14 @@ Doctor CLI
 ## State and concurrency
 
 - Each client owns its transport, template manager, logger, and delivery object.
-- `SendRequest`, `BulkSendResult`, `EnvironmentCheck`, `EnvironmentReport`, and
-  `AgentSkill` are immutable and may cross task boundaries.
+- `SendRequest`, `BulkSendFailure`, `BulkSendResult`, `EnvironmentCheck`,
+  `EnvironmentReport`, and `AgentSkill` are immutable and may cross task
+  boundaries.
 - `TemplateManager` is mutable and not safe for unsynchronized concurrent
   mutation. Share it only when the host owns synchronization.
 - `send_bulk()` is intentionally sequential and preserves input order.
 - Each command invocation is one bounded process. Do not add shared daemon state
-  for one-shot send, diagnostic, or skill-read operations.
+  for one-shot send, validation, diagnostic, or skill-read operations.
 
 Keep behavior with its owner. Do not spread a capability across callers through
 special-case coordination.

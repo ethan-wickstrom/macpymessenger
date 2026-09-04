@@ -1,7 +1,7 @@
 .. meta::
    :description lang=en:
       Check macOS, Messages, AppleScript, and package blockers before sending an
-      iMessage from Python with macpymessenger doctor.
+      iMessage with the macpymessenger doctor command.
 
 Check your environment
 ======================
@@ -62,31 +62,40 @@ Request stable machine-readable output:
 
    uv run macpymessenger doctor --json
 
-The payload includes the package version, aggregate blocker state, stable check
-identifiers, statuses, summaries, and next steps. Agents should use these fields
-rather than parse human output.
+Doctor output uses the versioned envelope shared by every JSON command. The
+``data`` object contains aggregate blocker state, stable check identifiers,
+statuses, summaries, and next steps:
 
 .. code-block:: json
 
    {
-     "blocked": false,
-     "checks": [
-       {
-         "identifier": "platform",
-         "next_step": null,
-         "status": "ok",
-         "summary": "macOS detected."
-       },
-       {
-         "identifier": "automation",
-         "next_step": "Run one send, then check System Settings > Privacy & Security > Automation.",
-         "status": "manual",
-         "summary": "Automation permission cannot be checked without sending an Apple event."
-       }
-     ],
-     "tool": "macpymessenger-doctor",
+     "command": "doctor",
+     "data": {
+       "blocked": false,
+       "checks": [
+         {
+           "identifier": "platform",
+           "next_step": null,
+           "status": "ok",
+           "summary": "macOS detected."
+         },
+         {
+           "identifier": "automation",
+           "next_step": "Run one send, then check System Settings > Privacy & Security > Automation.",
+           "status": "manual",
+           "summary": "Automation permission cannot be checked without sending an Apple event."
+         }
+       ]
+     },
+     "ok": true,
+     "schema_version": 1,
+     "tool": "macpymessenger",
      "version": "0.3.0"
    }
 
-Use ``blocked`` for automation. Show every ``manual`` check to a person or carry
-out its ``next_step`` before attempting delivery.
+``ok`` is the inverse of ``data.blocked``. Neither field means that Messages
+sign-in, Automation permission, or recipient delivery was verified. Show every
+``manual`` check to a person or carry out its ``next_step`` before attempting a
+send.
+
+See :doc:`command-line` for the shared envelope and exit-code contract.

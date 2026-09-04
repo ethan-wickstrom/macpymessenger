@@ -76,13 +76,14 @@ def test_skills_get_core_returns_installed_version_matched_instructions(
 ) -> None:
     exit_code = cli.main(["skills", "get", "core"])
     content = capsys.readouterr().out
+    normalized_content = " ".join(content.split())
 
     assert exit_code == 0
     assert content.startswith("---\nname: core\n")
     assert "macpymessenger doctor --json" in content
     assert "macpymessenger send --json" in content
     assert "explicitly asks" in content
-    assert "process arguments, environment variables, and temporary files" in content
+    assert "process arguments, environment variables, and temporary files" in normalized_content
     assert "shell history" not in content
     assert "MCP" not in content
 

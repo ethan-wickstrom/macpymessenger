@@ -3,26 +3,56 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, NamedTuple
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from .delivery import MessageDelivery
-from .exceptions import MessageSendError
+from .exceptions import MessageFailureReason, MessageSendError
 from .templates import TemplateCallable, TemplateManager
 from .transport import AppleScriptTransport, SendRequest
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Iterable, Iterator, Mapping
 
     from .transport import MessageTransport
 
-__all__ = ["BulkSendResult", "IMessageClient"]
+__all__ = ["BulkSendFailure", "BulkSendResult", "IMessageClient"]
 
 
-class BulkSendResult(NamedTuple):
-    """Immutable recipients classified by a sequential bulk send."""
+@dataclass(frozen=True, slots=True)
+class BulkSendFailure:
+    """One recipient and the closed reason its send failed."""
+
+    recipient: str
+    reason: MessageFailureReason
+
+
+@dataclass(frozen=True, slots=True)
+class BulkSendResult:
+    """Immutable outcome of a sequential bulk send.
+
+    ``failures`` is the authoritative detailed failure sequence. ``failed``
+    projects only recipient strings for simple callers. Iteration yields
+    ``sent`` and ``failed`` so existing two-value unpacking remains valid.
+    """
 
     sent: tuple[str, ...]
-    failed: tuple[str, ...]
+    failures: tuple[BulkSendFailure, ...]
+
+    @property
+    def failed(self) -> tuple[str, ...]:
+        """Return failed recipient strings in input order."""
+        return tuple(failure.recipient for failure in self.failures)
+
+    @property
+    def ok(self) -> bool:
+        """Whether every snapshotted recipient was sent without a known failure."""
+        return not self.failures
+
+    def __iter__(self) -> Iterator[tuple[str, ...]]:
+        """Yield ``sent`` and the compatibility ``failed`` projection."""
+        yield self.sent
+        yield self.failed
 
 
 class IMessageClient:
@@ -96,14 +126,22 @@ class IMessageClient:
         self.template_manager.delete_template(template_id)
 
     def send_bulk(self, recipients: Iterable[str], message: str) -> BulkSendResult:
-        """Snapshot, send in input order, and classify each recipient."""
+        """Snapshot, send in input order, and retain each typed failure."""
         recipient_snapshot = tuple(recipients)
         sent: list[str] = []
-        failed: list[str] = []
+        failures: list[BulkSendFailure] = []
         for recipient in recipient_snapshot:
             try:
                 self.send(recipient, message)
                 sent.append(recipient)
-            except MessageSendError:
-                failed.append(recipient)
-        return BulkSendResult(sent=tuple(sent), failed=tuple(failed))
+            except MessageSendError as error:
+                failures.append(
+                    BulkSendFailure(
+                        recipient=recipient,
+                        reason=error.reason,
+                    )
+                )
+        return BulkSendResult(
+            sent=tuple(sent),
+            failures=tuple(failures),
+        )

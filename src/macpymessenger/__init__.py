@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from importlib.metadata import PackageNotFoundError, version
 
-from .client import BulkSendResult, IMessageClient
+from .client import BulkSendFailure, BulkSendResult, IMessageClient
 from .exceptions import (
     InvalidDelayTypeError,
     InvalidSendTextError,
@@ -31,6 +31,7 @@ except PackageNotFoundError:  # pragma: no cover - source tree without installat
 
 __all__ = [
     "AppleScriptTransport",
+    "BulkSendFailure",
     "BulkSendResult",
     "IMessageClient",
     "InvalidDelayTypeError",

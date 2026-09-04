@@ -10,9 +10,11 @@ import macpymessenger
 def test_package_exports_the_supported_api_from_one_place() -> None:
     assert set(macpymessenger.__all__) == {
         "AppleScriptTransport",
+        "BulkSendFailure",
         "BulkSendResult",
         "IMessageClient",
         "InvalidDelayTypeError",
+        "InvalidSendTextError",
         "MacPyMessengerError",
         "MessageFailureReason",
         "MessageSendError",
@@ -20,6 +22,8 @@ def test_package_exports_the_supported_api_from_one_place() -> None:
         "NegativeDelayError",
         "ScriptNotFoundError",
         "SendRequest",
+        "SendTextField",
+        "SendTextValidationReason",
         "TemplateAlreadyExistsError",
         "TemplateError",
         "TemplateManager",
@@ -54,6 +58,10 @@ def test_send_signatures_use_recipient_terminology() -> None:
         "recipient",
         "message",
         "delay_seconds",
+    )
+    assert tuple(signature(macpymessenger.IMessageClient.send_request).parameters) == (
+        "self",
+        "request",
     )
     assert tuple(signature(macpymessenger.IMessageClient.send_template).parameters) == (
         "self",

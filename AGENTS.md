@@ -32,6 +32,10 @@ macpymessenger skills get core
   reconstruct a validated request between layers.
 - Keep delivery replaceable through `MessageTransport`. Automated tests inject a
   transport and never send a real message.
+- Keep known transport failures in `MessageSendError` with a closed `delivery`
+  or `transport` reason. `AppleScriptTransport` maps low-level failures before
+  exposing them; `MessageDelivery` rebuilds typed and legacy low-level custom
+  transport failures before logging or rethrowing them.
 - Keep bulk outcome detail in immutable `BulkSendFailure(recipient, reason)`
   records. `BulkSendResult.failures` is authoritative; `failed` and two-value
   unpacking are compatibility views.
@@ -46,8 +50,9 @@ macpymessenger skills get core
   invalid delays, and text that cannot be encoded as UTF-8 before creating the
   client.
 - Keep private recipient and message values out of process arguments, environment
-  variables, temporary files, child output, exception causes, logs, examples,
-  issues, and commits. Built-in delivery logs contain generic outcomes only.
+  variables, temporary files, child output, exception causes and contexts,
+  logs, examples, issues, and commits. Built-in delivery logs contain generic
+  outcomes only.
 - Keep library logging passive. Add no handler except the package `NullHandler`;
   the host application owns levels, formats, destinations, and retention.
 - Keep the repository Agent Skill as a discovery stub. Serve the full workflow

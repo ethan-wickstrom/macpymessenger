@@ -8,21 +8,49 @@ from dataclasses import dataclass
 from importlib.resources import files
 from typing import Protocol
 
-from .exceptions import InvalidDelayTypeError, NegativeDelayError, ScriptNotFoundError
+from .exceptions import (
+    InvalidDelayTypeError,
+    InvalidSendTextError,
+    MessageSendError,
+    NegativeDelayError,
+    ScriptNotFoundError,
+    SendTextField,
+)
 
 _OSASCRIPT_COMMAND = ("/usr/bin/osascript", "-")
 _SCRIPT_RESOURCE = ("osascript", "sendMessage.applescript")
 
 
+def _validate_send_text(field: SendTextField, value: object) -> None:
+    """Reject text that cannot cross the UTF-8 AppleScript boundary."""
+    if not isinstance(value, str):
+        raise InvalidSendTextError.wrong_type(field)
+    if not value:
+        raise InvalidSendTextError.empty(field)
+
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError:
+        failure = InvalidSendTextError.invalid_encoding(field)
+    else:
+        return
+
+    # Raise after leaving the handler so the rejected text is not reachable
+    # through ``UnicodeEncodeError.object`` on ``__context__``.
+    raise failure
+
+
 @dataclass(frozen=True, slots=True)
 class SendRequest:
-    """One immutable text delivery request."""
+    """One valid, immutable text delivery request."""
 
     recipient: str
     message: str
     delay_seconds: int = 0
 
     def __post_init__(self) -> None:
+        _validate_send_text("recipient", self.recipient)
+        _validate_send_text("message", self.message)
         if isinstance(self.delay_seconds, bool) or not isinstance(self.delay_seconds, int):
             raise InvalidDelayTypeError
         if self.delay_seconds < 0:
@@ -33,16 +61,22 @@ class MessageTransport(Protocol):
     """Transport boundary used to send one immutable request."""
 
     def send(self, request: SendRequest) -> None:
-        """Send ``request`` or raise an execution-specific exception."""
+        """Send ``request`` or raise ``MessageSendError`` for a known failure."""
 
 
 def _load_script_source() -> str:
     """Load the bundled AppleScript handler source."""
     try:
         resource = files("macpymessenger").joinpath(*_SCRIPT_RESOURCE)
-        return resource.read_text(encoding="utf-8")
-    except OSError:
-        raise ScriptNotFoundError.bundled_script_unavailable() from None
+        source = resource.read_text(encoding="utf-8")
+    except OSError, UnicodeError:
+        failure = ScriptNotFoundError.bundled_script_unavailable()
+    else:
+        return source
+
+    # Raise after leaving the handler so filesystem details are not reachable
+    # through either ``__cause__`` or ``__context__``.
+    raise failure
 
 
 def _encode_text(value: str) -> str:
@@ -74,12 +108,23 @@ class AppleScriptTransport:
         self._script_source = _load_script_source()
 
     def send(self, request: SendRequest) -> None:
-        """Send ``request`` without exposing recipient or message text in argv."""
-        subprocess.run(  # noqa: S603
-            _OSASCRIPT_COMMAND,
-            input=_render_applescript(request, script_source=self._script_source),
-            capture_output=True,
-            check=True,
-            shell=False,
-            text=True,
-        )
+        """Send ``request`` or raise a context-free public failure."""
+        failure: MessageSendError | None = None
+        try:
+            subprocess.run(  # noqa: S603
+                _OSASCRIPT_COMMAND,
+                input=_render_applescript(request, script_source=self._script_source),
+                capture_output=True,
+                check=True,
+                shell=False,
+                text=True,
+            )
+        except subprocess.CalledProcessError:
+            failure = MessageSendError.delivery_failed(request.recipient)
+        except OSError:
+            failure = MessageSendError.transport_failed(request.recipient)
+
+        if failure is not None:
+            # Raise after leaving the handler so raw child output is not reachable
+            # through either ``__cause__`` or ``__context__``.
+            raise failure

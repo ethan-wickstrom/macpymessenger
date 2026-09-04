@@ -7,18 +7,24 @@ import shutil
 import subprocess
 from importlib.resources import files
 from typing import Final
+from unittest.mock import patch
 
+import macpymessenger.transport as transport_module
 from macpymessenger import (
     AppleScriptTransport,
+    BulkSendFailure,
     BulkSendResult,
     IMessageClient,
+    InvalidSendTextError,
     MessageFailureReason,
+    MessageSendError,
     SendRequest,
     TemplateManager,
     __version__,
 )
 
 _INVALID_INPUT_EXIT_CODE: Final = 2
+_JSON_SCHEMA_VERSION: Final = 1
 _PRIVATE_RECIPIENT: Final = "private-recipient"
 _PRIVATE_MESSAGE: Final = "private-message"
 _CORE_SKILL_DESCRIPTION: Final = (
@@ -74,7 +80,50 @@ def _verify_package_data_and_api() -> None:
         "SendRequest default delay changed",
         condition=SendRequest("+15555550123", "Hello").delay_seconds == 0,
     )
-    _require("BulkSendResult shape changed", condition=BulkSendResult((), ()).sent == ())
+    try:
+        SendRequest("", "Hello")
+    except InvalidSendTextError as error:
+        _require(
+            "SendRequest empty-recipient error is not structured",
+            condition=error.field == "recipient" and error.reason == "empty",
+        )
+    else:
+        message = "SendRequest accepted an empty recipient"
+        raise RuntimeError(message)
+
+    invalid_text = chr(0xD800)
+    try:
+        SendRequest("+15555550123", invalid_text)
+    except InvalidSendTextError as error:
+        _require(
+            "SendRequest encoding error is not structured",
+            condition=error.field == "message" and error.reason == "encoding",
+        )
+        _require(
+            "SendRequest encoding error retained a cause",
+            condition=error.__cause__ is None,
+        )
+        _require(
+            "SendRequest encoding error retained private context",
+            condition=error.__context__ is None,
+        )
+    else:
+        message = "SendRequest accepted text that cannot be encoded as UTF-8"
+        raise RuntimeError(message)
+
+    empty_bulk = BulkSendResult(sent=(), failures=())
+    _require("BulkSendResult sent shape changed", condition=empty_bulk.sent == ())
+    _require("BulkSendResult failed projection changed", condition=empty_bulk.failed == ())
+    _require("BulkSendResult success state changed", condition=empty_bulk.ok)
+    _require(
+        "BulkSendResult unpacking changed",
+        condition=tuple(empty_bulk) == ((), ()),
+    )
+    failure = BulkSendFailure(recipient="private-recipient", reason="delivery")
+    _require(
+        "BulkSendFailure shape changed",
+        condition=failure.recipient == "private-recipient" and failure.reason == "delivery",
+    )
     _require(
         "TemplateManager default state changed",
         condition=TemplateManager().list_templates() == {},
@@ -83,6 +132,53 @@ def _verify_package_data_and_api() -> None:
         "MessageFailureReason is not public",
         condition=MessageFailureReason.__name__ == "MessageFailureReason",
     )
+    _require(
+        "IMessageClient.send_request is missing",
+        condition=callable(IMessageClient.send_request),
+    )
+
+
+def _verify_transport_failure_boundary() -> None:
+    request = SendRequest(_PRIVATE_RECIPIENT, _PRIVATE_MESSAGE)
+    raw_failure = subprocess.CalledProcessError(
+        returncode=1,
+        cmd=("/usr/bin/osascript", "-"),
+        output=f"private stdout: {_PRIVATE_MESSAGE}",
+        stderr=f"private stderr: {_PRIVATE_RECIPIENT}",
+    )
+    transport = AppleScriptTransport()
+
+    with patch.object(transport_module.subprocess, "run", side_effect=raw_failure):
+        try:
+            transport.send(request)
+        except MessageSendError as error:
+            _require(
+                "AppleScriptTransport changed the delivery failure reason",
+                condition=error.reason == "delivery",
+            )
+            _require(
+                "AppleScriptTransport changed the failed recipient",
+                condition=error.recipient == _PRIVATE_RECIPIENT,
+            )
+            _require(
+                "AppleScriptTransport retained a raw cause",
+                condition=error.__cause__ is None,
+            )
+            _require(
+                "AppleScriptTransport retained raw private context",
+                condition=error.__context__ is None,
+            )
+            _require(
+                "AppleScriptTransport exposed the recipient in error text",
+                condition=_PRIVATE_RECIPIENT not in str(error),
+            )
+            _require(
+                "AppleScriptTransport exposed the message in error text",
+                condition=_PRIVATE_MESSAGE not in str(error),
+            )
+        else:
+            message = "AppleScriptTransport swallowed a failed child process"
+            raise RuntimeError(message)
 
 
 def _verify_version_and_help() -> None:
@@ -111,7 +207,35 @@ def _verify_version_and_help() -> None:
         "send input is undocumented",
         condition="one JSON object from standard input" in send_help.stdout,
     )
+    _require("send dry-run is undocumented", condition="--dry-run" in send_help.stdout)
     _require("send exit codes are undocumented", condition="Exit status:" in send_help.stdout)
+    _require(
+        "send success boundary is undocumented",
+        condition="request validated or transport completed" in send_help.stdout,
+    )
+
+
+def _verify_envelope(payload: dict[str, object], *, command: str) -> None:
+    _require(
+        f"{command} schema version changed",
+        condition=payload.get("schema_version") == _JSON_SCHEMA_VERSION,
+    )
+    _require(
+        f"{command} tool identifier changed",
+        condition=payload.get("tool") == "macpymessenger",
+    )
+    _require(
+        f"{command} command identifier changed",
+        condition=payload.get("command") == command,
+    )
+    _require(
+        f"{command} version does not match metadata",
+        condition=payload.get("version") == __version__,
+    )
+    _require(
+        f"{command} ok field is not boolean",
+        condition=isinstance(payload.get("ok"), bool),
+    )
 
 
 def _verify_doctor() -> None:
@@ -122,21 +246,26 @@ def _verify_doctor() -> None:
     )
     _require("doctor JSON wrote to standard error", condition=result.stderr == "")
     payload = json.loads(result.stdout)
+    _verify_envelope(payload, command="doctor")
+    data = payload.get("data")
+    _require("doctor data is not an object", condition=isinstance(data, dict))
+    blocked = data.get("blocked")
+    _require("doctor blocked field is not boolean", condition=isinstance(blocked, bool))
+    _require("doctor restored the unsound ready field", condition="ready" not in data)
     _require(
-        "doctor tool identifier changed",
-        condition=payload["tool"] == "macpymessenger-doctor",
+        "doctor ok disagrees with blocked",
+        condition=payload["ok"] is (not blocked),
     )
-    _require(
-        "doctor blocked field is not boolean",
-        condition=isinstance(payload["blocked"], bool),
-    )
-    _require("doctor restored the unsound ready field", condition="ready" not in payload)
-    checks = payload["checks"]
+    checks = data.get("checks")
     _require(
         "doctor returned no checks",
         condition=isinstance(checks, list) and bool(checks),
     )
     for check in checks:
+        _require(
+            "doctor check is not an object",
+            condition=isinstance(check, dict),
+        )
         _require(
             "doctor check shape changed",
             condition=set(check) == {"identifier", "status", "summary", "next_step"},
@@ -152,13 +281,18 @@ def _verify_skills() -> None:
     _require("skills list --json failed", condition=catalog_result.returncode == 0)
     _require("skill catalog wrote to standard error", condition=catalog_result.stderr == "")
     catalog = json.loads(catalog_result.stdout)
-    _require(
-        "skill tool identifier changed",
-        condition=catalog["tool"] == "macpymessenger-skills",
-    )
+    _verify_envelope(catalog, command="skills.list")
     _require(
         "skill catalog changed",
-        condition=catalog["skills"] == [{"name": "core", "description": _CORE_SKILL_DESCRIPTION}],
+        condition=catalog.get("data")
+        == {
+            "skills": [
+                {
+                    "name": "core",
+                    "description": _CORE_SKILL_DESCRIPTION,
+                }
+            ]
+        },
     )
 
     bare_catalog = _run_cli("skills")
@@ -178,6 +312,10 @@ def _verify_skills() -> None:
     _require(
         "core skill omits the send command",
         condition="macpymessenger send --json" in core.stdout,
+    )
+    _require(
+        "core skill omits safe validation",
+        condition="macpymessenger send --dry-run --json" in core.stdout,
     )
     _require(
         "core skill recommends an excluded integration",
@@ -208,24 +346,53 @@ def _verify_invalid_send() -> None:
         condition=_PRIVATE_MESSAGE not in result.stdout,
     )
     payload = json.loads(result.stdout)
+    _verify_envelope(payload, command="send")
     _require(
         "invalid send result shape changed",
-        condition=payload
+        condition=payload.get("error")
         == {
-            "tool": "macpymessenger-send",
-            "version": __version__,
-            "ok": False,
-            "error": {"code": "invalid_input"},
+            "code": "invalid_input",
+            "retryable": False,
         },
+    )
+
+
+def _verify_send_dry_run() -> None:
+    request = json.dumps(
+        {
+            "recipient": _PRIVATE_RECIPIENT,
+            "message": _PRIVATE_MESSAGE,
+            "delay_seconds": 0,
+        }
+    )
+    result = _run_cli("send", "--dry-run", "--json", input_text=request)
+    _require("send dry-run failed", condition=result.returncode == 0)
+    _require("send dry-run wrote to standard error", condition=result.stderr == "")
+    _require(
+        "send dry-run output exposed the recipient",
+        condition=_PRIVATE_RECIPIENT not in result.stdout,
+    )
+    _require(
+        "send dry-run output exposed the message",
+        condition=_PRIVATE_MESSAGE not in result.stdout,
+    )
+    payload = json.loads(result.stdout)
+    _verify_envelope(payload, command="send")
+    _require("send dry-run reported failure", condition=payload.get("ok") is True)
+    _require(
+        "send dry-run result shape changed",
+        condition=payload.get("data") == {"outcome": "validated"},
     )
 
 
 def main() -> None:
     _verify_package_data_and_api()
+    _verify_transport_failure_boundary()
     _verify_version_and_help()
     _verify_doctor()
     _verify_skills()
     _verify_invalid_send()
+    _verify_send_dry_run()
 
 
 if __name__ == "__main__":

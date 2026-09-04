@@ -5,14 +5,17 @@ from __future__ import annotations
 import logging
 from importlib.metadata import PackageNotFoundError, version
 
-from .client import BulkSendResult, IMessageClient
+from .client import BulkSendFailure, BulkSendResult, IMessageClient
 from .exceptions import (
     InvalidDelayTypeError,
+    InvalidSendTextError,
     MacPyMessengerError,
     MessageFailureReason,
     MessageSendError,
     NegativeDelayError,
     ScriptNotFoundError,
+    SendTextField,
+    SendTextValidationReason,
     TemplateAlreadyExistsError,
     TemplateError,
     TemplateNotFoundError,
@@ -28,9 +31,11 @@ except PackageNotFoundError:  # pragma: no cover - source tree without installat
 
 __all__ = [
     "AppleScriptTransport",
+    "BulkSendFailure",
     "BulkSendResult",
     "IMessageClient",
     "InvalidDelayTypeError",
+    "InvalidSendTextError",
     "MacPyMessengerError",
     "MessageFailureReason",
     "MessageSendError",
@@ -38,6 +43,8 @@ __all__ = [
     "NegativeDelayError",
     "ScriptNotFoundError",
     "SendRequest",
+    "SendTextField",
+    "SendTextValidationReason",
     "TemplateAlreadyExistsError",
     "TemplateError",
     "TemplateManager",

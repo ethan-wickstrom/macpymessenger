@@ -94,17 +94,22 @@ def test_doctor_json_is_stable_for_agents(
 
     assert exit_code == 1
     assert payload == {
-        "tool": "macpymessenger-doctor",
+        "schema_version": 1,
+        "tool": "macpymessenger",
+        "command": "doctor",
         "version": __version__,
-        "blocked": True,
-        "checks": [
-            {
-                "identifier": "platform",
-                "status": "fail",
-                "summary": "macOS is required; found Linux.",
-                "next_step": "Run macpymessenger on a Mac.",
-            }
-        ],
+        "ok": False,
+        "data": {
+            "blocked": True,
+            "checks": [
+                {
+                    "identifier": "platform",
+                    "status": "fail",
+                    "summary": "macOS is required; found Linux.",
+                    "next_step": "Run macpymessenger on a Mac.",
+                }
+            ],
+        },
     }
 
 

@@ -34,6 +34,18 @@ def test_send_message_builds_one_request(
     assert transport.requests == [SendRequest("1234567890", "Hello")]
 
 
+def test_send_request_crosses_the_client_without_reconstruction(
+    client: tuple[IMessageClient, ClientStubTransport],
+) -> None:
+    instance, transport = client
+    request = SendRequest("1234567890", "Hello", delay_seconds=3)
+
+    instance.send_request(request)
+
+    assert transport.requests == [request]
+    assert transport.requests[0] is request
+
+
 def test_send_message_failure(client: tuple[IMessageClient, ClientStubTransport]) -> None:
     instance, transport = client
     transport.failing_recipients.add("9876543210")

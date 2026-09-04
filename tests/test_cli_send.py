@@ -46,9 +46,12 @@ def test_send_json_reads_one_private_request_from_stdin(
 
     assert exit_code == 0
     assert json.loads(captured.out) == {
-        "tool": "macpymessenger-send",
+        "schema_version": 1,
+        "tool": "macpymessenger",
+        "command": "send",
         "version": __version__,
         "ok": True,
+        "data": {"outcome": "transport_completed"},
     }
     assert captured.err == ""
     assert transport.requests == [
@@ -58,6 +61,62 @@ def test_send_json_reads_one_private_request_from_stdin(
             delay_seconds=5,
         )
     ]
+
+
+def test_send_passes_the_prebuilt_request_to_the_client(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    requests: list[SendRequest] = []
+
+    class RequestOnlyClient:
+        def send_request(self, request: SendRequest) -> None:
+            requests.append(request)
+
+    monkeypatch.setattr(cli, "IMessageClient", RequestOnlyClient)
+    _set_stdin(
+        monkeypatch,
+        '{"recipient":"private-recipient","message":"private-message"}',
+    )
+
+    exit_code = cli.main(["send", "--json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert requests == [SendRequest("private-recipient", "private-message")]
+    assert "private-recipient" not in captured.out
+    assert "private-message" not in captured.out
+
+
+def test_send_dry_run_validates_without_creating_a_client_or_sending(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def unexpected_client() -> IMessageClient:
+        message = "dry-run created the Messages effect boundary"
+        raise AssertionError(message)
+
+    monkeypatch.setattr(cli, "IMessageClient", unexpected_client)
+    _set_stdin(
+        monkeypatch,
+        '{"recipient":"private-recipient","message":"private-message"}',
+    )
+
+    exit_code = cli.main(["send", "--dry-run", "--json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert json.loads(captured.out) == {
+        "schema_version": 1,
+        "tool": "macpymessenger",
+        "command": "send",
+        "version": __version__,
+        "ok": True,
+        "data": {"outcome": "validated"},
+    }
+    assert captured.err == ""
+    assert "private-recipient" not in captured.out
+    assert "private-message" not in captured.out
 
 
 def test_send_json_reports_delivery_failure_without_echoing_private_data(
@@ -78,12 +137,15 @@ def test_send_json_reports_delivery_failure_without_echoing_private_data(
 
     assert exit_code == 1
     assert payload == {
-        "tool": "macpymessenger-send",
+        "schema_version": 1,
+        "tool": "macpymessenger",
+        "command": "send",
         "version": __version__,
         "ok": False,
         "error": {
             "code": "delivery_failed",
             "reason": "delivery",
+            "retryable": False,
         },
     }
     assert captured.err == ""
@@ -127,10 +189,12 @@ def test_send_json_rejects_ambiguous_or_invalid_input_before_creating_a_client(
 
     assert exit_code == INVALID_INPUT_EXIT_CODE
     assert result == {
-        "tool": "macpymessenger-send",
+        "schema_version": 1,
+        "tool": "macpymessenger",
+        "command": "send",
         "version": __version__,
         "ok": False,
-        "error": {"code": "invalid_input"},
+        "error": {"code": "invalid_input", "retryable": False},
     }
     assert captured.err == ""
     assert "private-recipient" not in captured.out
@@ -156,7 +220,7 @@ def test_send_json_rejects_malformed_json_without_echoing_input(
     assert "private-message" not in captured.out
 
 
-def test_send_human_output_is_compact_and_private(
+def test_send_human_output_states_the_confirmation_boundary(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -175,10 +239,27 @@ def test_send_human_output_is_compact_and_private(
     captured = capsys.readouterr()
 
     assert exit_code == 0
-    assert captured.out == "Message sent.\n"
+    assert captured.out == "Send request completed. Delivery is not confirmed.\n"
     assert captured.err == ""
     assert "+15555550123" not in captured.out
     assert "private message body" not in captured.out
+
+
+def test_send_dry_run_human_output_is_explicit(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _set_stdin(
+        monkeypatch,
+        '{"recipient":"private-recipient","message":"private-message"}',
+    )
+
+    exit_code = cli.main(["send", "--dry-run"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.out == "Request is valid. No message was sent.\n"
+    assert captured.err == ""
 
 
 def test_send_help_documents_the_noninteractive_contract(
@@ -193,7 +274,9 @@ def test_send_help_documents_the_noninteractive_contract(
     assert '"recipient"' in output
     assert '"message"' in output
     assert '"delay_seconds"' in output
+    assert "--dry-run" in output
+    assert "Validate input without creating a client or sending" in output
     assert "Exit status:" in output
-    assert "0  transport completed" in output
+    assert "0  request validated or transport completed" in output
     assert "1  send or transport failure" in output
     assert "2  invalid input" in output

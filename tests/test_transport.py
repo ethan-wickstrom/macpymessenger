@@ -7,12 +7,79 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from macpymessenger import AppleScriptTransport, MessageTransport, SendRequest
-from macpymessenger.transport import _render_applescript
+from macpymessenger import (
+    AppleScriptTransport,
+    InvalidSendTextError,
+    MessageSendError,
+    MessageTransport,
+    ScriptNotFoundError,
+    SendRequest,
+)
+from macpymessenger.transport import _load_script_source, _render_applescript
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from pathlib import Path
+
+
+def test_send_request_rejects_non_string_recipient() -> None:
+    with pytest.raises(InvalidSendTextError) as exc_info:
+        SendRequest(123, "Hello")  # ty: ignore[invalid-argument-type]
+
+    assert exc_info.value.field == "recipient"
+    assert exc_info.value.reason == "type"
+
+
+def test_send_request_rejects_non_string_message() -> None:
+    with pytest.raises(InvalidSendTextError) as exc_info:
+        SendRequest("+15555550123", 123)  # ty: ignore[invalid-argument-type]
+
+    assert exc_info.value.field == "message"
+    assert exc_info.value.reason == "type"
+
+
+@pytest.mark.parametrize(
+    ("recipient", "message", "field"),
+    [
+        ("", "Hello", "recipient"),
+        ("+15555550123", "", "message"),
+    ],
+)
+def test_send_request_rejects_empty_text(
+    recipient: str,
+    message: str,
+    field: str,
+) -> None:
+    with pytest.raises(InvalidSendTextError) as exc_info:
+        SendRequest(recipient, message)
+
+    assert exc_info.value.field == field
+    assert exc_info.value.reason == "empty"
+
+
+@pytest.mark.parametrize(
+    ("recipient", "message", "field"),
+    [
+        ("\ud800", "Hello", "recipient"),
+        ("+15555550123", "\ud800", "message"),
+    ],
+)
+def test_send_request_rejects_text_that_cannot_be_encoded_as_utf8(
+    recipient: str,
+    message: str,
+    field: str,
+) -> None:
+    rejected_value = recipient if field == "recipient" else message
+
+    with pytest.raises(InvalidSendTextError) as exc_info:
+        SendRequest(recipient, message)
+
+    error = exc_info.value
+    assert error.field == field
+    assert error.reason == "encoding"
+    assert error.__cause__ is None
+    assert error.__context__ is None
+    assert rejected_value not in str(error)
 
 
 def test_send_request_rejects_non_integer_delay() -> None:
@@ -25,6 +92,26 @@ def test_send_request_rejects_non_integer_delay() -> None:
 def test_send_request_rejects_negative_delay() -> None:
     with pytest.raises(ValueError, match="Delay must be non-negative"):
         SendRequest("+15555550123", "Hello", delay_seconds=-1)
+
+
+def test_script_load_failure_does_not_expose_private_exception_context(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    private_path = "/Users/private-user/project/private-script.applescript"
+
+    def failing_files(_package: str) -> None:
+        raise OSError(private_path)
+
+    monkeypatch.setattr("macpymessenger.transport.files", failing_files)
+
+    with pytest.raises(ScriptNotFoundError) as exc_info:
+        _load_script_source()
+
+    error = exc_info.value
+    assert str(error) == "Bundled AppleScript could not be read; reinstall macpymessenger."
+    assert error.__cause__ is None
+    assert error.__context__ is None
+    assert private_path not in str(error)
 
 
 def test_applescript_transport_keeps_private_values_out_of_process_argv(
@@ -58,6 +145,60 @@ def test_applescript_transport_keeps_private_values_out_of_process_argv(
     assert request.message not in script
     assert base64.b64encode(request.recipient.encode()).decode("ascii") in script
     assert base64.b64encode(request.message.encode()).decode("ascii") in script
+
+
+def test_applescript_transport_maps_delivery_failure_without_private_exception_data(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    request = SendRequest("private-recipient", "private message body")
+
+    def failing_run(command: Sequence[str], **_kwargs: object) -> None:
+        raise subprocess.CalledProcessError(
+            returncode=1,
+            cmd=command,
+            output=f"child stdout contains {request.message}",
+            stderr=f"child stderr contains {request.recipient}",
+        )
+
+    monkeypatch.setattr("macpymessenger.transport.subprocess.run", failing_run)
+    transport = AppleScriptTransport()
+
+    with pytest.raises(MessageSendError) as exc_info:
+        transport.send(request)
+
+    error = exc_info.value
+    assert error.recipient == request.recipient
+    assert error.reason == "delivery"
+    assert str(error) == "Message delivery failed."
+    assert error.__cause__ is None
+    assert error.__context__ is None
+    assert request.recipient not in str(error)
+    assert request.message not in str(error)
+
+
+def test_applescript_transport_maps_os_failure_without_private_exception_data(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    request = SendRequest("private-recipient", "private message body")
+
+    def failing_run(_command: Sequence[str], **_kwargs: object) -> None:
+        message = f"OS error contains {request.recipient} and {request.message}"
+        raise OSError(message)
+
+    monkeypatch.setattr("macpymessenger.transport.subprocess.run", failing_run)
+    transport = AppleScriptTransport()
+
+    with pytest.raises(MessageSendError) as exc_info:
+        transport.send(request)
+
+    error = exc_info.value
+    assert error.recipient == request.recipient
+    assert error.reason == "transport"
+    assert str(error) == "Message transport failed."
+    assert error.__cause__ is None
+    assert error.__context__ is None
+    assert request.recipient not in str(error)
+    assert request.message not in str(error)
 
 
 def test_rendered_applescript_is_deterministic() -> None:

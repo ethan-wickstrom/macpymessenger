@@ -23,18 +23,36 @@ macpymessenger skills get core
 - Keep the common Python path at `IMessageClient()` with
   `AppleScriptTransport`.
 - Keep public imports at the `macpymessenger` package root.
-- Keep one immutable value at the effect boundary:
+- Keep one validated immutable value at the effect boundary:
   `SendRequest(recipient, message, delay_seconds)`.
+- Make `SendRequest` own recipient, message, and delay validation. Do not repeat
+  those domain rules in the client, CLI, or transports.
+- Keep `IMessageClient.send()` as the convenience constructor and
+  `send_request()` as the path for prebuilt requests. Do not decompose and
+  reconstruct a validated request between layers.
 - Keep delivery replaceable through `MessageTransport`. Automated tests inject a
   transport and never send a real message.
+- Keep known transport failures in `MessageSendError` with a closed `delivery`
+  or `transport` reason. `AppleScriptTransport` maps low-level failures before
+  exposing them; `MessageDelivery` rebuilds typed and legacy low-level custom
+  transport failures before logging or rethrowing them.
+- Keep bulk outcome detail in immutable `BulkSendFailure(recipient, reason)`
+  records. `BulkSendResult.failures` is authoritative; `failed` and two-value
+  unpacking are compatibility views.
 - Keep the agent send path non-interactive: one closed JSON object on standard
   input, structured output on standard output, diagnostics on standard error,
   and stable exit codes.
+- Keep every JSON command inside the versioned envelope with `schema_version`,
+  `tool`, `command`, `version`, `ok`, and either `data` or `error`.
+- Keep `send --dry-run` validation-only. It must not construct a client, load the
+  AppleScript transport, run diagnostics, request permission, or send text.
 - Reject malformed JSON, unknown fields, duplicate keys, empty required values,
-  invalid delays, and non-UTF-8 text before creating the client.
+  invalid delays, and text that cannot be encoded as UTF-8 before creating the
+  client.
 - Keep private recipient and message values out of process arguments, environment
-  variables, temporary files, child output, exception causes, logs, examples,
-  issues, and commits. Built-in delivery logs contain generic outcomes only.
+  variables, temporary files, child output, exception causes and contexts,
+  logs, examples, issues, and commits. Built-in delivery logs contain generic
+  outcomes only.
 - Keep library logging passive. Add no handler except the package `NullHandler`;
   the host application owns levels, formats, destinations, and retention.
 - Keep the repository Agent Skill as a discovery stub. Serve the full workflow
@@ -42,8 +60,10 @@ macpymessenger skills get core
 - Keep unsupported capabilities out of the stable client. Do not add placeholder
   methods for chat history, attachments, contact lookup, remote gateways, or
   account management.
-- Treat `doctor.blocked == false` as “no automated blocker found,” not “delivery
-  proven.” Preserve every manual check.
+- Treat `doctor.data.blocked == false` as “no automated blocker found,” not
+  “delivery proven.” Preserve every manual check.
+- Treat `send.data.outcome == "transport_completed"` as local transport
+  completion, not recipient delivery.
 - Never retry a failed or uncertain send automatically; the package has no
   delivery receipt or idempotency key.
 - Update the owning guide, API page, `README.md`, `docs/llms.txt`, bundled skill,

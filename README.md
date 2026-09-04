@@ -5,42 +5,31 @@
 [![CI](https://github.com/ethan-wickstrom/macpymessenger/actions/workflows/ci.yml/badge.svg)](https://github.com/ethan-wickstrom/macpymessenger/actions/workflows/ci.yml)
 [![Documentation](https://readthedocs.org/projects/macpymessenger/badge/?version=latest)](https://macpymessenger.readthedocs.io/en/latest/)
 
-Send iMessages from Python on macOS through the built-in Messages app.
+Send text through the built-in macOS Messages app from Python, shell scripts, or
+local AI agents.
 
-macpymessenger is a typed, dependency-free library and command-line tool for
-local scripts, automations, developer tools, and agents. It sends text through
-one immutable request model, supports Python 3.14 t-string templates, and exposes
-failures as data instead of raw command output.
+macpymessenger is typed, dependency-free, local, and send-only. One validated
+immutable `SendRequest` crosses one replaceable `MessageTransport`. The built-in
+transport keeps recipient and message text out of process arguments and
+temporary files. Public failures expose closed reason fields instead of raw
+AppleScript output.
 
-> **Before you start:** You need macOS, Python 3.14 or newer, an Apple account
-> signed in to Messages, and Automation permission for the application that
-> launches Python. The first send may ask to let Terminal, your editor, or
-> another launcher control Messages. Allow access, or review it in **System
-> Settings > Privacy & Security > Automation**. macpymessenger is not a hosted
-> service and cannot send from Linux or Windows.
+> **Requirements:** macOS, Python 3.14 or newer, an Apple account signed in to
+> Messages, and Automation permission for the application that launches Python.
+> The first real send may prompt Terminal, an editor, or an agent host to control
+> Messages. macpymessenger is not a hosted service and cannot send from Linux or
+> Windows.
 
-## Install and check the Mac
+## First send from Python
 
-Add macpymessenger to a uv project, then run its side-effect-free doctor through
-the project environment:
+Install the package and check detectable local blockers:
 
 ```bash
 uv add macpymessenger
 uv run macpymessenger doctor
 ```
 
-With an active virtual environment, use pip and the installed command directly:
-
-```bash
-python -m pip install macpymessenger
-macpymessenger doctor
-```
-
-The doctor reports definite blockers and manual checks. It does not open
-Messages, request permission, read message data, run AppleScript, or send text.
-Use `--json` for stable script and agent output.
-
-## Send from Python
+Then create one client and reuse it:
 
 ```python
 from macpymessenger import IMessageClient, MessageSendError
@@ -50,25 +39,74 @@ client = IMessageClient()
 try:
     client.send("+15555550123", "Hello from Python!")
 except MessageSendError as error:
-    print(f"Could not send to {error.recipient}: {error}")
+    print(f"Local send failed: {error.reason}")
 ```
 
-The recipient may be a phone number or email address that Messages recognizes.
-`send()` returns `None` after the AppleScript transport succeeds. A failure
+`send()` returns `None` after the local AppleScript transport completes. This
+result is not a delivery receipt from the recipient's device. A failed send
 raises `MessageSendError` with `recipient` and a closed `reason` value:
 `"delivery"` or `"transport"`.
 
-## Send from a shell script or agent
+The doctor is side-effect-free. It does not open Messages, run AppleScript,
+request permission, read message data, or send text. A clean doctor result means
+no automated blocker was found; complete every manual check before sending.
 
-Load the instructions bundled with the installed command before an agent uses
-macpymessenger:
+Using pip instead of uv:
+
+```bash
+python -m pip install macpymessenger
+macpymessenger doctor
+```
+
+## Build a request once
+
+`SendRequest` is the single request model used by the Python client, CLI, and
+transport boundary:
+
+```python
+from macpymessenger import IMessageClient, SendRequest
+
+request = SendRequest(
+    recipient="+15555550123",
+    message="The report is ready.",
+    delay_seconds=30,
+)
+
+client = IMessageClient()
+client.send_request(request)
+```
+
+Construction rejects empty, non-string, or non-UTF-8 recipient and message
+values, non-integer delays including booleans, and negative delays before any
+delivery effect can run. `send()` is the convenience form; it builds one
+`SendRequest` and delegates to `send_request()`.
+
+## Use the command from a script or agent
+
+Load instructions from the installed package before an agent uses the command:
 
 ```bash
 macpymessenger skills get core
 ```
 
-The installed skill and command always share a version. Send one user-approved
-message as one JSON object on standard input:
+Run diagnostics with machine-readable output:
+
+```bash
+macpymessenger doctor --json
+```
+
+Validate one closed request without constructing a client or sending:
+
+```bash
+cat <<'JSON' | macpymessenger send --dry-run --json
+{"recipient":"<recipient>","message":"<message>","delay_seconds":0}
+JSON
+```
+
+A valid dry run returns `data.outcome: "validated"`. Dry run checks request data
+only; it does not replace doctor checks, user approval, or Messages permission.
+
+Send the exact user-approved request:
 
 ```bash
 cat <<'JSON' | macpymessenger send --json
@@ -76,27 +114,38 @@ cat <<'JSON' | macpymessenger send --json
 JSON
 ```
 
-`send` rejects unknown fields, duplicate keys, empty required strings,
-non-integer or negative delays, and malformed text before it creates the client.
-It writes compact JSON without echoing the recipient or message and exits with
-`0` for transport completion, `1` for a send or transport failure, and `2` for
-invalid input. Do not automatically retry a failed or uncertain send because a
-retry may create a duplicate message.
+Every JSON command uses one versioned envelope with `schema_version`, `tool`,
+`command`, `version`, `ok`, and either `data` or `error`. A successful real send
+returns `data.outcome: "transport_completed"`; delivery is not confirmed. Send
+failures include `error.retryable: false`. Do not automatically retry a failed
+or uncertain send because a retry may duplicate the message.
 
-See the [command-line guide](https://macpymessenger.readthedocs.io/en/latest/guides/command-line.html)
-for the complete contract.
+`send` accepts no unknown fields or duplicate keys. Invalid input exits with
+status `2` before the client exists. Send or transport failure exits with status
+`1`. Validation or local transport completion exits with status `0`. Structured
+output never echoes recipient or message text.
 
-## Common Python tasks
+Read the [complete command contract](https://macpymessenger.readthedocs.io/en/latest/guides/command-line.html).
 
-### Send later
+## Send to several recipients
 
 ```python
-client.send("+15555550123", "This sends in one minute.", delay_seconds=60)
+recipients = ["+15555550123", "+15555550124"]
+result = client.send_bulk(recipients, "The build is ready.")
+
+print(result.sent)
+for failure in result.failures:
+    print(failure.recipient, failure.reason)
 ```
 
-The delay must be a non-negative integer.
+`send_bulk()` snapshots the iterable and sends sequentially in input order.
+`result.failures` contains immutable `BulkSendFailure(recipient, reason)` values.
+`result.failed` projects only failed recipient strings, `result.ok` reports
+whether every local send completed, and `sent, failed = result` remains valid.
+Bulk outcomes are not delivery receipts. Do not automatically retry failed or
+uncertain items.
 
-### Reuse a message template
+## Reuse a t-string template
 
 Templates are functions that return Python 3.14 t-strings. Interpolations use
 normal Python conversion and formatting:
@@ -115,24 +164,10 @@ client.send_template(
 
 macpymessenger does not use Jinja2 or template files.
 
-### Send to several recipients
-
-```python
-recipients = ["+15555550123", "+15555550124"]
-result = client.send_bulk(recipients, "The build is ready.")
-
-print(result.sent)
-print(result.failed)
-```
-
-`send_bulk()` sends sequentially in input order and returns the immutable
-`BulkSendResult(sent, failed)`. Tuple unpacking also works:
-`sent, failed = result`.
-
-### Replace the delivery effect
+## Replace the delivery effect
 
 Inject a `MessageTransport` for tests or another local delivery mechanism. The
-transport receives one immutable `SendRequest`:
+transport receives the exact immutable request:
 
 ```python
 from macpymessenger import IMessageClient, SendRequest
@@ -148,59 +183,58 @@ class RecordingTransport:
 
 transport = RecordingTransport()
 client = IMessageClient(transport=transport)
-client.send("+15555550123", "Recorded, not sent.")
+request = SendRequest("+15555550123", "Recorded, not sent.")
+client.send_request(request)
+assert transport.requests[0] is request
 ```
 
-### Use application logging
+A transport should raise `MessageSendError` for a known delivery or transport
+failure. `IMessageClient` sanitizes typed failures before exposing them and still
+maps `CalledProcessError` or `OSError` from older custom transports. Ordinary
+automated tests should inject a transport and never invoke Messages or
+AppleScript.
 
-macpymessenger emits through Python logging but never adds output handlers, sets
-levels, chooses formats, or creates files:
+## Logging and private data
 
-```python
-import logging
-
-logging.basicConfig(filename="messages.log", level=logging.INFO)
-client = IMessageClient()
-```
-
-Delivery records contain generic outcomes, not recipient handles or message
-bodies. The host application owns destinations, access, and retention.
-
-## Private-data boundary
+macpymessenger emits generic records through Python logging but does not add
+output handlers, set levels, choose formats, or create files. The host
+application owns logging destinations, access, and retention.
 
 The built-in transport invokes fixed argv `('/usr/bin/osascript', '-')` and
 streams encoded AppleScript through standard input. Recipient and message text
-do not enter process arguments or temporary files. Transport exceptions and
-child output do not cross the public error boundary.
+do not enter process arguments, environment variables, or temporary files.
+Child output and raw transport exceptions do not cross the public error
+boundary. Public encoding, script-loading, delivery, and transport failures
+contain neither the raw exception as `__cause__` nor as `__context__`.
 
-## Scope
+## Deliberate scope
 
-Use macpymessenger when code running on your Mac needs to send text through your
-existing Messages account. The package deliberately does not read chat history,
-send attachments, resolve contacts, expose a remote API, run a messaging server,
-or provide an MCP server.
+Use macpymessenger when code running on a Mac needs to send text through the
+existing Messages account. The package does not read chat history, send
+attachments, resolve contacts, expose a remote API, run a messaging server,
+provide delivery receipts, manage accounts, or provide an MCP server.
 
 ## Documentation
 
-- [Install and prepare your Mac](https://macpymessenger.readthedocs.io/en/latest/installation.html)
-- [Check your environment](https://macpymessenger.readthedocs.io/en/latest/guides/environment-diagnostics.html)
-- [Use the command line](https://macpymessenger.readthedocs.io/en/latest/guides/command-line.html)
-- [Send messages from Python](https://macpymessenger.readthedocs.io/en/latest/guides/sending-messages.html)
-- [Use t-string templates](https://macpymessenger.readthedocs.io/en/latest/guides/templates.html)
-- [Use a custom transport](https://macpymessenger.readthedocs.io/en/latest/api/transport.html)
-- [Configure logging](https://macpymessenger.readthedocs.io/en/latest/guides/logging.html)
-- [Troubleshoot a failed send](https://macpymessenger.readthedocs.io/en/latest/guides/troubleshooting.html)
-- [Browse the public API](https://macpymessenger.readthedocs.io/en/latest/modules.html)
-- [Contribute](https://macpymessenger.readthedocs.io/en/latest/development/contributing.html)
-- [Read the changelog](https://github.com/ethan-wickstrom/macpymessenger/blob/main/CHANGELOG.md)
+- [Installation](https://macpymessenger.readthedocs.io/en/latest/installation.html)
+- [Environment diagnostics](https://macpymessenger.readthedocs.io/en/latest/guides/environment-diagnostics.html)
+- [Command line and Agent Skill](https://macpymessenger.readthedocs.io/en/latest/guides/command-line.html)
+- [Python sending guide](https://macpymessenger.readthedocs.io/en/latest/guides/sending-messages.html)
+- [Templates](https://macpymessenger.readthedocs.io/en/latest/guides/templates.html)
+- [Custom transports](https://macpymessenger.readthedocs.io/en/latest/api/transport.html)
+- [Errors](https://macpymessenger.readthedocs.io/en/latest/api/exceptions.html)
+- [Troubleshooting](https://macpymessenger.readthedocs.io/en/latest/guides/troubleshooting.html)
+- [Public API](https://macpymessenger.readthedocs.io/en/latest/modules.html)
+- [Contributing](CONTRIBUTING.md)
+- [Changelog](CHANGELOG.md)
 
 ## Project status
 
-macpymessenger is alpha software. Text messages, t-string templates, delayed
-sends, sequential bulk sends, typed errors, custom transports, read-only
-environment diagnostics, an agent-safe send command, and version-matched Agent
-Skills are supported.
+macpymessenger is alpha software. Text sends, validated immutable requests,
+t-string templates, delays, structured sequential bulk outcomes, typed errors,
+custom transports, passive diagnostics, a validation-safe command line, and
+version-matched Agent Skills are supported.
 
-macpymessenger is licensed under [Apache-2.0](https://github.com/ethan-wickstrom/macpymessenger/blob/main/LICENSE).
-It is maintained by [Ethan Wickstrom](https://github.com/ethan-wickstrom) and
-started as a fork of [Rolstenhouse/py-iMessage](https://github.com/Rolstenhouse/py-iMessage).
+macpymessenger is licensed under [Apache-2.0](LICENSE). It is maintained by
+[Ethan Wickstrom](https://github.com/ethan-wickstrom) and started as a fork of
+[Rolstenhouse/py-iMessage](https://github.com/Rolstenhouse/py-iMessage).

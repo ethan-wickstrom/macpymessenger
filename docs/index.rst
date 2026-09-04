@@ -1,35 +1,38 @@
 .. meta::
    :description lang=en:
-      Send iMessages from Python on macOS through the built-in Messages app.
-      Install macpymessenger, check your Mac, and send typed messages.
-   :keywords: Python iMessage, macOS Messages automation, AppleScript, Python 3.14
+      Send text through the local macOS Messages app from typed Python, shell
+      scripts, or AI agents with validated requests and structured outcomes.
 
 macpymessenger
 ==============
 
-Send iMessages from Python on macOS.
-
-macpymessenger is a typed, dependency-free library for scripts, local
-automations, developer tools, and agents running on a Mac. It controls the
-built-in Messages app through a private-data-safe AppleScript transport. It does
-not read chat history, send attachments, expose a remote API, or run a messaging
-server.
-
-Quick start
------------
+macpymessenger sends text through the built-in Messages app on a Mac you control.
+It provides a typed Python API, a validation-safe command line, version-matched
+Agent Skills, Python 3.14 t-string templates, structured failures, passive
+logging, and side-effect-free environment diagnostics. The package has no
+runtime dependencies.
 
 You need macOS, Python 3.14 or newer, an Apple account signed in to Messages,
-and Automation permission for the application that launches Python.
+and Automation permission for the application that launches Python. The first
+real send may ask Terminal, an editor, or an agent host for permission to control
+Messages.
+
+Install and inspect the Mac
+---------------------------
+
+Add the package to a uv project and run the side-effect-free doctor:
 
 .. code-block:: bash
 
    uv add macpymessenger
    uv run macpymessenger doctor
 
-The doctor reports detectable blockers and manual checks without opening
-Messages, running AppleScript, or sending text.
+The doctor reports definite blockers and manual checks. A clean result means no
+automated blocker was found; it does not prove Messages sign-in, Automation
+permission, or recipient delivery.
 
-Then create one client and reuse it:
+Send from Python
+----------------
 
 .. code-block:: python
 
@@ -40,44 +43,54 @@ Then create one client and reuse it:
    try:
        client.send("+15555550123", "Hello from Python!")
    except MessageSendError as error:
-       print(f"Could not send to {error.recipient}: {error}")
+       print(f"Local send failed: {error.reason}")
 
-The first real send may ask whether Terminal, your editor, or another launcher
-can control Messages. Allow access, or review it in **System Settings > Privacy
-& Security > Automation**.
+``send()`` returns after the local transport completes. This result is not a
+delivery receipt from the recipient's device. Build a validated immutable
+``SendRequest`` and call ``send_request()`` when another layer creates or queues
+work before it owns the client.
 
-Find what you need
-------------------
+Use the command from an agent
+-----------------------------
 
-**First send from Python**
-   Follow :doc:`installation`, run :doc:`guides/environment-diagnostics`, then
-   use :doc:`guides/sending-messages`.
+Load the instructions bundled with the installed package:
 
-**Shell script or AI agent**
-   Use :doc:`guides/command-line` for JSON over standard input, stable output,
-   exit codes, and version-matched Agent Skills.
+.. code-block:: bash
 
-**Reusable messages**
-   Read :doc:`guides/templates`.
+   uv run macpymessenger skills get core
 
-**Custom or test delivery**
-   Implement :doc:`api/transport` instead of replacing client coordination.
+Validate one closed request without creating a client or sending:
 
-**A send failed**
-   Use :doc:`guides/troubleshooting` and the :doc:`api/exceptions` reference.
+.. code-block:: bash
 
-**Application logging**
-   Read :doc:`guides/logging` before routing recipient handles to a log sink.
+   cat <<'JSON' | uv run macpymessenger send --dry-run --json
+   {"recipient":"<recipient>","message":"<message>","delay_seconds":0}
+   JSON
 
-**Class, method, or result shape**
-   Go to :doc:`modules`.
+Every JSON command uses one versioned envelope. A dry run returns
+``data.outcome == "validated"``. A real-send success returns
+``data.outcome == "transport_completed"``, not proof of recipient delivery.
+Failed or uncertain sends must not be retried automatically because a retry may
+create a duplicate message.
 
-**Contributing or changing the library**
-   Start with :doc:`development/contributing`.
+Understand the boundary
+-----------------------
+
+The built-in transport invokes fixed ``/usr/bin/osascript -`` arguments and
+streams encoded AppleScript through standard input. Recipient and message text
+do not enter process arguments, environment variables, or temporary files. Raw
+child output does not cross the public error boundary.
+
+The package deliberately does not read chat history, send attachments, resolve
+contacts, expose a remote API, manage a Messages account, provide delivery
+receipts, or run an MCP server.
+
+Start with a task
+-----------------
 
 .. toctree::
    :maxdepth: 2
-   :caption: Get started
+   :caption: Start here
 
    introduction
    installation
@@ -87,8 +100,8 @@ Find what you need
    :maxdepth: 2
    :caption: Guides
 
-   guides/environment-diagnostics
    guides/command-line
+   guides/environment-diagnostics
    guides/sending-messages
    guides/templates
    guides/logging
@@ -107,13 +120,15 @@ Find what you need
 
 .. toctree::
    :maxdepth: 2
-   :caption: Development
+   :caption: Project
 
    development/contributing
    development/testing
    development/release-process
 
-License
--------
+Search and agent indexes
+------------------------
 
-macpymessenger uses the Apache-2.0 license.
+- :download:`llms.txt <llms.txt>` — curated task, guide, API, and repository
+  links for agents and retrieval systems.
+- ``searchindex.js`` — Sphinx search data in the built documentation.

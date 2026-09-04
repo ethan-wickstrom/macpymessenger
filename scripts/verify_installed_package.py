@@ -7,7 +7,9 @@ import shutil
 import subprocess
 from importlib.resources import files
 from typing import Final
+from unittest.mock import patch
 
+import macpymessenger.transport as transport_module
 from macpymessenger import (
     AppleScriptTransport,
     BulkSendFailure,
@@ -15,6 +17,7 @@ from macpymessenger import (
     IMessageClient,
     InvalidSendTextError,
     MessageFailureReason,
+    MessageSendError,
     SendRequest,
     TemplateManager,
     __version__,
@@ -88,6 +91,26 @@ def _verify_package_data_and_api() -> None:
         message = "SendRequest accepted an empty recipient"
         raise RuntimeError(message)
 
+    invalid_text = chr(0xD800)
+    try:
+        SendRequest("+15555550123", invalid_text)
+    except InvalidSendTextError as error:
+        _require(
+            "SendRequest encoding error is not structured",
+            condition=error.field == "message" and error.reason == "encoding",
+        )
+        _require(
+            "SendRequest encoding error retained a cause",
+            condition=error.__cause__ is None,
+        )
+        _require(
+            "SendRequest encoding error retained private context",
+            condition=error.__context__ is None,
+        )
+    else:
+        message = "SendRequest accepted text that cannot be encoded as UTF-8"
+        raise RuntimeError(message)
+
     empty_bulk = BulkSendResult(sent=(), failures=())
     _require("BulkSendResult sent shape changed", condition=empty_bulk.sent == ())
     _require("BulkSendResult failed projection changed", condition=empty_bulk.failed == ())
@@ -113,6 +136,49 @@ def _verify_package_data_and_api() -> None:
         "IMessageClient.send_request is missing",
         condition=callable(IMessageClient.send_request),
     )
+
+
+def _verify_transport_failure_boundary() -> None:
+    request = SendRequest(_PRIVATE_RECIPIENT, _PRIVATE_MESSAGE)
+    raw_failure = subprocess.CalledProcessError(
+        returncode=1,
+        cmd=("/usr/bin/osascript", "-"),
+        output=f"private stdout: {_PRIVATE_MESSAGE}",
+        stderr=f"private stderr: {_PRIVATE_RECIPIENT}",
+    )
+    transport = AppleScriptTransport()
+
+    with patch.object(transport_module.subprocess, "run", side_effect=raw_failure):
+        try:
+            transport.send(request)
+        except MessageSendError as error:
+            _require(
+                "AppleScriptTransport changed the delivery failure reason",
+                condition=error.reason == "delivery",
+            )
+            _require(
+                "AppleScriptTransport changed the failed recipient",
+                condition=error.recipient == _PRIVATE_RECIPIENT,
+            )
+            _require(
+                "AppleScriptTransport retained a raw cause",
+                condition=error.__cause__ is None,
+            )
+            _require(
+                "AppleScriptTransport retained raw private context",
+                condition=error.__context__ is None,
+            )
+            _require(
+                "AppleScriptTransport exposed the recipient in error text",
+                condition=_PRIVATE_RECIPIENT not in str(error),
+            )
+            _require(
+                "AppleScriptTransport exposed the message in error text",
+                condition=_PRIVATE_MESSAGE not in str(error),
+            )
+        else:
+            message = "AppleScriptTransport swallowed a failed child process"
+            raise RuntimeError(message)
 
 
 def _verify_version_and_help() -> None:
@@ -321,6 +387,7 @@ def _verify_send_dry_run() -> None:
 
 def main() -> None:
     _verify_package_data_and_api()
+    _verify_transport_failure_boundary()
     _verify_version_and_help()
     _verify_doctor()
     _verify_skills()

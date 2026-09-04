@@ -85,7 +85,8 @@ def _verify_package_data_and_api() -> None:
             condition=error.field == "recipient" and error.reason == "empty",
         )
     else:
-        raise RuntimeError("SendRequest accepted an empty recipient")
+        message = "SendRequest accepted an empty recipient"
+        raise RuntimeError(message)
 
     empty_bulk = BulkSendResult(sent=(), failures=())
     _require("BulkSendResult sent shape changed", condition=empty_bulk.sent == ())

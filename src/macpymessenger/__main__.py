@@ -198,9 +198,9 @@ def _read_send_request() -> SendRequest:
 
     try:
         return SendRequest(
-            recipient=cast(str, fields["recipient"]),
-            message=cast(str, fields["message"]),
-            delay_seconds=cast(int, fields.get("delay_seconds", 0)),
+            recipient=cast("str", fields["recipient"]),
+            message=cast("str", fields["message"]),
+            delay_seconds=cast("int", fields.get("delay_seconds", 0)),
         )
     except (InvalidDelayTypeError, InvalidSendTextError, NegativeDelayError):
         raise _InvalidSendInputError from None
@@ -228,22 +228,47 @@ def _send_error_payload(
     return _json_envelope("send", ok=False, error=error)
 
 
+def _write_send_input_error(*, json_output: bool) -> int:
+    if json_output:
+        _write_json(_send_error_payload("invalid_input"))
+    else:
+        sys.stderr.write("Invalid input. Pass one send request as JSON on standard input.\n")
+    return _INVALID_INPUT
+
+
+def _write_send_success(*, json_output: bool, outcome: str) -> int:
+    if json_output:
+        _write_json(_send_success_payload(outcome))
+    elif outcome == "validated":
+        sys.stdout.write("Request is valid. No message was sent.\n")
+    else:
+        sys.stdout.write("Send request completed. Delivery is not confirmed.\n")
+    return _SUCCESS
+
+
+def _write_send_failure(
+    *,
+    json_output: bool,
+    reason: MessageFailureReason,
+) -> int:
+    if json_output:
+        _write_json(_send_error_payload(f"{reason}_failed", reason=reason))
+    else:
+        sys.stderr.write(
+            f"The send failed or could not be confirmed: {reason}_failed. "
+            "Do not retry automatically.\n"
+        )
+    return _SEND_FAILED
+
+
 def _run_send(*, json_output: bool, dry_run: bool) -> int:
     try:
         request = _read_send_request()
     except _InvalidSendInputError:
-        if json_output:
-            _write_json(_send_error_payload("invalid_input"))
-        else:
-            sys.stderr.write("Invalid input. Pass one send request as JSON on standard input.\n")
-        return _INVALID_INPUT
+        return _write_send_input_error(json_output=json_output)
 
     if dry_run:
-        if json_output:
-            _write_json(_send_success_payload("validated"))
-        else:
-            sys.stdout.write("Request is valid. No message was sent.\n")
-        return _SUCCESS
+        return _write_send_success(json_output=json_output, outcome="validated")
 
     try:
         client = IMessageClient()
@@ -253,20 +278,12 @@ def _run_send(*, json_output: bool, dry_run: bool) -> int:
     except ScriptNotFoundError:
         reason = "transport"
     else:
-        if json_output:
-            _write_json(_send_success_payload("transport_completed"))
-        else:
-            sys.stdout.write("Send request completed. Delivery is not confirmed.\n")
-        return _SUCCESS
-
-    if json_output:
-        _write_json(_send_error_payload(f"{reason}_failed", reason=reason))
-    else:
-        sys.stderr.write(
-            f"The send failed or could not be confirmed: {reason}_failed. "
-            "Do not retry automatically.\n"
+        return _write_send_success(
+            json_output=json_output,
+            outcome="transport_completed",
         )
-    return _SEND_FAILED
+
+    return _write_send_failure(json_output=json_output, reason=reason)
 
 
 def _run_skills_list(*, json_output: bool) -> int:

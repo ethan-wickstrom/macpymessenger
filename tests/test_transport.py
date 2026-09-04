@@ -12,9 +12,10 @@ from macpymessenger import (
     InvalidSendTextError,
     MessageSendError,
     MessageTransport,
+    ScriptNotFoundError,
     SendRequest,
 )
-from macpymessenger.transport import _render_applescript
+from macpymessenger.transport import _load_script_source, _render_applescript
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -85,6 +86,26 @@ def test_send_request_rejects_non_integer_delay() -> None:
 def test_send_request_rejects_negative_delay() -> None:
     with pytest.raises(ValueError, match="Delay must be non-negative"):
         SendRequest("+15555550123", "Hello", delay_seconds=-1)
+
+
+def test_script_load_failure_does_not_expose_private_exception_context(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    private_path = "/Users/private-user/project/private-script.applescript"
+
+    def failing_files(_package: str) -> None:
+        raise OSError(private_path)
+
+    monkeypatch.setattr("macpymessenger.transport.files", failing_files)
+
+    with pytest.raises(ScriptNotFoundError) as exc_info:
+        _load_script_source()
+
+    error = exc_info.value
+    assert str(error) == "Bundled AppleScript could not be read; reinstall macpymessenger."
+    assert error.__cause__ is None
+    assert error.__context__ is None
+    assert private_path not in str(error)
 
 
 def test_applescript_transport_keeps_private_values_out_of_process_argv(

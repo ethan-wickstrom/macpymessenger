@@ -69,11 +69,17 @@ def test_send_request_rejects_text_that_cannot_be_encoded_as_utf8(
     message: str,
     field: str,
 ) -> None:
+    rejected_value = recipient if field == "recipient" else message
+
     with pytest.raises(InvalidSendTextError) as exc_info:
         SendRequest(recipient, message)
 
-    assert exc_info.value.field == field
-    assert exc_info.value.reason == "encoding"
+    error = exc_info.value
+    assert error.field == field
+    assert error.reason == "encoding"
+    assert error.__cause__ is None
+    assert error.__context__ is None
+    assert rejected_value not in str(error)
 
 
 def test_send_request_rejects_non_integer_delay() -> None:

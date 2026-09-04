@@ -188,7 +188,10 @@ client.send_request(request)
 assert transport.requests[0] is request
 ```
 
-Ordinary automated tests should inject a transport and never invoke Messages or
+A transport should raise `MessageSendError` for a known delivery or transport
+failure. `IMessageClient` sanitizes typed failures before exposing them and still
+maps `CalledProcessError` or `OSError` from older custom transports. Ordinary
+automated tests should inject a transport and never invoke Messages or
 AppleScript.
 
 ## Logging and private data
@@ -201,7 +204,8 @@ The built-in transport invokes fixed argv `('/usr/bin/osascript', '-')` and
 streams encoded AppleScript through standard input. Recipient and message text
 do not enter process arguments, environment variables, or temporary files.
 Child output and raw transport exceptions do not cross the public error
-boundary.
+boundary. Public encoding, script-loading, delivery, and transport failures
+contain neither the raw exception as `__cause__` nor as `__context__`.
 
 ## Deliberate scope
 

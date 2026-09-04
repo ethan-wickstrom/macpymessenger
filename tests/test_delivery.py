@@ -42,10 +42,12 @@ def test_delivery_sends_one_immutable_request(
     delivery: tuple[MessageDelivery, StubTransport],
 ) -> None:
     instance, transport = delivery
+    request = SendRequest("+10000000000", "Hello", delay_seconds=5)
 
-    instance.deliver("+10000000000", "Hello", delay_seconds=5)
+    instance.deliver(request)
 
-    assert transport.requests == [SendRequest("+10000000000", "Hello", delay_seconds=5)]
+    assert transport.requests == [request]
+    assert transport.requests[0] is request
 
 
 def test_delivery_logs_success_without_private_content(
@@ -57,7 +59,7 @@ def test_delivery_logs_success_without_private_content(
     private_message = "private message body"
 
     with caplog.at_level(logging.INFO, logger="test.delivery"):
-        instance.deliver(recipient, private_message)
+        instance.deliver(SendRequest(recipient, private_message))
 
     assert "Message sent" in caplog.text
     assert recipient not in caplog.text
@@ -78,7 +80,7 @@ def test_delivery_maps_applescript_failure_without_private_cause_log_or_text(
         caplog.at_level(logging.ERROR, logger="test.delivery"),
         pytest.raises(MessageSendError) as exc_info,
     ):
-        instance.deliver(recipient, private_message)
+        instance.deliver(SendRequest(recipient, private_message))
 
     error = exc_info.value
     assert error.recipient == recipient
@@ -106,7 +108,7 @@ def test_delivery_maps_transport_failure_without_private_cause_log_or_text(
         caplog.at_level(logging.ERROR, logger="test.delivery"),
         pytest.raises(MessageSendError) as exc_info,
     ):
-        instance.deliver(recipient, private_message)
+        instance.deliver(SendRequest(recipient, private_message))
 
     error = exc_info.value
     assert error.recipient == recipient

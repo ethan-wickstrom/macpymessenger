@@ -7,35 +7,158 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+**One immutable delivery request.** `SendRequest(recipient, message,
+delay_seconds)` is the frozen, slotted value that crosses the delivery effect
+boundary. It rejects booleans, non-integer delays, and negative delays before an
+effect runs.
+
+**One replaceable delivery effect.** `MessageTransport.send(request)` is the
+public extension and test seam. `AppleScriptTransport` is the production default.
+Tests can record requests without reproducing client coordination, templates,
+bulk classification, logging, or error mapping.
+
+**Private-data-safe AppleScript transport.** The built-in transport invokes fixed
+argv `('/usr/bin/osascript', '-')`, base64-encodes recipient and message text into
+the rendered script, and streams that script through standard input. Private
+values no longer enter process arguments or temporary files. Child output
+remains inside the transport.
+
+**Agent-safe send command.** `macpymessenger send` reads one closed JSON object
+from standard input. `--json` returns stable machine fields without echoing the
+recipient or message. Exit status `0` means transport completion, `1` means a
+send or transport failure, and `2` means invalid input.
+
+**Version-matched Agent Skills.** `macpymessenger skills`, `skills list --json`,
+and `skills get core` expose instructions bundled with the installed package. A
+thin repository discovery skill points agents to the installed workflow so the
+instructions and command contract share a version.
+
+**Side-effect-free environment diagnostics.** `macpymessenger doctor` checks
+macOS, `/usr/bin/osascript`, Messages.app, and bundled AppleScript source without
+opening Messages, invoking AppleScript, requesting Automation access, reading
+message data, or sending text. JSON output exposes `blocked`, stable
+`identifier`, `status`, `summary`, and `next_step` fields. Unverifiable account
+and permission state is `manual`, not success.
+
+**Named bulk-send results.** `send_bulk()` returns immutable
+`BulkSendResult(sent, failed)` tuples. Named fields replace positional guesswork;
+`sent, failed = result` unpacking remains valid.
+
+**Agent and search discovery.** The hosted docs publish canonical URLs, page
+metadata, OpenSearch metadata, Python 3.14 intersphinx links, a curated
+`llms.txt`, and one command-line guide. `AGENTS.md` routes repository agents
+through current data shapes, ownership, private-data rules, and exact
+verification commands.
+
 ### Changed
 
-**The library no longer manages log handlers.** Following the standard library logging contract for libraries, the package installs a `logging.NullHandler` and emitted events use the client logger by default (`macpymessenger.client`, unless you pass a custom `logger` to `IMessageClient`). The client never attaches file handlers, sets levels, or chooses formats. Configure standard `logging` in your application to route events, or keep passing a `logger` to `IMessageClient`. See `docs/paradigm.md` for the design verdicts behind this and the other changes below.
+**The common path is `IMessageClient()`.** The client owns an
+`AppleScriptTransport` by default. Optional `transport`, `template_manager`, and
+`logger` collaborators are keyword-only.
 
-**Template rendering returns plain strings.** `TemplateManager.render_template` is the single rendering API.
+**The public domain term is `recipient`.** `send()`, `send_template()`, and
+`send_bulk()` use `recipient` or `recipients` because Messages accepts both phone
+numbers and email addresses. Positional send calls are unchanged; callers using
+`phone_number=` or `phone_numbers=` must rename those keywords.
 
-**`IMessageClient.send` is typed `delay_seconds: int = 0`.** The runtime validation (rejecting `bool`, non-`int`, and negative values with `InvalidDelayTypeError`/`NegativeDelayError`) is unchanged.
+**Delivery errors expose a closed reason.** `MessageSendError.recipient`
+identifies the failed handle. `reason` is `"delivery"` when AppleScript or
+Messages rejects a send and `"transport"` when the transport cannot run. The
+closed `MessageFailureReason` alias is public. Raw transport exceptions are not
+chained because they can contain private child-process data.
 
-**Parity and property suites.** `tests/parity/` records the pre-rebuild behavior as a frozen characterization baseline plus explicitly justified divergences, and `tests/test_properties.py` verifies the foundation invariants with Hypothesis. The rebuild rationale lives in `docs/paradigm.md`, `docs/audit.md`, and `docs/foundation.md`.
+**Command input is closed before effects.** The send command rejects non-object
+JSON, missing or empty required strings, unknown fields, duplicate keys,
+non-integer or negative delays, and non-UTF-8 text before constructing
+`IMessageClient`.
+
+**T-string interpolation uses Python semantics.** Template values use normal
+conversion and `format()` behavior. Integers, floats, and domain values with
+`__format__` support can be interpolated directly. Only `None` means no context;
+a false-valued mapping is preserved.
+
+**Logging follows the standard library contract.** The package installs a
+`NullHandler` and emits through named loggers. It never creates files, attaches
+application handlers, sets levels, chooses formats, logs recipients or message
+bodies, or logs raw transport exceptions. Host applications own destinations,
+access, and retention.
+
+**Diagnostics report blockers, not readiness.** `EnvironmentReport.ready` is
+replaced by `blocked`. `PASS`/`INFO` output becomes `OK`/`MANUAL`. A zero doctor
+exit code means no automated blocker was found; it does not prove that Messages
+is signed in or that Automation permission has been granted.
+
+**Development and release checks are artifact-first.** CI uses a locked uv
+environment, lint and formatter diffs, type checks, hermetic tests, strict Sphinx
+builds, package builds, clean-wheel smoke tests, and macOS AppleScript
+compilation. The release path uses a separately built artifact and PyPI Trusted
+Publishing.
+
+### Fixed
+
+**Pull-request CI no longer fails on formatter drift.** The merged source and
+tests are in Ruff's canonical Python 3.14 form, and the stale invariant test for
+the removed configuration and command-runner design is gone.
+
+**Private send data no longer leaks through process inspection or failures.** The
+old argv shape included recipient, full message text, and delay for the lifetime
+of the `osascript` process. Failed sends also copied the raw command into logs and
+traceback causes. Fixed argv, standard-input transport, captured child output,
+plain error logging, and `raise ... from None` close those paths.
+
+**Doctor output no longer exposes an installed home path.** The bundled-source
+check reports a generic result rather than the full package filesystem path.
+
+**uv quick-start commands now run in the project environment.** Documentation
+uses `uv run macpymessenger ...` after `uv add macpymessenger` instead of assuming
+the project environment is activated.
+
+**Documentation examples are independently copyable.** API and logging examples
+include their own imports and state. The package-logger example disables
+propagation when it installs its own handler, avoiding duplicate root output.
 
 ### Removed
 
-**`FileLoggingConfiguration` and the `file_logging` client parameter.** Replaced by standard `logging` configuration owned by the application. `ConfigurationError.file_logging_unavailable` is gone with it.
+**Script-path configuration.** `Configuration`, `ConfigurationError`, and custom
+AppleScript path handling are removed. A custom effect now implements
+`MessageTransport`, which preserves extensibility without a filesystem-shaped
+public API.
 
-**Experimental stub methods.** `IMessageClient.get_chat_history` and `IMessageClient.send_with_attachment` only ever raised `NotImplementedError` and are removed.
+**Generic command execution.** `CommandRunner`, `SubprocessCommandRunner`, and
+`macpymessenger.commands` are removed. The package has one production effect, so
+a generic argv adapter added indirection while forcing private data into the
+wrong shape.
 
-**`RenderedTemplate` and `TemplateManager.compose_template`.** The wrapper added nothing over the rendered string.
+**Library-owned file logging.** `FileLoggingConfiguration` and the
+`file_logging=` client parameter are removed. Applications own logging output.
 
-**`InvalidCommandError` and the command pre-validation in `SubprocessCommandRunner`.** Commands are built internally and `subprocess.run` rejects invalid argument types itself.
+**Unimplemented client methods.** `get_chat_history()` and
+`send_with_attachment()` are removed. Unsupported capabilities no longer occupy
+public names that always raise `NotImplementedError`.
 
-**`TemplateTypeError.unexpected_element`.** `string.templatelib.Template` cannot be subclassed and iterating it yields only `str` and `Interpolation`, so the branch that raised it could never execute.
+**Template wrapper machinery.** `RenderedTemplate` and
+`TemplateManager.compose_template()` are removed. Rendering returns `str`.
 
-**Compatibility re-exports of `CommandRunner` and `SubprocessCommandRunner` from `macpymessenger.client`.** Import them from the package root or `macpymessenger.commands`.
+**String-only interpolation failures.** `TemplateTypeError` now covers only a
+factory that fails to return a t-string template. Normal formatting errors come
+from Python's conversion or format protocol.
 
-### Earlier unreleased changes
+### Migration
 
-**Message delivery extracted to a dedicated module.** All delivery behavior — delay validation, send command construction, command execution, delivery failure mapping, and send logging — now lives in `macpymessenger.delivery.MessageDelivery`. `IMessageClient.send` delegates to `MessageDelivery.deliver` so the client facade stays thin. The delivery class depends on the `CommandRunner` seam (from `macpymessenger.commands`) rather than embedding subprocess concerns in the client. Implements [#36](https://github.com/ethan-wickstrom/macpymessenger/issues/36).
-
-**Command execution moved to a named module.** The `CommandRunner` protocol and `SubprocessCommandRunner` adapter now live in `macpymessenger.commands`. Fixes [#35](https://github.com/ethan-wickstrom/macpymessenger/issues/35).
+- Replace `IMessageClient(Configuration())` with `IMessageClient()`.
+- Replace custom script paths or `command_runner=` with a `MessageTransport` and
+  pass it as `IMessageClient(transport=...)`.
+- Rename `phone_number=` to `recipient=` and `phone_numbers=` to `recipients=`.
+- Read bulk outcomes through `result.sent` and `result.failed`; copy with
+  `list(result.failed)` before mutation.
+- Replace `error.reason == "command"` with `error.reason == "transport"`.
+- Replace `compose_template(...).content` with `render_template(...)`.
+- Replace doctor JSON `ready`, `id`, and `fix` with `blocked`, `identifier`, and
+  `next_step`; handle the `manual` status explicitly.
+- Configure logging in the application with `logging.basicConfig(...)` or a
+  caller-owned logger.
 
 ## [0.3.0] - 2026-06-09
 

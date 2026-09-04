@@ -1,57 +1,80 @@
-Installation
-============
+.. meta::
+   :description lang=en:
+      Install macpymessenger on macOS, check Messages and AppleScript blockers,
+      and prepare Automation permission for Python or agent sending.
 
-macpymessenger requires macOS and Python 3.14 or newer. It sends through the Messages app by running AppleScript.
+Install and prepare your Mac
+============================
+
+Check the requirements
+----------------------
+
+You need:
+
+- macOS;
+- Python 3.14 or newer;
+- the built-in Messages app; and
+- an Apple account signed in to Messages.
+
+The wheel can be imported on another operating system so tests and type checks
+can run there, but message delivery requires macOS, Messages, and
+``/usr/bin/osascript``.
 
 Install with uv
 ---------------
 
+Add the package to a project, then run its command through the project
+environment:
+
 .. code-block:: bash
 
    uv add macpymessenger
+   uv run macpymessenger doctor
 
-This updates your project environment and records the dependency.
+Use ``uv run macpymessenger doctor --json`` when a script or agent needs
+structured output. Load the installed agent workflow with:
+
+.. code-block:: bash
+
+   uv run macpymessenger skills get core
 
 Install with pip
 ----------------
 
-.. code-block:: bash
-
-   pip install macpymessenger
-
-Verify the install
-------------------
-
-Import the package to check that Python can find it:
+Inside an active virtual environment:
 
 .. code-block:: bash
 
-   python -c "from macpymessenger import Configuration; print(Configuration())"
+   python -m pip install macpymessenger
+   macpymessenger doctor
 
-This also checks that the bundled AppleScript exists and is readable.
+Understand the doctor result
+----------------------------
 
-Check the installed package metadata if needed:
+The doctor checks definite local blockers without opening Messages, invoking
+AppleScript, requesting permission, reading message data, or sending text. A
+zero exit code means no automated blocker was found. It does not prove that the
+Messages account is signed in or that the current launcher has Automation
+permission; complete every ``MANUAL`` check before the first send.
 
-.. code-block:: bash
+See :doc:`guides/environment-diagnostics` for the text, JSON, and exit-code
+contract.
 
-   pip show macpymessenger
+Prepare Messages
+----------------
 
-Common install issues
----------------------
+#. Open Messages.
+#. Sign in and send a message by hand.
+#. Run the first-send example in :doc:`guides/sending-messages`.
+#. If macOS asks whether the launching application can control Messages, allow it.
 
-Python is too old. Run ``python --version``. You need Python 3.14 or newer.
+You can review access in **System Settings > Privacy & Security > Automation**.
+Permission belongs to the application that launches Python, so Terminal, an
+editor, a launcher, and an agent host may each need separate approval.
 
-The platform is not macOS. The package can install elsewhere, but sending messages requires macOS, AppleScript, and Messages.app.
+Next step
+---------
 
-A custom script path fails. ``Configuration(send_script_path=...)`` checks the file immediately. Make sure the file exists and can be read.
-
-Development setup
------------------
-
-When working on this repository itself, install the development dependencies:
-
-.. code-block:: bash
-
-   uv sync
-
-Then run commands inside the environment with ``uv run``.
+Python callers should follow :doc:`guides/sending-messages`. Shell scripts and
+agents should follow :doc:`guides/command-line`. If no automated blocker is
+found but delivery fails, use :doc:`guides/troubleshooting`.

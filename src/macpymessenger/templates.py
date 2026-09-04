@@ -1,8 +1,8 @@
-"""Template management utilities leveraging Python 3.14 t-strings."""
+"""Template storage and rendering with Python 3.14 t-strings."""
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, MutableMapping
+from collections.abc import Callable, Mapping
 from string.templatelib import Interpolation, Template, convert
 
 from .exceptions import TemplateAlreadyExistsError, TemplateNotFoundError, TemplateTypeError
@@ -13,14 +13,7 @@ __all__ = ["TemplateCallable", "TemplateManager"]
 
 
 def _process_template(template: Template) -> str:
-    """Render a t-string Template object ensuring all interpolations are strings.
-
-    Each interpolation must resolve to ``str``; its conversion (``!s``, ``!r``,
-    ``!a``) and format spec (for example ``:>10``) are then applied. Iterating
-    a ``Template`` yields only ``str`` and ``Interpolation`` items, and the
-    class cannot be subclassed, so no other cases exist.
-    """
-
+    """Render ``template`` with Python's conversion and format protocols."""
     parts: list[str] = []
     for item in template:
         match item:
@@ -28,35 +21,35 @@ def _process_template(template: Template) -> str:
                 parts.append(text)
             case Interpolation(
                 value=value,
-                expression=expression,
                 conversion=conversion,
                 format_spec=format_spec,
             ):
-                if not isinstance(value, str):
-                    raise TemplateTypeError.non_string_interpolation(
-                        expression, type(value).__name__
-                    )
-                parts.append(format(convert(value, conversion), format_spec or ""))
+                parts.append(format(convert(value, conversion), format_spec))
     return "".join(parts)
 
 
 class TemplateManager:
-    """Manages message templates using callables that return t-strings."""
+    """Register and render callable t-string templates."""
+
+    __slots__ = ("_templates",)
 
     def __init__(self) -> None:
-        self._templates: MutableMapping[str, TemplateCallable] = {}
+        self._templates: dict[str, TemplateCallable] = {}
 
     def create_template(self, identifier: str, factory: TemplateCallable) -> None:
+        """Register ``factory`` under a new identifier."""
         if identifier in self._templates:
             raise TemplateAlreadyExistsError.duplicate_identifier(identifier)
         self._templates[identifier] = factory
 
     def update_template(self, identifier: str, factory: TemplateCallable) -> None:
+        """Replace an existing template factory."""
         if identifier not in self._templates:
             raise TemplateNotFoundError.missing_identifier(identifier)
         self._templates[identifier] = factory
 
     def delete_template(self, identifier: str) -> None:
+        """Delete an existing template factory."""
         if identifier not in self._templates:
             raise TemplateNotFoundError.missing_identifier(identifier)
         del self._templates[identifier]
@@ -66,15 +59,18 @@ class TemplateManager:
         identifier: str,
         context: Mapping[str, object] | None = None,
     ) -> str:
+        """Render a registered template with keyword values from ``context``."""
         try:
             factory = self._templates[identifier]
         except KeyError as error:
             raise TemplateNotFoundError.missing_identifier(identifier) from error
-        kwargs = dict(context) if context is not None else {}
+
+        kwargs = {} if context is None else dict(context)
         template = factory(**kwargs)
         if not isinstance(template, Template):
             raise TemplateTypeError.invalid_factory_return()
         return _process_template(template)
 
     def list_templates(self) -> dict[str, TemplateCallable]:
+        """Return a shallow copy of the registered template mapping."""
         return dict(self._templates)

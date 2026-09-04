@@ -1,26 +1,34 @@
 # Git and release guidelines
 
-Use this file when preparing commits, pull requests, changelog entries, or releases.
+Use this file for commits, pull requests, changelog entries, or releases.
 
-## Commits use Conventional Commits
+## Commits
 
-- Use prefixes such as `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`, and `ci:`.
-- Use an optional scope when it adds useful context.
-- Example: `feat(client): raise MessageSendError on failures`.
+- Use Conventional Commit prefixes such as `feat:`, `fix:`, `docs:`,
+  `refactor:`, `test:`, `build:`, and `ci:`.
+- Keep each commit to one coherent behavior, data shape, scaffold, or document.
+- State the outcome, not the editing activity. Prefer `feat: add environment
+  diagnostics` over `chore: update files`.
+- Never commit credentials, private recipients, generated build output, or real
+  message text.
 
-## Pull requests should stay short and structured
+## Pull requests
 
-- Explain why the change exists.
-- Summarize how the change works.
-- Link related issues such as `Closes #123`.
-- Include checks run and results.
-- Include documentation and changelog updates when behavior changes.
+- Lead with the developer or maintainer problem solved.
+- Describe public additions, changes, removals, and migration steps separately.
+- Link related issues.
+- Report exact verification commands and hosted CI outcomes.
+- Update `README.md`, owning docs, `docs/llms.txt`, package metadata, agent
+  instructions, and `CHANGELOG.md` when their contract changes.
 
-## Releases are maintainer tasks
+## Releases
 
-- Update `CHANGELOG.md` with user-visible changes.
-- Link to relevant documentation when helpful.
-- Bump `pyproject.toml` using Semantic Versioning.
-- Ensure CI is green.
-- Tag releases with a version such as `v0.2.0`.
-- Publish through the GitHub workflow.
+- Treat the wheel as the release unit, not the source checkout.
+- Use Semantic Versioning in `pyproject.toml`; pre-1.0 breaking changes require a
+  minor-version release.
+- Complete the full root `AGENTS.md` gate and require Linux and macOS CI.
+- Tag only the verified commit.
+- Let the release workflow build, clean-install, import, inspect bundled data,
+  run the console entry point, and publish.
+- Independently install the published artifact and check `macpymessenger
+  --version` plus `macpymessenger doctor --json`.

@@ -11,6 +11,7 @@ from typing import Protocol
 from .exceptions import (
     InvalidDelayTypeError,
     InvalidSendTextError,
+    MessageSendError,
     NegativeDelayError,
     ScriptNotFoundError,
     SendTextField,
@@ -53,7 +54,7 @@ class MessageTransport(Protocol):
     """Transport boundary used to send one immutable request."""
 
     def send(self, request: SendRequest) -> None:
-        """Send ``request`` or raise an execution-specific exception."""
+        """Send ``request`` or raise ``MessageSendError`` for a known failure."""
 
 
 def _load_script_source() -> str:
@@ -94,12 +95,23 @@ class AppleScriptTransport:
         self._script_source = _load_script_source()
 
     def send(self, request: SendRequest) -> None:
-        """Send ``request`` without exposing recipient or message text in argv."""
-        subprocess.run(  # noqa: S603
-            _OSASCRIPT_COMMAND,
-            input=_render_applescript(request, script_source=self._script_source),
-            capture_output=True,
-            check=True,
-            shell=False,
-            text=True,
-        )
+        """Send ``request`` or raise a context-free public failure."""
+        failure: MessageSendError | None = None
+        try:
+            subprocess.run(  # noqa: S603
+                _OSASCRIPT_COMMAND,
+                input=_render_applescript(request, script_source=self._script_source),
+                capture_output=True,
+                check=True,
+                shell=False,
+                text=True,
+            )
+        except subprocess.CalledProcessError:
+            failure = MessageSendError.delivery_failed(request.recipient)
+        except OSError:
+            failure = MessageSendError.transport_failed(request.recipient)
+
+        if failure is not None:
+            # Raise after leaving the handler so raw child output is not reachable
+            # through either ``__cause__`` or ``__context__``.
+            raise failure

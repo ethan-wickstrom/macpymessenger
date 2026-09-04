@@ -5,7 +5,7 @@ from __future__ import annotations
 import subprocess
 from typing import TYPE_CHECKING
 
-from .exceptions import MessageSendError
+from .exceptions import MessageFailureReason, MessageSendError
 
 if TYPE_CHECKING:
     import logging
@@ -13,6 +13,15 @@ if TYPE_CHECKING:
     from .transport import MessageTransport, SendRequest
 
 __all__ = ["MessageDelivery"]
+
+
+def _sanitized_failure(
+    recipient: str,
+    reason: MessageFailureReason,
+) -> MessageSendError:
+    if reason == "delivery":
+        return MessageSendError.delivery_failed(recipient)
+    return MessageSendError.transport_failed(recipient)
 
 
 class MessageDelivery:
@@ -29,15 +38,23 @@ class MessageDelivery:
         self._logger = logger
 
     def deliver(self, request: SendRequest) -> None:
-        """Send one validated request or raise a typed failure."""
+        """Send one validated request or raise a context-free typed failure."""
+        failure: MessageSendError | None = None
         try:
             self._transport.send(request)
+        except MessageSendError as error:
+            failure = _sanitized_failure(request.recipient, error.reason)
         except subprocess.CalledProcessError:
-            # The transport exception can contain private payload or child output.
-            self._logger.error("Message delivery failed")  # noqa: TRY400
-            raise MessageSendError.delivery_failed(request.recipient) from None
+            # Preserve compatibility with custom transports built before the
+            # typed transport-failure contract.
+            failure = MessageSendError.delivery_failed(request.recipient)
         except OSError:
-            # Do not copy transport internals into application logs or tracebacks.
-            self._logger.error("Message transport failed")  # noqa: TRY400
-            raise MessageSendError.transport_failed(request.recipient) from None
+            failure = MessageSendError.transport_failed(request.recipient)
+
+        if failure is not None:
+            self._logger.error("Message %s failed", failure.reason)  # noqa: TRY400
+            # Raise after leaving the handler so an unsafe custom transport
+            # exception is not reachable through ``__cause__`` or ``__context__``.
+            raise failure
+
         self._logger.info("Message sent")

@@ -52,7 +52,7 @@ class MessageDelivery:
             failure = MessageSendError.transport_failed(request.recipient)
 
         if failure is not None:
-            self._logger.error("Message %s failed", failure.reason)  # noqa: TRY400
+            self._logger.error("Message %s failed", failure.reason)
             # Raise after leaving the handler so an unsafe custom transport
             # exception is not reachable through ``__cause__`` or ``__context__``.
             raise failure

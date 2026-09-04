@@ -15,6 +15,10 @@ if TYPE_CHECKING:
     from macpymessenger import MessageTransport
 
 
+def _raise_private_os_error(message: str) -> None:
+    raise OSError(message)
+
+
 class OSErrorTransport:
     def send(self, request: SendRequest) -> None:  # noqa: ARG002
         message = "transport unavailable"
@@ -25,7 +29,7 @@ class UnsafeTypedFailureTransport:
     def send(self, request: SendRequest) -> None:
         private_detail = f"{request.recipient}: {request.message}"
         try:
-            raise OSError(private_detail)
+            _raise_private_os_error(private_detail)
         except OSError as cause:
             raise MessageSendError(
                 request.recipient,

@@ -37,6 +37,12 @@ integrations can implement this protocol without reproducing client
 coordination, request validation, template rendering, bulk classification,
 logging, or error mapping.
 
+Raise ``MessageSendError`` with the request recipient and a ``"delivery"`` or
+``"transport"`` reason for a known failure. ``IMessageClient`` rebuilds typed
+transport failures before exposing them, so a custom exception message, cause,
+or context does not cross the client boundary. The client also maps
+``subprocess.CalledProcessError`` and ``OSError`` from older custom transports.
+
 .. autoclass:: macpymessenger.MessageTransport
    :members: send
    :no-private-members:
@@ -66,8 +72,15 @@ AppleScriptTransport
 ``AppleScriptTransport`` is the production default. It invokes fixed argv
 ``('/usr/bin/osascript', '-')`` and streams a complete script through standard
 input. Recipient and message text are base64-encoded inside that script, so
-private values do not enter process arguments or temporary files. Child output
-is captured inside the transport and does not cross the public error boundary.
+private values do not enter process arguments or temporary files.
+
+The transport maps a nonzero AppleScript exit to
+``MessageSendError(reason="delivery")`` and an operating-system failure to
+``MessageSendError(reason="transport")``. It captures child output and raises
+the public error only after leaving the low-level exception handler. Raw child
+output and operating-system details therefore appear in neither ``__cause__``
+nor ``__context__``. Direct transport callers receive the same safe failure
+shape as client callers.
 
 .. autoclass:: macpymessenger.AppleScriptTransport
    :members: send

@@ -75,6 +75,8 @@ Python request construction rejected recipient or message text before an effect
 ran. Inspect ``error.field`` for ``"recipient"`` or ``"message"`` and
 ``error.reason`` for ``"type"``, ``"empty"``, or ``"encoding"``. Correct the
 request; the exception message intentionally omits the rejected private value.
+For encoding failures, the underlying ``UnicodeEncodeError`` is absent from both
+``error.__cause__`` and ``error.__context__``.
 
 ``MessageSendError``
 --------------------
@@ -93,16 +95,18 @@ Python callers should inspect the structured fields first:
    The operating system could not run the transport. Run the doctor and confirm
    that ``/usr/bin/osascript`` is available.
 
-The raw child-process exception is intentionally not chained. It can contain
-private transport data and is not part of the public recovery contract.
+The built-in transport and client discard raw child-process, operating-system,
+and caller-supplied typed failure details before exposing the public error. The
+raw exception appears in neither ``error.__cause__`` nor ``error.__context__``.
 
 ``ScriptNotFoundError``
 -----------------------
 
 The AppleScript source bundled in the installed wheel is missing, unreadable, or
-not valid UTF-8. Reinstall macpymessenger from a complete wheel. Custom delivery
-behavior belongs behind ``MessageTransport`` rather than a script-path override;
-see :doc:`../api/transport`.
+not valid UTF-8. Reinstall macpymessenger from a complete wheel. The underlying
+filesystem or Unicode error is absent from ``__cause__`` and ``__context__``.
+Custom delivery behavior belongs behind ``MessageTransport`` rather than a
+script-path override; see :doc:`../api/transport`.
 
 ``InvalidDelayTypeError`` or ``NegativeDelayError``
 ---------------------------------------------------

@@ -5,13 +5,15 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, cast
 
 from . import __version__
 from .agent_skills import AgentSkillResourceError, list_skills, load_skill, skill_names
 from .client import IMessageClient
 from .diagnostics import EnvironmentReport, diagnose_environment
 from .exceptions import (
+    InvalidDelayTypeError,
+    InvalidSendTextError,
     MessageFailureReason,
     MessageSendError,
     NegativeDelayError,
@@ -25,6 +27,8 @@ if TYPE_CHECKING:
 _SUCCESS: Final = 0
 _SEND_FAILED: Final = 1
 _INVALID_INPUT: Final = 2
+_JSON_SCHEMA_VERSION: Final = 1
+_TOOL_NAME: Final = "macpymessenger"
 _SEND_FIELDS: Final[frozenset[str]] = frozenset(
     {
         "delay_seconds",
@@ -77,11 +81,16 @@ def _build_parser() -> argparse.ArgumentParser:
             '  "delay_seconds"  optional non-negative integer; default 0\n\n'
             "No other fields or duplicate keys are accepted.\n\n"
             "Exit status:\n"
-            "  0  transport completed\n"
+            "  0  request validated or transport completed\n"
             "  1  send or transport failure\n"
             "  2  invalid input"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    send.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate input without creating a client or sending a message.",
     )
     send.add_argument(
         "--json",
@@ -109,13 +118,34 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _doctor_json_payload(report: EnvironmentReport) -> dict[str, object]:
-    payload = report.to_dict()
-    return {
-        "tool": "macpymessenger-doctor",
+def _json_envelope(
+    command: str,
+    *,
+    ok: bool,
+    data: dict[str, object] | None = None,
+    error: dict[str, object] | None = None,
+) -> dict[str, object]:
+    """Build the shared versioned JSON result shape."""
+    payload: dict[str, object] = {
+        "schema_version": _JSON_SCHEMA_VERSION,
+        "tool": _TOOL_NAME,
+        "command": command,
         "version": __version__,
-        **payload,
+        "ok": ok,
     }
+    if data is not None:
+        payload["data"] = data
+    if error is not None:
+        payload["error"] = error
+    return payload
+
+
+def _doctor_json_payload(report: EnvironmentReport) -> dict[str, object]:
+    return _json_envelope(
+        "doctor",
+        ok=not report.blocked,
+        data=report.to_dict(),
+    )
 
 
 def _write_json(payload: dict[str, object]) -> None:
@@ -150,7 +180,7 @@ def _unique_json_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
 def _read_send_request() -> SendRequest:
     try:
         payload: object = json.load(sys.stdin, object_pairs_hook=_unique_json_object)
-    except json.JSONDecodeError, OSError, RecursionError, UnicodeError:
+    except (json.JSONDecodeError, OSError, RecursionError, UnicodeError):
         raise _InvalidSendInputError from None
 
     if not isinstance(payload, dict):
@@ -166,85 +196,76 @@ def _read_send_request() -> SendRequest:
     if not _REQUIRED_SEND_FIELDS.issubset(field_names) or not field_names <= _SEND_FIELDS:
         raise _InvalidSendInputError
 
-    recipient = fields["recipient"]
-    message = fields["message"]
-    delay_seconds = fields.get("delay_seconds", 0)
-    if not isinstance(recipient, str) or not isinstance(message, str):
-        raise _InvalidSendInputError
-    if not recipient or not message:
-        raise _InvalidSendInputError
-    if isinstance(delay_seconds, bool) or not isinstance(delay_seconds, int):
-        raise _InvalidSendInputError
-
     try:
-        recipient.encode("utf-8")
-        message.encode("utf-8")
         return SendRequest(
-            recipient=recipient,
-            message=message,
-            delay_seconds=delay_seconds,
+            recipient=cast(str, fields["recipient"]),
+            message=cast(str, fields["message"]),
+            delay_seconds=cast(int, fields.get("delay_seconds", 0)),
         )
-    except NegativeDelayError, UnicodeEncodeError:
+    except (InvalidDelayTypeError, InvalidSendTextError, NegativeDelayError):
         raise _InvalidSendInputError from None
 
 
-def _send_result_payload(
+def _send_success_payload(outcome: str) -> dict[str, object]:
+    return _json_envelope(
+        "send",
+        ok=True,
+        data={"outcome": outcome},
+    )
+
+
+def _send_error_payload(
+    code: str,
     *,
-    ok: bool,
     reason: MessageFailureReason | None = None,
 ) -> dict[str, object]:
-    payload: dict[str, object] = {
-        "tool": "macpymessenger-send",
-        "version": __version__,
-        "ok": ok,
+    error: dict[str, object] = {
+        "code": code,
+        "retryable": False,
     }
     if reason is not None:
-        payload["error"] = {
-            "code": f"{reason}_failed",
-            "reason": reason,
-        }
-    return payload
+        error["reason"] = reason
+    return _json_envelope("send", ok=False, error=error)
 
 
-def _run_send(*, json_output: bool) -> int:
+def _run_send(*, json_output: bool, dry_run: bool) -> int:
     try:
         request = _read_send_request()
     except _InvalidSendInputError:
         if json_output:
-            _write_json(
-                {
-                    "tool": "macpymessenger-send",
-                    "version": __version__,
-                    "ok": False,
-                    "error": {"code": "invalid_input"},
-                }
-            )
+            _write_json(_send_error_payload("invalid_input"))
         else:
             sys.stderr.write("Invalid input. Pass one send request as JSON on standard input.\n")
         return _INVALID_INPUT
 
+    if dry_run:
+        if json_output:
+            _write_json(_send_success_payload("validated"))
+        else:
+            sys.stdout.write("Request is valid. No message was sent.\n")
+        return _SUCCESS
+
     try:
         client = IMessageClient()
-        client.send(
-            request.recipient,
-            request.message,
-            delay_seconds=request.delay_seconds,
-        )
+        client.send_request(request)
     except MessageSendError as error:
         reason = error.reason
     except ScriptNotFoundError:
         reason = "transport"
     else:
         if json_output:
-            _write_json(_send_result_payload(ok=True))
+            _write_json(_send_success_payload("transport_completed"))
         else:
-            sys.stdout.write("Message sent.\n")
+            sys.stdout.write("Send request completed. Delivery is not confirmed.\n")
         return _SUCCESS
 
     if json_output:
-        _write_json(_send_result_payload(ok=False, reason=reason))
+        _write_json(_send_error_payload(f"{reason}_failed", reason=reason))
     else:
-        sys.stderr.write(f"Message was not sent: {reason}_failed.\n")
+        sys.stderr.write(
+            f"The send failed or could not be confirmed: {reason}_failed. "
+            "Do not retry automatically.\n"
+        )
     return _SEND_FAILED
 
 
@@ -254,11 +275,11 @@ def _run_skills_list(*, json_output: bool) -> int:
     except AgentSkillResourceError:
         if json_output:
             _write_json(
-                {
-                    "tool": "macpymessenger-skills",
-                    "version": __version__,
-                    "error": {"code": "skill_unavailable"},
-                }
+                _json_envelope(
+                    "skills.list",
+                    ok=False,
+                    error={"code": "skill_unavailable", "retryable": False},
+                )
             )
         else:
             sys.stderr.write("Bundled Agent Skill content is unavailable.\n")
@@ -266,11 +287,11 @@ def _run_skills_list(*, json_output: bool) -> int:
 
     if json_output:
         _write_json(
-            {
-                "tool": "macpymessenger-skills",
-                "version": __version__,
-                "skills": [skill.to_dict() for skill in skills],
-            }
+            _json_envelope(
+                "skills.list",
+                ok=True,
+                data={"skills": [skill.to_dict() for skill in skills]},
+            )
         )
     else:
         for skill in skills:
@@ -305,7 +326,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _SEND_FAILED if report.blocked else _SUCCESS
 
     if arguments.command == "send":
-        return _run_send(json_output=arguments.json_output)
+        return _run_send(
+            json_output=arguments.json_output,
+            dry_run=arguments.dry_run,
+        )
 
     if arguments.command == "skills":
         if arguments.skill_command in {None, "list"}:

@@ -12,8 +12,8 @@ blocker diagnostics.
 | Recipient | A destination accepted by Messages, either a phone number or iMessage email address. |
 | Message | The text passed to Messages for delivery. |
 | Send request | The validated immutable `SendRequest(recipient, message, delay_seconds)` value crossing the effect boundary. |
-| Message transport | The effect owner that sends one `SendRequest`. |
-| AppleScript transport | The default transport that streams encoded AppleScript through stdin to fixed `/usr/bin/osascript -` argv. |
+| Message transport | The effect owner that sends one `SendRequest` and reports known failures as `MessageSendError`. |
+| AppleScript transport | The default transport that streams encoded AppleScript through stdin to fixed `/usr/bin/osascript -` argv and sanitizes low-level failures. |
 | Bundled AppleScript | The packaged handler source loaded by `AppleScriptTransport`. |
 | Template factory | A callable that returns a Python 3.14 t-string. |
 | Template identifier | The caller-supplied key for one template factory. |
@@ -42,8 +42,12 @@ Use these exact terms in code, docs, tests, and changelog entries. Do not use
 - `BulkSendResult` exposes immutable `sent` and detailed `failures`; `failed`
   projects recipient strings and `ok` reports whether `failures` is empty.
 - `MessageTransport` keeps the effect replaceable and ordinary tests hermetic.
+  Known failures use `MessageSendError` with a closed reason.
 - `AppleScriptTransport` keeps recipient and message text out of process argv and
-  temporary files.
+  temporary files, captures child output, and leaves low-level exceptions out of
+  public `__cause__` and `__context__` fields.
+- `MessageDelivery` resanitizes typed failures and maps legacy
+  `CalledProcessError` or `OSError` failures from custom transports.
 - `TemplateManager` stores callable t-string factories and renders plain strings
   with normal Python conversion and formatting.
 - Python logging stays application-owned; the library emits records only and

@@ -43,12 +43,15 @@ Do not introduce a second representation for any of these concepts.
   renders registered templates, and classifies sequential bulk outcomes.
 - `IMessageClient.send()` constructs one `SendRequest`; `send_request()` passes a
   prebuilt request unchanged.
-- `MessageDelivery` crosses `MessageTransport`, maps transport-specific
-  exceptions, and emits generic delivery events.
-- `MessageTransport` is the only replaceable delivery effect.
+- `MessageDelivery` crosses `MessageTransport`, rebuilds typed and legacy
+  low-level custom-transport failures after their handlers end, and emits only
+  generic delivery events.
+- `MessageTransport` is the only replaceable delivery effect. Known failures use
+  `MessageSendError` with a closed `delivery` or `transport` reason.
 - `AppleScriptTransport` loads the bundled handler source, encodes private
-  values, and runs fixed `/usr/bin/osascript -` argv with script input on
-  standard input.
+  values, runs fixed `/usr/bin/osascript -` argv with script input on standard
+  input, and maps child-process or operating-system failures to context-free
+  public errors.
 - `TemplateManager` stores callable t-string factories and renders plain strings
   through Python's normal conversion and format protocols.
 - `diagnostics` performs side-effect-free local checks and owns the doctor model.

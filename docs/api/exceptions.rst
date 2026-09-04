@@ -1,7 +1,7 @@
 .. meta::
    :description lang=en:
-      Exception reference for macpymessenger delivery, transport, delay,
-      installation, and Python t-string template failures.
+      Exception reference for macpymessenger request validation, delivery,
+      transport, delay, installation, and Python t-string template failures.
 
 Exceptions
 ==========
@@ -10,6 +10,23 @@ All public exceptions are importable from ``macpymessenger``. Catch the
 narrowest error your program can act on. Catch ``MacPyMessengerError`` only at
 an application boundary where one response is correct for every library
 failure.
+
+Request validation
+------------------
+
+.. autotype:: macpymessenger.SendTextField
+.. autotype:: macpymessenger.SendTextValidationReason
+
+.. autoclass:: macpymessenger.InvalidSendTextError
+   :members:
+
+``InvalidSendTextError.field`` is ``"recipient"`` or ``"message"``.
+``InvalidSendTextError.reason`` is ``"type"``, ``"empty"``, or ``"encoding"``.
+The exception message identifies the field and rule but never includes the
+rejected private value.
+
+.. autoclass:: macpymessenger.InvalidDelayTypeError
+.. autoclass:: macpymessenger.NegativeDelayError
 
 Delivery errors
 ---------------
@@ -27,9 +44,6 @@ reasons: ``"delivery"`` and ``"transport"``.
 rejected the send, or ``"transport"`` when the transport could not run. The raw
 transport exception is intentionally not chained because it can contain private
 child-process data.
-
-.. autoclass:: macpymessenger.InvalidDelayTypeError
-.. autoclass:: macpymessenger.NegativeDelayError
 
 Installation errors
 -------------------

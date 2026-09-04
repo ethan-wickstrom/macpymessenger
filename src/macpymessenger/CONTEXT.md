@@ -1,9 +1,9 @@
 # macpymessenger context
 
 macpymessenger sends text through the local macOS Messages app. The package
-combines one immutable request, one replaceable transport, optional t-string
-rendering, typed public failures, passive logging, and side-effect-free blocker
-diagnostics.
+combines one validated immutable request, one replaceable transport, optional
+t-string rendering, typed public failures, passive logging, and side-effect-free
+blocker diagnostics.
 
 ## Domain terms
 
@@ -11,13 +11,14 @@ diagnostics.
 | ---- | ------- |
 | Recipient | A destination accepted by Messages, either a phone number or iMessage email address. |
 | Message | The text passed to Messages for delivery. |
-| Send request | The immutable `SendRequest(recipient, message, delay_seconds)` value crossing the effect boundary. |
+| Send request | The validated immutable `SendRequest(recipient, message, delay_seconds)` value crossing the effect boundary. |
 | Message transport | The effect owner that sends one `SendRequest`. |
 | AppleScript transport | The default transport that streams encoded AppleScript through stdin to fixed `/usr/bin/osascript -` argv. |
 | Bundled AppleScript | The packaged handler source loaded by `AppleScriptTransport`. |
 | Template factory | A callable that returns a Python 3.14 t-string. |
 | Template identifier | The caller-supplied key for one template factory. |
-| Bulk send result | The immutable `BulkSendResult(sent, failed)` classification. |
+| Bulk send failure | The immutable `BulkSendFailure(recipient, reason)` record for one known failure. |
+| Bulk send result | The immutable `BulkSendResult(sent, failures)` outcome with derived `failed` and `ok` views. |
 | Environment check | One immutable diagnostic with an identifier, status, summary, and optional next step. |
 | Environment report | The ordered tuple of checks and derived aggregate blocker state. |
 | Delivery failure | A send where AppleScript or Messages returned failure. |
@@ -32,10 +33,14 @@ Use these exact terms in code, docs, tests, and changelog entries. Do not use
 ## Stable capabilities
 
 - `IMessageClient()` sends one text through `AppleScriptTransport`.
+- `IMessageClient.send_request()` accepts the same `SendRequest` used by the CLI
+  and transports without reconstructing it.
 - The client can delay one send, render and send a registered template, and send
   the same message to recipients sequentially in input order.
-- `SendRequest` validates delay and contains no shared mutable state.
-- `BulkSendResult` exposes immutable `sent` and `failed` recipient tuples.
+- `SendRequest` validates recipient, message, and delay before any delivery
+  effect and contains no shared mutable state.
+- `BulkSendResult` exposes immutable `sent` and detailed `failures`; `failed`
+  projects recipient strings and `ok` reports whether `failures` is empty.
 - `MessageTransport` keeps the effect replaceable and ordinary tests hermetic.
 - `AppleScriptTransport` keeps recipient and message text out of process argv and
   temporary files.
@@ -46,6 +51,8 @@ Use these exact terms in code, docs, tests, and changelog entries. Do not use
 - The doctor reports automated blockers and manual checks without controlling
   Messages or claiming readiness.
 - Public failures use the package exception hierarchy and structured fields.
+- JSON command output uses one versioned envelope with `schema_version`, `tool`,
+  `command`, `version`, `ok`, and either `data` or `error`.
 
 ## Stable exclusions
 
@@ -58,7 +65,7 @@ public names for excluded work.
 - Each client owns its template manager, transport, delivery object, and logger.
 - Template storage is mutable but not shared unless a caller explicitly shares a
   `TemplateManager`; callers own synchronization for concurrent mutation.
-- Send requests, diagnostic checks, diagnostic reports, and bulk results are
-  immutable values.
+- Send requests, bulk failures, bulk results, diagnostic checks, and diagnostic
+  reports are immutable values.
 - Delivery performs sends sequentially. Do not introduce shared mutable
   coordination for bulk delivery.

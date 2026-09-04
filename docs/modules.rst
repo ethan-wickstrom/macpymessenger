@@ -1,7 +1,8 @@
 .. meta::
    :description lang=en:
-      Public API map for macpymessenger clients, immutable send requests,
-      transports, bulk results, t-string templates, diagnostics, and errors.
+      Public API map for macpymessenger clients, validated immutable send
+      requests, transports, structured bulk results, templates, diagnostics,
+      and errors.
 
 API reference
 =============
@@ -18,10 +19,11 @@ The supported public API is available from ``macpymessenger``:
 Choose a reference page
 -----------------------
 
-- :doc:`api/client` — sending, templates, named bulk results, and logging.
-- :doc:`api/transport` — immutable send requests and effect replacement.
+- :doc:`api/client` — sending, prebuilt requests, templates, structured bulk
+  outcomes, and logging.
+- :doc:`api/transport` — validated immutable requests and effect replacement.
 - :doc:`api/templates` — t-string registration and Python formatting.
-- :doc:`api/exceptions` — reachable failures and structured delivery errors.
+- :doc:`api/exceptions` — request validation and structured delivery failures.
 - :doc:`api/diagnostics` — side-effect-free blocker and manual-check reports.
 
 Supported scope

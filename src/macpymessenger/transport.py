@@ -27,10 +27,17 @@ def _validate_send_text(field: SendTextField, value: object) -> None:
         raise InvalidSendTextError.wrong_type(field)
     if not value:
         raise InvalidSendTextError.empty(field)
+
     try:
         value.encode("utf-8")
     except UnicodeEncodeError:
-        raise InvalidSendTextError.invalid_encoding(field) from None
+        failure = InvalidSendTextError.invalid_encoding(field)
+    else:
+        return
+
+    # Raise after leaving the handler so the rejected text is not reachable
+    # through ``UnicodeEncodeError.object`` on ``__context__``.
+    raise failure
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,9 +68,15 @@ def _load_script_source() -> str:
     """Load the bundled AppleScript handler source."""
     try:
         resource = files("macpymessenger").joinpath(*_SCRIPT_RESOURCE)
-        return resource.read_text(encoding="utf-8")
+        source = resource.read_text(encoding="utf-8")
     except OSError, UnicodeError:
-        raise ScriptNotFoundError.bundled_script_unavailable() from None
+        failure = ScriptNotFoundError.bundled_script_unavailable()
+    else:
+        return source
+
+    # Raise after leaving the handler so filesystem details are not reachable
+    # through either ``__cause__`` or ``__context__``.
+    raise failure
 
 
 def _encode_text(value: str) -> str:

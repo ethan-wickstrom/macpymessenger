@@ -26,18 +26,25 @@ def test_skills_list_json_exposes_a_small_versioned_catalog(
     payload = json.loads(capsys.readouterr().out)
 
     assert exit_code == 0
-    assert payload["tool"] == "macpymessenger-skills"
-    assert payload["version"] == __version__
-    assert payload["skills"] == [
-        {
-            "name": "core",
-            "description": (
-                "Use this skill when the user explicitly asks an agent to send an "
-                "iMessage through the local macOS Messages app or inspect "
-                "macpymessenger readiness."
-            ),
-        }
-    ]
+    assert payload == {
+        "schema_version": 1,
+        "tool": "macpymessenger",
+        "command": "skills.list",
+        "version": __version__,
+        "ok": True,
+        "data": {
+            "skills": [
+                {
+                    "name": "core",
+                    "description": (
+                        "Use this skill when the user explicitly asks an agent to send an "
+                        "iMessage through the local macOS Messages app or inspect "
+                        "macpymessenger readiness."
+                    ),
+                }
+            ]
+        },
+    }
 
 
 def test_bare_skills_lists_the_catalog(

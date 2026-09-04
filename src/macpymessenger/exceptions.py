@@ -5,10 +5,43 @@ from __future__ import annotations
 from typing import Literal, Self
 
 type MessageFailureReason = Literal["delivery", "transport"]
+type SendTextField = Literal["recipient", "message"]
+type SendTextValidationReason = Literal["type", "empty", "encoding"]
 
 
 class MacPyMessengerError(Exception):
     """Base exception for all macpymessenger errors."""
+
+
+class InvalidSendTextError(MacPyMessengerError, ValueError):
+    """Raised when a request contains invalid recipient or message text.
+
+    ``field`` identifies ``"recipient"`` or ``"message"``. ``reason`` is the
+    closed value ``"type"``, ``"empty"``, or ``"encoding"``. Error messages
+    never include the rejected private value.
+    """
+
+    def __init__(
+        self,
+        field: SendTextField,
+        reason: SendTextValidationReason,
+        message: str,
+    ) -> None:
+        super().__init__(message)
+        self.field = field
+        self.reason = reason
+
+    @classmethod
+    def wrong_type(cls, field: SendTextField) -> Self:
+        return cls(field, "type", f"{field.capitalize()} must be a string.")
+
+    @classmethod
+    def empty(cls, field: SendTextField) -> Self:
+        return cls(field, "empty", f"{field.capitalize()} must not be empty.")
+
+    @classmethod
+    def invalid_encoding(cls, field: SendTextField) -> Self:
+        return cls(field, "encoding", f"{field.capitalize()} must be valid UTF-8 text.")
 
 
 class InvalidDelayTypeError(MacPyMessengerError, TypeError):

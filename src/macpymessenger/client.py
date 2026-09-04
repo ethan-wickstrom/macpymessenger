@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from .delivery import MessageDelivery
 from .exceptions import MessageSendError
 from .templates import TemplateCallable, TemplateManager
-from .transport import AppleScriptTransport
+from .transport import AppleScriptTransport, SendRequest
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -59,8 +59,18 @@ class IMessageClient:
         return self._logger
 
     def send(self, recipient: str, message: str, delay_seconds: int = 0) -> None:
-        """Send one text message to a Messages phone number or email address."""
-        self._delivery.deliver(recipient, message, delay_seconds)
+        """Build and send one text request."""
+        self.send_request(
+            SendRequest(
+                recipient=recipient,
+                message=message,
+                delay_seconds=delay_seconds,
+            )
+        )
+
+    def send_request(self, request: SendRequest) -> None:
+        """Send one prebuilt request without reconstructing it."""
+        self._delivery.deliver(request)
 
     def send_template(
         self,

@@ -32,3 +32,23 @@ Use this file for commits, pull requests, changelog entries, or releases.
   run the console entry point, and publish.
 - Independently install the published artifact and check `macpymessenger
   --version` plus `macpymessenger doctor --json`.
+
+## Local version preflight
+
+Before choosing a release tag, save a fresh public PyPI JSON snapshot and run:
+
+```bash
+curl --fail --silent --show-error https://pypi.org/pypi/macpymessenger/json -o /tmp/macpymessenger-pypi.json
+uv run --locked python scripts/check_release_version.py --published-metadata /tmp/macpymessenger-pypi.json
+```
+
+The check is offline and rejects a version already present in that snapshot,
+even when its release file list is empty. It is intentionally separate from
+ordinary development CI: an Unreleased checkout may retain the current version.
+Exit 0 only means the version is absent from the supplied snapshot, not that
+release gates passed. Refresh the snapshot immediately before a release review.
+Keep the README and installation guide explicit about development source installs
+until their examples are available in a published release. At release preparation,
+replace the source pin with the chosen published version requirement after its
+artifact has been independently verified. Never publish a development build as
+an already published version.

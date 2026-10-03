@@ -6,6 +6,8 @@ macpymessenger is local and send-only. It has no runtime dependencies. It does n
 
 The core data flow is `IMessageClient` → validated immutable `SendRequest` → `MessageTransport`. `IMessageClient.send_request()` passes a prebuilt request unchanged. The default `AppleScriptTransport` invokes fixed argv `('/usr/bin/osascript', '-')` and sends encoded AppleScript through standard input, keeping recipient and message text out of process arguments and temporary files.
 
+These guides describe version 0.4.0. Version 0.3.0 uses the earlier Configuration API. Follow the installation guide and CHANGELOG migration checklist when upgrading; use the v0.3.0 README for applications on the earlier release.
+
 ## Start here
 
 - [Documentation](https://macpymessenger.readthedocs.io/en/latest/): Product scope, quick start, and documentation map.

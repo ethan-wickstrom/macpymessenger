@@ -20,12 +20,22 @@ AppleScript output.
 > Messages. macpymessenger is not a hosted service and cannot send from Linux or
 > Windows.
 
+## Installation and release status
+
+This README describes **0.4.0**, including `SendRequest`, `doctor`, the JSON CLI,
+and bundled skills. Upgrading from 0.3.0 requires API changes: replace
+`IMessageClient(Configuration())` with `IMessageClient()`, use custom transports
+instead of script-path configuration, and let your application own logging.
+See the [migration checklist](CHANGELOG.md#migration) for the complete changes.
+The [0.3.0 documentation](https://github.com/ethan-wickstrom/macpymessenger/blob/v0.3.0/README.md)
+remains available for applications using that earlier release.
+
 ## First send from Python
 
 Install the package and check detectable local blockers:
 
 ```bash
-uv add macpymessenger
+uv add "macpymessenger==0.4.0"
 uv run macpymessenger doctor
 ```
 
@@ -54,7 +64,7 @@ no automated blocker was found; complete every manual check before sending.
 Using pip instead of uv:
 
 ```bash
-python -m pip install macpymessenger
+python -m pip install "macpymessenger==0.4.0"
 macpymessenger doctor
 ```
 

@@ -6,6 +6,18 @@
 Install and prepare your Mac
 ============================
 
+Release status
+--------------
+
+These guides describe **0.4.0**. Upgrading from 0.3.0 requires API changes:
+replace ``IMessageClient(Configuration())`` with ``IMessageClient()``, use custom
+transports instead of script-path configuration, and configure logging in the
+application. See the `migration checklist
+<https://github.com/ethan-wickstrom/macpymessenger/blob/v0.4.0/CHANGELOG.md#migration>`_.
+The `0.3.0 README
+<https://github.com/ethan-wickstrom/macpymessenger/blob/v0.3.0/README.md>`_
+remains available for the earlier API.
+
 Check the requirements
 ----------------------
 
@@ -28,7 +40,7 @@ environment:
 
 .. code-block:: bash
 
-   uv add macpymessenger
+   uv add "macpymessenger==0.4.0"
    uv run macpymessenger doctor
 
 Use ``uv run macpymessenger doctor --json`` when a script or agent needs
@@ -45,7 +57,7 @@ Inside an active virtual environment:
 
 .. code-block:: bash
 
-   python -m pip install macpymessenger
+   python -m pip install "macpymessenger==0.4.0"
    macpymessenger doctor
 
 Understand the doctor result

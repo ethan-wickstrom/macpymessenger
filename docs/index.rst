@@ -20,11 +20,13 @@ Messages.
 Install and inspect the Mac
 ---------------------------
 
-Add the package to a uv project and run the side-effect-free doctor:
+These guides describe **0.4.0**. See :doc:`installation` for requirements and
+migration from 0.3.0. Add the package to a uv project and run the side-effect-free
+doctor:
 
 .. code-block:: bash
 
-   uv add macpymessenger
+   uv add "macpymessenger==0.4.0"
    uv run macpymessenger doctor
 
 The doctor reports definite blockers and manual checks. A clean result means no

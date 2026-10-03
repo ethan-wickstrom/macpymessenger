@@ -7,6 +7,14 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-03
+
+### Release preparation
+
+- Installation guides pin 0.4.0 and distinguish its API from published 0.3.0.
+- An offline version preflight against a saved PyPI response catches attempts to
+  reuse an already published package version before release preparation.
+
 ### Added
 
 **One validated immutable delivery request.**

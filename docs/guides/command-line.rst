@@ -144,7 +144,7 @@ A validated dry run has this shape:
      "ok": true,
      "schema_version": 1,
      "tool": "macpymessenger",
-     "version": "0.3.0"
+     "version": "0.4.0"
    }
 
 A completed local transport has the same envelope with
@@ -165,7 +165,7 @@ A failed send has a generic code and closed reason:
      "ok": false,
      "schema_version": 1,
      "tool": "macpymessenger",
-     "version": "0.3.0"
+     "version": "0.4.0"
    }
 
 The command never echoes the recipient or message in structured output.

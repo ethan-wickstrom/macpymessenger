@@ -90,7 +90,7 @@ statuses, summaries, and next steps:
      "ok": true,
      "schema_version": 1,
      "tool": "macpymessenger",
-     "version": "0.3.0"
+     "version": "0.4.0"
    }
 
 ``ok`` is the inverse of ``data.blocked``. Neither field means that Messages
